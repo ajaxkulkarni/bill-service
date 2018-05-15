@@ -1,0 +1,85 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/context
+	http://www.springframework.org/schema/context/spring-context-3.0.xsd
+	http://www.springframework.org/schema/task
+    http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+
+    <context:annotation-config />
+    
+    <task:annotation-driven></task:annotation-driven>
+   
+	<context:component-scan base-package="com.rns.web.billapp.service" />
+
+	<bean id="userBo" class="com.rns.web.billapp.service.bo.impl.BillUserBoImpl">
+		<property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory" />
+		<property name="executor" ref="executor" />
+	</bean>
+	
+	
+	<bean id="executor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
+		<property name="corePoolSize" value="5" />
+		<property name="maxPoolSize" value="10" />
+		<property name="WaitForTasksToCompleteOnShutdown" value="true" />
+	</bean>
+
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
+		<!-- <property name="url" value="jdbc:mysql://localhost:3306/bill_app" />
+		<property name="username" value="root" />
+		<property name="password" value="WickedSmile@123456" /> -->
+		<property name="url" value="jdbc:mysql://localhost:3306/bill_app" />
+		<property name="username" value="root" />
+		<property name="password" value="" />
+		<property name="testOnReturn" value="true" />
+		<property name="testOnBorrow" value="true" />
+		<property name="testWhileIdle" value="true" />
+		<property name="validationQuery" value="SELECT 1" />
+		<property name="initialSize" value="20"/>
+  		<property name="maxActive" value="50"/>
+  		<property name="maxIdle" value="40"/>
+  		<property name="minIdle" value="0"/>
+  		<!-- <property name="maxWaitMillis" value="50000"/> -->
+	</bean>
+
+	<!-- Hibernate 4 SessionFactory Bean definition -->
+	<bean id="hibernate4AnnotatedSessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="annotatedClasses">
+			<list>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBItemBusiness</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBItemParent</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBItemSubscription</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBLocation</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBSector</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBSubscription</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBUser</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBUserBusiness</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBUserAddress</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBUserLog</value>
+			
+			</list>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.MySQLDialect
+				</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.generate_statistics">true</prop>
+				<!-- <prop key="hibernate.hbm2ddl.auto">update</prop> -->
+				<!-- <prop key="hibernate.connection.release_mode">after_statement</prop> -->
+				<!-- <prop key="connection.provider_class"> org.hibernate.connection.C3P0ConnectionProvider 
+					</prop> -->
+			</props>
+		</property>
+	</bean>
+
+
+</beans>
