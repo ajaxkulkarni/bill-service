@@ -16,7 +16,7 @@
 	<context:component-scan base-package="com.rns.web.billapp.service" />
 	
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-		<property name="locations"  value="file:///home/service/properties/db.properties"/>
+		<property name="locations"  value="classpath:db.properties"/>
 	</bean>
 	
 
