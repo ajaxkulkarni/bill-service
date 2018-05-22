@@ -30,6 +30,7 @@ public class BillDBUserLog {
 	private Date createdDate;
 	private BillDBItemParent parentItem;
 	private BillDBUserBusiness business;
+	private String weeklyPricing;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -123,6 +124,14 @@ public class BillDBUserLog {
 	}
 	public void setBusiness(BillDBUserBusiness business) {
 		this.business = business;
+	}
+	
+	@Column(name = "weekly_price")
+	public String getWeeklyPricing() {
+		return weeklyPricing;
+	}
+	public void setWeeklyPricing(String weeklyPricing) {
+		this.weeklyPricing = weeklyPricing;
 	}
 	
 }

@@ -4,6 +4,8 @@ import static javax.persistence.GenerationType.IDENTITY;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -13,6 +15,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 @Entity
@@ -29,7 +32,16 @@ public class BillDBSubscription {
 	private String phone;
 	private String address;
 	private BillDBLocation location;
+	private Set<BillDBItemSubscription> subscriptions = new HashSet<BillDBItemSubscription>();
 	
+	
+	public BillDBSubscription(Integer id) {
+		setId(id);
+	}
+	
+	public BillDBSubscription() {
+		
+	}
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -115,5 +127,14 @@ public class BillDBSubscription {
 	@Column(name = "address")
 	public String getAddress() {
 		return address;
+	}
+
+	@OneToMany(mappedBy = "subscription", fetch = FetchType.LAZY)
+	public Set<BillDBItemSubscription> getSubscriptions() {
+		return subscriptions;
+	}
+
+	public void setSubscriptions(Set<BillDBItemSubscription> subscriptions) {
+		this.subscriptions = subscriptions;
 	}
 }

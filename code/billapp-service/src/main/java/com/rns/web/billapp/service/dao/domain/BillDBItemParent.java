@@ -29,6 +29,8 @@ public class BillDBItemParent {
 	private Date createdDate;
 	private String status;
 	private BillDBSector sector;
+	private String weeklyPricing;
+	private String imagePath;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -111,6 +113,22 @@ public class BillDBItemParent {
 	}
 	public void setSector(BillDBSector sector) {
 		this.sector = sector;
+	}
+	
+	@Column(name = "weekly_price")
+	public String getWeeklyPricing() {
+		return weeklyPricing;
+	}
+	public void setWeeklyPricing(String weeklyPricing) {
+		this.weeklyPricing = weeklyPricing;
+	}
+	
+	@Column(name = "img_path")
+	public String getImagePath() {
+		return imagePath;
+	}
+	public void setImagePath(String imagePath) {
+		this.imagePath = imagePath;
 	}
 	
 }

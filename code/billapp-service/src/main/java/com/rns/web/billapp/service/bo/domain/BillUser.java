@@ -1,9 +1,13 @@
 package com.rns.web.billapp.service.bo.domain;
 
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 
+import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -129,6 +133,20 @@ public class BillUser {
 	}
 	public void setAddress(String address) {
 		this.address = address;
+	}
+	
+	@Override
+	public String toString() {
+		try {
+			return new ObjectMapper().writer().writeValueAsString(this);
+		} catch (JsonGenerationException e) {
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return super.toString();
 	}
 	
 }

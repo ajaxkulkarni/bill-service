@@ -3,6 +3,16 @@ package com.rns.web.billapp.service.bo.domain;
 import java.math.BigDecimal;
 import java.util.Date;
 
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.rns.web.billapp.service.domain.BillFile;
+
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(Include.NON_EMPTY)
 public class BillItem {
 
 	private Integer id;
@@ -17,6 +27,10 @@ public class BillItem {
 	private BillItem parentItem;
 	private BigDecimal quantity;
 	private BillUserLog changeLog;
+	private BillSector itemSector;
+	private String weeklyPricing;
+	private Integer parentItemId;
+	private BillFile image;
 	
 	public Integer getId() {
 		return id;
@@ -89,6 +103,30 @@ public class BillItem {
 	}
 	public void setChangeLog(BillUserLog changeLog) {
 		this.changeLog = changeLog;
+	}
+	public BillSector getItemSector() {
+		return itemSector;
+	}
+	public void setItemSector(BillSector itemSector) {
+		this.itemSector = itemSector;
+	}
+	public String getWeeklyPricing() {
+		return weeklyPricing;
+	}
+	public void setWeeklyPricing(String weeklyPricing) {
+		this.weeklyPricing = weeklyPricing;
+	}
+	public Integer getParentItemId() {
+		return parentItemId;
+	}
+	public void setParentItemId(Integer parentItemId) {
+		this.parentItemId = parentItemId;
+	}
+	public BillFile getImage() {
+		return image;
+	}
+	public void setImage(BillFile image) {
+		this.image = image;
 	}
 	
 }

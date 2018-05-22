@@ -5,10 +5,23 @@ import com.rns.web.billapp.service.domain.BillServiceResponse;
 
 public interface BillUserBo {
 	
+	/*Write APIs*/
+	
 	BillServiceResponse updateUserInfo(BillServiceRequest request);
 	BillServiceResponse updateUserFinancialInfo(BillServiceRequest request);
 	BillServiceResponse updateBusinessItem(BillServiceRequest request);
 	BillServiceResponse updateCustomerInfo(BillServiceRequest request);
 	BillServiceResponse updateCustomerItem(BillServiceRequest request);
+	BillServiceResponse updateCustomerItemTemporary(BillServiceRequest request);
+	BillServiceResponse updateCustomerInvoice(BillServiceRequest request);
+	
+	/*Read APIs*/
+	
+	BillServiceResponse loadProfile(BillServiceRequest request); //also login
+	BillServiceResponse getAllAreas();
+	BillServiceResponse getSectorItems(BillServiceRequest request);
+	BillServiceResponse getBusinessItems(BillServiceRequest request);
+	BillServiceResponse getAllBusinessCustomers(BillServiceRequest request);
+	BillServiceResponse loadDeliveries(BillServiceRequest request);
 	
 }

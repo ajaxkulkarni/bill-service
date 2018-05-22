@@ -2,12 +2,16 @@ package com.rns.web.billapp.service.util;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Session;
 
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBUserLog;
@@ -21,7 +25,9 @@ public class BillUserLogUtil implements BillConstants {
 			userLog.setFromDate(new Date());
 			userLog.setCreatedDate(new Date());
 			userLog.setChangeType(LOG_CHANGE_PERM);
+			userLog.setQuantityChange(item.getQuantity());
 			BillUserLog changeLog = item.getChangeLog();
+			addParents(dao, dbSubscribedItem, userLog, item);
 			if(changeLog != null) {
 				if(changeLog.getFromDate() != null) {
 					userLog.setFromDate(changeLog.getFromDate());
@@ -29,10 +35,10 @@ public class BillUserLogUtil implements BillConstants {
 				if(changeLog.getToDate() != null) {
 					userLog.setToDate(changeLog.getToDate());
 					userLog.setChangeType(LOG_CHANGE_TEMP);
+					//userLog = getResultantLog(new BillLogDAOImpl(session).getActiveItemSubscription(userLog), userLog);
+					
 				}
 			}
-			userLog.setQuantityChange(item.getQuantity());
-			addParents(dao, dbSubscribedItem, userLog);
 			session.persist(userLog);
 		}
 		//Subscription ended
@@ -42,14 +48,41 @@ public class BillUserLogUtil implements BillConstants {
 			userLog.setCreatedDate(new Date());
 			userLog.setChangeType(LOG_CHANGE_PERM);
 			userLog.setQuantityChange(BigDecimal.ZERO);
-			addParents(dao, dbSubscribedItem, userLog);
+			addParents(dao, dbSubscribedItem, userLog, null);
 			session.persist(userLog);
 		}
 	}
 	
-	private static void addParents(BillGenericDaoImpl dao, BillDBItemSubscription dbSubscribedItem, BillDBUserLog userLog) {
+	private static BillDBUserLog getResultantLog(List<BillDBUserLog> activeItemSubscriptions, BillDBUserLog userLog, Session session) {
+		if(CollectionUtils.isEmpty(activeItemSubscriptions)) {
+			return userLog;
+		}
+		for(BillDBUserLog log:activeItemSubscriptions) {
+			if(CommonUtils.isGreaterThan(log.getFromDate(), userLog.getFromDate()) && CommonUtils.isGreaterThan(userLog.getToDate(), log.getToDate())) {
+				//Between the 2 dates..overlap
+				session.delete(log);
+			} else if(CommonUtils.isGreaterThan(log.getFromDate(), userLog.getFromDate()) && CommonUtils.isGreaterThan(log.getToDate(), userLog.getToDate())) {
+				//From date is between and to date surpasses
+				log.setToDate(DateUtils.addDays(userLog.getFromDate(), -1));
+			} else if(CommonUtils.isGreaterThan(log.getFromDate(), userLog.getFromDate()) && CommonUtils.isGreaterThan(log.getToDate(), userLog.getToDate())) {
+				//From date is between and to date surpasses
+				log.setToDate(DateUtils.addDays(userLog.getFromDate(), -1));
+			}
+		}
+		return null;
+	}
+
+	private static void addParents(BillGenericDaoImpl dao, BillDBItemSubscription dbSubscribedItem, BillDBUserLog userLog, BillItem item) {
 		userLog.setBusinessItem(dbSubscribedItem.getBusinessItem());
 		userLog.setSubscription(dbSubscribedItem.getSubscription());
+		if(dbSubscribedItem.getBusinessItem() != null) {
+			userLog.setBusiness(dbSubscribedItem.getBusinessItem().getBusiness());
+		}
+		if(item != null && item.getParentItemId() != null) {
+			BillDBItemParent parent = new BillDBItemParent();
+			parent.setId(item.getParentItemId());
+			userLog.setParentItem(parent);
+		}
 		if(userLog.getSubscription() != null) {
 			BillDBSubscription dbSubscription = null;
 			if(userLog.getSubscription().getBusiness() == null || userLog.getSubscription().getBusiness().getId() == null) {
@@ -61,6 +94,19 @@ public class BillUserLogUtil implements BillConstants {
 				userLog.setBusiness(userLog.getSubscription().getBusiness());
 			}
 			
+		}
+	}
+
+	public static void updateBillItemParentLog(BillDBItemParent dbItem, BillItem item, Session session) {
+		if(item.getPrice() != null || StringUtils.isNotBlank(item.getWeekDays())) {
+			BillDBUserLog userLog = new BillDBUserLog();
+			userLog.setFromDate(new Date());
+			userLog.setCreatedDate(new Date());
+			userLog.setChangeType(LOG_CHANGE_PERM);
+			userLog.setPriceChange(item.getPrice());
+			userLog.setWeeklyPricing(item.getWeeklyPricing());
+			userLog.setParentItem(dbItem);
+			session.persist(userLog);
 		}
 	}
 

@@ -1,5 +1,7 @@
 package com.rns.web.billapp.service.domain;
 
+import java.util.Date;
+
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
@@ -7,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillItem;
+import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -17,6 +20,10 @@ public class BillServiceRequest {
 	private BillUser user;
 	private BillBusiness business;
 	private BillItem item;
+	private BillInvoice invoice;
+	private BillSector sector;
+	private String requestType;
+	private Date requestedDate;
 	
 	public BillUser getUser() {
 		return user;
@@ -40,6 +47,38 @@ public class BillServiceRequest {
 
 	public void setItem(BillItem item) {
 		this.item = item;
+	}
+
+	public BillInvoice getInvoice() {
+		return invoice;
+	}
+
+	public void setInvoice(BillInvoice invoice) {
+		this.invoice = invoice;
+	}
+
+	public BillSector getSector() {
+		return sector;
+	}
+
+	public void setSector(BillSector sector) {
+		this.sector = sector;
+	}
+
+	public String getRequestType() {
+		return requestType;
+	}
+
+	public void setRequestType(String requestType) {
+		this.requestType = requestType;
+	}
+
+	public Date getRequestedDate() {
+		return requestedDate;
+	}
+
+	public void setRequestedDate(Date requestedDate) {
+		this.requestedDate = requestedDate;
 	}
 
 }

@@ -14,6 +14,7 @@ import java.util.Date;
 import java.util.Scanner;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Session;
 
 public class CommonUtils {
@@ -71,7 +72,7 @@ public class CommonUtils {
 
 
 	public static String getFileName(String filePath) {
-		String[] tokens = StringUtils.split(filePath, ".");
+		String[] tokens = StringUtils.split(filePath, "/");
 		if(tokens == null || tokens.length == 0) {
 			return null;
 		}
@@ -189,6 +190,20 @@ public class CommonUtils {
 		Calendar c = Calendar.getInstance();
 		c.set(Calendar.DAY_OF_MONTH, c.getActualMaximum(Calendar.DAY_OF_MONTH));
 		return c.getTime();
+	}
+	
+	public static boolean isSameDate(Date date1, Date date2) {
+		if(date1 == null || date2 == null) {
+			return false;
+		}
+		return DateUtils.isSameDay(date1, date2);
+	}
+	
+	public static boolean isGreaterThan(Date date1, Date date2) {
+		if(date1 == null || date2 == null) {
+			return false;
+		}
+		return date1.compareTo(date2) >= 0;
 	}
 	
 }

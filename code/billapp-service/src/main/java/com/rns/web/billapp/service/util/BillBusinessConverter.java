@@ -91,6 +91,7 @@ public class BillBusinessConverter {
 		if(dbItem.getBusiness() == null) {
 			BillDBUserBusiness dbBusiness = new BillDBUserBusiness();
 			dbBusiness.setId(business.getId());
+			dbItem.setBusiness(dbBusiness);
 		}
 		if(dbItem.getId() == null) {
 			session.persist(dbItem);

@@ -6,8 +6,6 @@ import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.SimpleExpression;
 
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
-import com.rns.web.billapp.service.dao.domain.BillDBUser;
-import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.util.BillConstants;
 
 public class BillSubscriptionDAOImpl {

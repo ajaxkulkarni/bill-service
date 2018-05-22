@@ -2,6 +2,7 @@ package com.rns.billapp.web.service;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.junit.Before;
@@ -16,18 +17,25 @@ import com.rns.web.billapp.service.bo.domain.BillLocation;
 import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.bo.impl.BillAdminBoImpl;
 import com.rns.web.billapp.service.bo.impl.BillUserBoImpl;
-import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
+import com.rns.web.billapp.service.domain.BillInvoice;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
+import com.rns.web.billapp.service.domain.BillServiceResponse;
+import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.CommonUtils;
 
 public class BillTest {
 	
 	private BillUserBoImpl userbo;
+	private BillAdminBoImpl adminBo;
 
 	@Before
 	public void init() {
 		ApplicationContext ctx = new ClassPathXmlApplicationContext("applicationContext.xml");
 		userbo = (BillUserBoImpl) ctx.getBean("userBo");
+		adminBo = (BillAdminBoImpl) ctx.getBean("adminBo");
 	}
 	
 	@Test
@@ -78,12 +86,12 @@ public class BillTest {
 	}
 	
 	@Test
-	public void updateBusinessItem() {
+	public void testUpdateBusinessItem() {
 		BillServiceRequest request = new BillServiceRequest();
 		BillBusiness business = new BillBusiness();
 		business.setId(2);
 		BillItem item = new BillItem();
-		item.setId(2);
+		item.setId(1);
 		BillItem parentItem = new BillItem();
 		parentItem.setId(2);
 		item.setParentItem(parentItem);
@@ -100,7 +108,7 @@ public class BillTest {
 		user.setPhone("9423040642");
 		user.setEmail("ajinkyakulkarni1391@yahoo.com");
 		user.setName("Shiva");
-		user.setAddress("Navi peth, Pune 30");
+		user.setAddress("Sadashiv peth, Pune 30");
 		BillSubscription currentSubscription = new BillSubscription();
 		BillLocation area = new BillLocation(2);
 		//currentSubscription.setId(1);
@@ -121,7 +129,7 @@ public class BillTest {
 		BillServiceRequest request = new BillServiceRequest();
 		
 		BillItem item = new BillItem();
-		//item.setId(3);
+		item.setId(3);
 		item.setQuantity(new BigDecimal(1));
 		item.setWeekDays("1,7");
 		BillItem parentItem = new BillItem();
@@ -137,4 +145,135 @@ public class BillTest {
 		System.out.println(userbo.updateCustomerItem(request).getResponse());
 	}
 	
+	@Test
+	public void testPauseDelivery() {
+		BillServiceRequest request = new BillServiceRequest();
+		
+		BillItem item = new BillItem();
+		item.setId(3);
+		item.setQuantity(new BigDecimal(0));
+		BillUserLog changeLog = new BillUserLog();
+		changeLog.setFromDate(CommonUtils.convertDate("2018-05-19"));
+		changeLog.setToDate(CommonUtils.convertDate("2018-05-23"));
+		changeLog.setChangeType(BillConstants.LOG_CHANGE_TEMP);
+		item.setChangeLog(changeLog);
+		BillItem parentItem = new BillItem();
+		parentItem.setId(1);
+		item.setParentItem(parentItem);
+		request.setItem(item);
+		
+		BillUser user = new BillUser();
+		BillSubscription currentSubscription = new BillSubscription();
+		currentSubscription.setId(1);
+		user.setCurrentSubscription(currentSubscription);
+		request.setUser(user);
+		System.out.println(userbo.updateCustomerItemTemporary(request).getResponse());
+	}
+	
+	@Test
+	public void testPauseDeliveryBusinessItem() {
+		BillServiceRequest request = new BillServiceRequest();
+		BillItem item = new BillItem();
+		item.setQuantity(new BigDecimal(0));
+		BillUserLog changeLog = new BillUserLog();
+		changeLog.setFromDate(CommonUtils.convertDate("2018-05-19"));
+		changeLog.setToDate(CommonUtils.convertDate("2018-05-23"));
+		changeLog.setChangeType(BillConstants.LOG_CHANGE_TEMP);
+		item.setChangeLog(changeLog);
+		BillItem parentItem = new BillItem();
+		parentItem.setId(1);
+		item.setParentItem(parentItem);
+		request.setItem(item);
+		BillUser user = new BillUser();
+		request.setUser(user);
+		System.out.println(userbo.updateCustomerItemTemporary(request).getResponse());
+	}
+	
+	@Test
+	public void testUpdateInvoice() {
+		BillServiceRequest request = new BillServiceRequest();
+		
+		BillInvoice invoice = new BillInvoice();
+		invoice.setMonth(3);
+		invoice.setYear(2018);
+		invoice.setAmount(new BigDecimal(110));
+		invoice.setPendingBalance(new BigDecimal(20));
+		invoice.setComments("Pending service charge ..");
+		
+		BillUser user = new BillUser();
+		BillSubscription currentSubscription = new BillSubscription();
+		currentSubscription.setId(1);
+		user.setCurrentSubscription(currentSubscription);
+		request.setUser(user);
+		request.setInvoice(invoice);
+		System.out.println(userbo.updateCustomerInvoice(request).getResponse());
+	}
+	
+	@Test
+	public void testUpdateParentItem() {
+		
+		BillServiceRequest request = new BillServiceRequest();
+		BillItem item = new BillItem();
+		item.setId(3);
+		item.setName("Sandhyanand Times");
+		item.setPrice(new BigDecimal(10));
+		item.setDescription("The worst newspaper in the history of mankind. It's AAJ ka ANAND");
+		item.setFrequency("DAILY");
+		item.setWeekDays("1,2,3,4,5,6,7");
+		item.setWeeklyPricing("10,10,10,10,10,15,15");
+		request.setItem(item);
+		adminBo.updateItem(request);
+	}
+	
+	@Test
+	public void testLoadProfile() {
+		BillServiceRequest request = new BillServiceRequest();
+		BillUser user = new BillUser();
+		user.setPhone("1231231231");
+		request.setUser(user);
+		BillServiceResponse response = userbo.loadProfile(request);
+		System.out.println(response.getResponse() + ":" + response.getWarningText());
+		System.out.println(response.getUser());
+	}
+	
+	@Test
+	public void testGetAreas() {
+		System.out.println(userbo.getAllAreas().getLocations().size());
+	}
+	
+	@Test
+	public void testGetSectorItems() {
+		BillServiceRequest request = new BillServiceRequest();
+		BillSector sector = new BillSector(2);
+		request.setSector(sector);
+		System.out.println(userbo.getSectorItems(request).getItems());
+	}
+	
+	@Test
+	public void testGetBusinessItems() {
+		BillServiceRequest request = new BillServiceRequest();
+		BillBusiness business = new BillBusiness();
+		business.setId(2);
+		request.setBusiness(business);
+		System.out.println(userbo.getBusinessItems(request).getItems());
+	}
+	
+	@Test
+	public void testGetBusinessCustomers() {
+		BillServiceRequest request = new BillServiceRequest();
+		BillBusiness business = new BillBusiness();
+		business.setId(2);
+		request.setBusiness(business);
+		System.out.println(userbo.getAllBusinessCustomers(request).getUsers());
+	}
+	
+	@Test
+	public void testGetDeliveries() {
+		BillServiceRequest request = new BillServiceRequest();
+		BillBusiness business = new BillBusiness();
+		business.setId(2);
+		request.setBusiness(business);
+		request.setRequestedDate(new Date());
+		System.out.println(userbo.loadDeliveries(request).getUsers());
+	}
 }
