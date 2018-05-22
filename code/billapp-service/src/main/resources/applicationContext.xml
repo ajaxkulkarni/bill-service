@@ -14,6 +14,11 @@
     <task:annotation-driven></task:annotation-driven>
    
 	<context:component-scan base-package="com.rns.web.billapp.service" />
+	
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations"  value="file:///home/service/properties/db.properties"/>
+	</bean>
+	
 
 	<bean id="userBo" class="com.rns.web.billapp.service.bo.impl.BillUserBoImpl">
 		<property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory" />
@@ -35,12 +40,9 @@
 	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
 		destroy-method="close">
 		<property name="driverClassName" value="com.mysql.jdbc.Driver" />
-		<!-- <property name="url" value="jdbc:mysql://localhost:3306/bill_app" />
-		<property name="username" value="root" />
-		<property name="password" value="WickedSmile@123456" /> -->
 		<property name="url" value="jdbc:mysql://localhost:3306/bill_app" />
-		<property name="username" value="root" />
-		<property name="password" value="" />
+		<property name="username" value="${db.username}" />
+		<property name="password" value="${db.password}" />
 		<property name="testOnReturn" value="true" />
 		<property name="testOnBorrow" value="true" />
 		<property name="testWhileIdle" value="true" />
