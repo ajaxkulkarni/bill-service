@@ -41,7 +41,7 @@ public class BillGenericDaoImpl {
         return criteria.list();
 	}
 
-	private SimpleExpression activeCriteria() {
+	public static SimpleExpression activeCriteria() {
 		return Restrictions.eq("status", BillConstants.STATUS_ACTIVE);
 	}
 

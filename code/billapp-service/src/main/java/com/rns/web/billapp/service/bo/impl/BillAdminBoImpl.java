@@ -140,6 +140,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			response.setItems(BillDataConverter.getItems(items));
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
 		} finally {
 			CommonUtils.closeSession(session);
 		}

@@ -561,9 +561,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillSubscription currentSubscription = new BillSubscription();
 					currentSubscription.setItems(BillDataConverter.getSubscribedItems(new ArrayList<BillDBItemSubscription>(subscription.getSubscriptions())));
 					user.setCurrentSubscription(currentSubscription); 
-					if(BillRuleEngine.isDelivery(logs, currentSubscription)) {
+					/*if(BillRuleEngine.isDelivery(logs, currentSubscription)) {
 						users.add(user);
-					}
+					}*/
 				}
 			}
 			response.setUsers(users);

@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.lang3.time.DateUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
@@ -19,7 +20,10 @@ import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.bo.impl.BillAdminBoImpl;
+import com.rns.web.billapp.service.bo.impl.BillSchedulerBoImpl;
 import com.rns.web.billapp.service.bo.impl.BillUserBoImpl;
+import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
+import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillInvoice;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
@@ -30,12 +34,14 @@ public class BillTest {
 	
 	private BillUserBoImpl userbo;
 	private BillAdminBoImpl adminBo;
+	private BillSchedulerBoImpl scheduler;
 
 	@Before
 	public void init() {
 		ApplicationContext ctx = new ClassPathXmlApplicationContext("applicationContext.xml");
 		userbo = (BillUserBoImpl) ctx.getBean("userBo");
 		adminBo = (BillAdminBoImpl) ctx.getBean("adminBo");
+		scheduler = (BillSchedulerBoImpl) ctx.getBean("schedulerBo");
 	}
 	
 	@Test
@@ -131,7 +137,7 @@ public class BillTest {
 		BillItem item = new BillItem();
 		item.setId(3);
 		item.setQuantity(new BigDecimal(1));
-		item.setWeekDays("1,7");
+		item.setWeekDays("1,5,7");
 		BillItem parentItem = new BillItem();
 		parentItem.setId(1);
 		item.setParentItem(parentItem);
@@ -274,6 +280,22 @@ public class BillTest {
 		business.setId(2);
 		request.setBusiness(business);
 		request.setRequestedDate(new Date());
-		System.out.println(userbo.loadDeliveries(request).getUsers());
+		//System.out.println(userbo.loadDeliveries(request).getUsers());
+		
+		System.out.println(new BillVendorDaoImpl(userbo.getSessionFactory().openSession()).getDeliveries(null).get(0).getPhone());
+	}
+	
+	@Test
+	public void testLogQueries() {
+		List<Object[]> objects = new BillLogDAOImpl(userbo.getSessionFactory().openSession()).getParentItemQuantityLogs(CommonUtils.getDate(new Date()));
+		for(Object[] array: objects) {
+			System.out.println(array[0] + ":" + array[1] + ":" + array[2]);
+		}
+		System.out.println(objects);
+	}
+	
+	@Test
+	public void testInvoiceRoutine() {
+		scheduler.calculateInvoices();
 	}
 }

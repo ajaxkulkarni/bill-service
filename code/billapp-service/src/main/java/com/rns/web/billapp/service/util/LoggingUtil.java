@@ -13,8 +13,14 @@ public class LoggingUtil {
 	
 	private static Logger errorLogger = Logger.getLogger("errorLogger");
 	
+	public static Logger schedulerLogger = Logger.getLogger("schedulerLogger");
+	
 	
 	//private static Logger emailLogger = Logger.getLogger("email");
+	
+	public static void logMessage(String message, Logger logger) {
+		logger.info(message);
+	}
 	
 	public static void logMessage(String message) {
 		reportLogger.info(message);

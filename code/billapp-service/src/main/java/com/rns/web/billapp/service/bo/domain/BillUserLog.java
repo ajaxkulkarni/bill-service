@@ -20,6 +20,15 @@ public class BillUserLog {
 	private BigDecimal priceChange;
 	private BigDecimal quantityChange;
 	private Date createdDate;
+	private Integer subscriptionId;
+	private Integer businessItemId;
+	private Integer businessId;
+	private Integer parentItemId;
+	private String weeklyPricing;
+	
+	public BillUserLog() {
+		
+	}
 	
 	public Date getFromDate() {
 		return fromDate;
@@ -57,6 +66,45 @@ public class BillUserLog {
 	public void setCreatedDate(Date createdDate) {
 		this.createdDate = createdDate;
 	}
-	
 
+	public Integer getSubscriptionId() {
+		return subscriptionId;
+	}
+
+	public void setSubscriptionId(Integer subscriptionId) {
+		this.subscriptionId = subscriptionId;
+	}
+
+	public Integer getBusinessItemId() {
+		return businessItemId;
+	}
+
+	public void setBusinessItemId(Integer businessItemId) {
+		this.businessItemId = businessItemId;
+	}
+
+	public Integer getBusinessId() {
+		return businessId;
+	}
+
+	public void setBusinessId(Integer businessId) {
+		this.businessId = businessId;
+	}
+
+	public Integer getParentItemId() {
+		return parentItemId;
+	}
+
+	public void setParentItemId(Integer parentItemId) {
+		this.parentItemId = parentItemId;
+	}
+
+	public String getWeeklyPricing() {
+		return weeklyPricing;
+	}
+
+	public void setWeeklyPricing(String weeklyPricing) {
+		this.weeklyPricing = weeklyPricing;
+	}
+	
 }

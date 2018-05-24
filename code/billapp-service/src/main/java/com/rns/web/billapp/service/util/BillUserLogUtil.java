@@ -1,10 +1,12 @@
 package com.rns.web.billapp.service.util;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Session;
@@ -110,4 +112,29 @@ public class BillUserLogUtil implements BillConstants {
 		}
 	}
 
+	public static List<BillUserLog> getUserLogs(List<Object[]> resultset) {
+		if(CollectionUtils.isEmpty(resultset)) {
+			return null;
+		}
+		List<BillUserLog> logs = new ArrayList<BillUserLog>();
+		for(Object[] row: resultset) {
+			if(ArrayUtils.isEmpty(row)) {
+				continue;
+			}
+			BillUserLog log = new BillUserLog();
+			log.setSubscriptionId((Integer) row[1]);
+			log.setBusinessItemId((Integer) row[2]);
+			log.setChangeType(row[3].toString());
+			log.setFromDate((Date) row[4]);
+			log.setToDate((Date) row[5]);
+			log.setPriceChange((BigDecimal) row[6]);
+			log.setQuantityChange((BigDecimal) row[7]);
+			log.setParentItemId((Integer) row[9]);
+			log.setBusinessId((Integer) row[10]);
+			log.setWeeklyPricing((String) row[11]);
+			
+		}
+		return logs;
+	}
+	
 }

@@ -37,5 +37,9 @@ public interface BillConstants {
 	String ID_ATTR = "id";
 	String LOG_CHANGE_TEMP = "TEMP";
 	String LOG_CHANGE_PERM = "PERM";
+	String FREQ_DAILY = "DAILY";
+	String FREQ_MONTHLY = "MONTHLY";
+	String FREQ_WEEKLY = "WEELKLY";
+	
 
 }

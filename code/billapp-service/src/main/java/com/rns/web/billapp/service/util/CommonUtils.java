@@ -205,5 +205,19 @@ public class CommonUtils {
 		}
 		return date1.compareTo(date2) >= 0;
 	}
+
+
+	public static Date startDate(Date date) {
+		if(date == null) {
+			return null;
+		}
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		cal.set(Calendar.MINUTE, 0);
+		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.SECOND, 0);
+		return cal.getTime();
+	}
+	
 	
 }

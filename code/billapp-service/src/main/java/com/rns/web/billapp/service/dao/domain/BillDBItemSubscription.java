@@ -27,6 +27,7 @@ public class BillDBItemSubscription {
 	private String status;
 	private String comments;
 	private BigDecimal quantity;
+	private BigDecimal price;
 	private BillDBSubscription subscription;
 	private BillDBItemBusiness businessItem;
 	
@@ -114,6 +115,14 @@ public class BillDBItemSubscription {
 	}
 	public void setBusinessItem(BillDBItemBusiness businessItem) {
 		this.businessItem = businessItem;
+	}
+	
+	@Column(name = "price")
+	public BigDecimal getPrice() {
+		return price;
+	}
+	public void setPrice(BigDecimal price) {
+		this.price = price;
 	}
 	
 }

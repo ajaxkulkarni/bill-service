@@ -30,6 +30,11 @@
 		<property name="executor" ref="executor" />
 	</bean>
 	
+	<bean id="schedulerBo" class="com.rns.web.billapp.service.bo.impl.BillSchedulerBoImpl">
+		<property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory" />
+		<property name="executor" ref="executor" />
+	</bean>
+	
 	
 	<bean id="executor" class="org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor">
 		<property name="corePoolSize" value="5" />
@@ -72,6 +77,8 @@
 				<value>com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails</value>
 				<value>com.rns.web.billapp.service.dao.domain.BillDBUserLog</value>
 				<value>com.rns.web.billapp.service.dao.domain.BillDBInvoice</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBOrders</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBOrderItems</value>
 			</list>
 		</property>
 		<property name="hibernateProperties">

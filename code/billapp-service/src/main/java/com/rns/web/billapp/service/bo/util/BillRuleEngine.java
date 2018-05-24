@@ -1,49 +1,51 @@
 package com.rns.web.billapp.service.bo.util;
 
 import java.math.BigDecimal;
-import java.util.Calendar;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
 
 import com.rns.web.billapp.service.bo.domain.BillItem;
-import com.rns.web.billapp.service.bo.domain.BillSubscription;
-import com.rns.web.billapp.service.dao.domain.BillDBUserLog;
+import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 
 public class BillRuleEngine {
 
-	public static boolean isDelivery(List<BillDBUserLog> logs, BillSubscription currentSubscription) {
+	public static boolean isDelivery(List<BillUserLog> logs, BillDBItemSubscription subscription) {
 		if(CollectionUtils.isEmpty(logs)) {
 			return true;
 		}
-		if(currentSubscription == null || CollectionUtils.isEmpty(currentSubscription.getItems())) {
+		if(subscription == null) {
 			return false;
 		}
-		int noOrder = 0;	
-		for(BillDBUserLog log: logs) {
-			for(BillItem item: currentSubscription.getItems()) {
-				if(item.getParentItemId() != null && log.getParentItem() != null && log.getParentItem().getId() == item.getParentItemId()) {
-					noOrder = setQuantity(log, item, noOrder);
-							
-				} else if (log.getBusinessItem() != null && item.getParentItem() != null && item.getParentItem().getId() == log.getBusinessItem().getId()) {
-					noOrder = setQuantity(log, item, noOrder);
+		//int noOrder = 0;	
+		for(BillUserLog log: logs) {
+			if(subscription.getBusinessItem() != null && subscription.getBusinessItem().getParent() != null && log.getParentItemId() == subscription.getBusinessItem().getParent().getId()) {
+				if(log.getQuantityChange() != null && BigDecimal.ZERO.equals(log.getQuantityChange())) {
+					return false;
+				}
+						
+			} else if (subscription.getBusinessItem() != null && subscription.getBusinessItem().getId() == log.getBusinessItemId()) {
+				if(log.getQuantityChange() != null && BigDecimal.ZERO.equals(log.getQuantityChange())) {
+					return false;
 				}
 			}
 		}
-		if(noOrder == currentSubscription.getItems().size()) {
+		/*if(noOrder == currentSubscription.getItems().size()) {
 			return false;
-		}
+		}*/
 		return true;
 	}
+	
 
-	private static int setQuantity(BillDBUserLog log, BillItem item, int noOrder) {
+	private static void setQuantity(BillUserLog log, BillItem item) {
 		if(item.getQuantity() == null || !item.getQuantity().equals(BigDecimal.ZERO)) {
 			item.setQuantity(log.getQuantityChange());
-			if(item.getQuantity() != null && item.getQuantity().equals(BigDecimal.ZERO)) {
+			/*if(item.getQuantity() != null && item.getQuantity().equals(BigDecimal.ZERO)) {
 				noOrder++;
-			}
+			}*/
 		}
-		return noOrder;
+		//return noOrder;
 	}
 	
 }
