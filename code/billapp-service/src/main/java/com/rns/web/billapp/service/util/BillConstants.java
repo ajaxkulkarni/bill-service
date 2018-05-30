@@ -10,6 +10,7 @@ public interface BillConstants {
 	
 	Integer ERROR_CODE_FATAL = -999;
 	Integer ERROR_CODE_GENERIC = -111;
+	Integer ERROR_NOT_APPROVED = -222;
 	int WARNING_CODE_1 = 101;
 	int WARNING_CODE_2 = 102;
 	int WARNING_CODE_3 = 103;

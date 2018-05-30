@@ -1,10 +1,15 @@
 package com.rns.web.billapp.service.domain;
 
 import java.io.InputStream;
+import java.io.Serializable;
 import java.math.BigDecimal;
 
-public class BillFile {
+public class BillFile implements Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 619350656305349583L;
 	private String fileName;
 	private String filePath;
 	private InputStream fileData;

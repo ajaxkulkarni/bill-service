@@ -5,12 +5,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
+import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
@@ -109,11 +111,24 @@ public class BillDataConverter implements BillConstants {
 		List<BillUser> businessCustomers = new ArrayList<BillUser>();
 		NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
 		for (BillDBSubscription dbCustomer : customers) {
-			BillUser customer = new BillUser();
-			beanUtils.copyProperties(customer, dbCustomer);
+			BillUser customer = getCustomerDetails(beanUtils, dbCustomer);
 			businessCustomers.add(customer);
 		}
 		return businessCustomers;
+	}
+
+	public static BillUser getCustomerDetails(NullAwareBeanUtils beanUtils, BillDBSubscription dbCustomer)
+			throws IllegalAccessException, InvocationTargetException {
+		BillUser customer = new BillUser();
+		BillSubscription subscription = new BillSubscription();
+		beanUtils.copyProperties(subscription, dbCustomer);
+		beanUtils.copyProperties(customer, dbCustomer);
+		if(dbCustomer.getSubscriptions() != null) {
+			subscription.setItems(getSubscribedItems(new ArrayList<BillDBItemSubscription>(dbCustomer.getSubscriptions())));
+		}
+		customer.setCurrentSubscription(subscription);
+		customer.setId(dbCustomer.getId());
+		return customer;
 	}
 	
 	public static List<BillItem> getSubscribedItems(List<BillDBItemSubscription> items) throws IllegalAccessException, InvocationTargetException {
@@ -123,14 +138,17 @@ public class BillDataConverter implements BillConstants {
 		List<BillItem> subsribedItems = new ArrayList<BillItem>();
 		NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
 		for (BillDBItemSubscription subscribed : items) {
+			if(!StringUtils.equals(STATUS_ACTIVE, subscribed.getStatus())) {
+				continue;
+			}
 			BillItem parentItem = new BillItem();
 			BillItem item = new BillItem();
 			beanUtils.copyProperties(item, subscribed);
 			if(subscribed.getBusinessItem().getParent() != null) {
-				beanUtils.copyProperties(item, subscribed.getBusinessItem().getParent());
+				beanUtils.copyProperties(parentItem, subscribed.getBusinessItem().getParent());
 				item.setParentItemId(subscribed.getBusinessItem().getParent().getId());
 			} else {
-				beanUtils.copyProperties(item, subscribed.getBusinessItem());
+				beanUtils.copyProperties(parentItem, subscribed.getBusinessItem());
 			}
 			parentItem.setId(subscribed.getBusinessItem().getId());
 			item.setParentItem(parentItem);

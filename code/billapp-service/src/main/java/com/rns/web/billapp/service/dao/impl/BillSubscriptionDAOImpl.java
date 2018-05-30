@@ -1,11 +1,15 @@
 package com.rns.web.billapp.service.dao.impl;
 
+import java.util.List;
+
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.SimpleExpression;
+import org.hibernate.sql.JoinType;
 
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.util.BillConstants;
 
 public class BillSubscriptionDAOImpl {
@@ -30,7 +34,25 @@ public class BillSubscriptionDAOImpl {
          }
          return null;
 	}
+	
+	public List<BillDBSubscription> getBusinessSubscriptions(Integer businessId) {
+		Criteria criteria = session.createCriteria(BillDBSubscription.class)
+				 .add(activeCriteria());
+		criteria.createCriteria("business").add(activeCriteria()).add(Restrictions.eq("id", businessId));
+		criteria.createCriteria("subscriptions", JoinType.LEFT_OUTER_JOIN)/*.add(activeCriteria())*/;
+		return criteria.list();
+		
+	}
 
+	public BillDBSubscription getSubscriptionDetails(Integer subscriptionId) {
+		Criteria criteria = session.createCriteria(BillDBSubscription.class)
+				 .add(Restrictions.eq("id", subscriptionId))
+				 .add(activeCriteria());
+		criteria.createCriteria("subscriptions", JoinType.LEFT_OUTER_JOIN)/*.add(activeCriteria())*/;
+		return (BillDBSubscription) criteria.uniqueResult();
+		
+	}
+	
 	private SimpleExpression activeCriteria() {
 		return Restrictions.eq("status", BillConstants.STATUS_ACTIVE);
 	}

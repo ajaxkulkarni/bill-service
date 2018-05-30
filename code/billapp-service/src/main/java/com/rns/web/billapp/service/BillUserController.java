@@ -96,5 +96,91 @@ public class BillUserController {
 		return response;
 	}
 	
+	@POST
+	@Path("/loadProfile")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse loadProfile(BillServiceRequest request){
+		return userBo.loadProfile(request);
+	}
 	
+	@POST
+	@Path("/getAllAreas")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getAreas(BillServiceRequest request){
+		return userBo.getAllAreas();
+	}
+	
+	@POST
+	@Path("/updateUserProfile")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateUserProfile(BillServiceRequest request){
+		return userBo.updateUserInfo(request);
+	}
+	
+	@POST
+	@Path("/updateBankDetails")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateBankDetails(BillServiceRequest request){
+		return userBo.updateUserFinancialInfo(request);
+	}
+	
+	@POST
+	@Path("/loadBusinessItems")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse loadBusinessItems(BillServiceRequest request){
+		return userBo.getBusinessItems(request);
+	}
+	
+	@POST
+	@Path("/loadSectorItems")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse loadSectorItems(BillServiceRequest request){
+		return userBo.getSectorItems(request);
+	}
+	
+	@POST
+	@Path("/updateBusinessItem")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateBusinessItem(BillServiceRequest request){
+		return userBo.updateBusinessItem(request);
+	}
+	
+	@POST
+	@Path("/getAllCustomers")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getAllCustomers(BillServiceRequest request){
+		return userBo.getAllBusinessCustomers(request);
+	}
+	
+	@POST
+	@Path("/updateCustomer")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateCustomer(BillServiceRequest request){
+		return userBo.updateCustomerInfo(request);
+	}
+	
+	@POST
+	@Path("/getCustomerProfile")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getCustomerProfile(BillServiceRequest request){
+		return userBo.getCustomerProfile(request);
+	}
+	
+	@POST
+	@Path("/updateCustomerItem")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateCustomerItem(BillServiceRequest request){
+		return userBo.updateCustomerItem(request);
+	}
 }

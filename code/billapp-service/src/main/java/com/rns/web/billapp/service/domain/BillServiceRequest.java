@@ -1,6 +1,7 @@
 package com.rns.web.billapp.service.domain;
 
 import java.util.Date;
+import java.util.List;
 
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -24,6 +25,7 @@ public class BillServiceRequest {
 	private BillSector sector;
 	private String requestType;
 	private Date requestedDate;
+	private List<BillItem> items;
 	
 	public BillUser getUser() {
 		return user;
@@ -79,6 +81,14 @@ public class BillServiceRequest {
 
 	public void setRequestedDate(Date requestedDate) {
 		this.requestedDate = requestedDate;
+	}
+
+	public List<BillItem> getItems() {
+		return items;
+	}
+
+	public void setItems(List<BillItem> items) {
+		this.items = items;
 	}
 
 }

@@ -1,6 +1,7 @@
 package com.rns.web.billapp.service.bo.domain;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
@@ -17,8 +18,12 @@ import com.rns.web.billapp.service.domain.BillFile;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_EMPTY)
-public class BillUser {
+public class BillUser implements Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = -3668168696698074108L;
 	private Integer id;
 	private String name;
 	private String email;

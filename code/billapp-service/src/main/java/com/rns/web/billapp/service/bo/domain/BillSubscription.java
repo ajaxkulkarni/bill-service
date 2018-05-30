@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service.bo.domain;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -13,8 +14,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_EMPTY)
-public class BillSubscription {
+public class BillSubscription implements Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 2123383471370181455L;
 	private Integer id;
 	private BigDecimal serviceCharge;
 	private Date createdDate;

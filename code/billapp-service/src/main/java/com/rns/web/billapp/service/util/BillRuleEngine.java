@@ -1,4 +1,4 @@
-package com.rns.web.billapp.service.bo.util;
+package com.rns.web.billapp.service.util;
 
 import java.math.BigDecimal;
 import java.util.List;

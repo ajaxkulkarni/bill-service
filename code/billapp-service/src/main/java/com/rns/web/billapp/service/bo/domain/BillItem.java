@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service.bo.domain;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
@@ -13,8 +14,12 @@ import com.rns.web.billapp.service.domain.BillFile;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_EMPTY)
-public class BillItem {
+public class BillItem implements Serializable {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 6620229710257490921L;
 	private Integer id;
 	private String name;
 	private String description;

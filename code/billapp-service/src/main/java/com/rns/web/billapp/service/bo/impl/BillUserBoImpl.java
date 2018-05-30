@@ -22,7 +22,6 @@ import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
-import com.rns.web.billapp.service.bo.util.BillRuleEngine;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
@@ -91,7 +90,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					dbUser.setStatus(STATUS_PENDING);
 					session.persist(dbUser);
 					updateUserFiles(user, dbUser);
-					BillBusinessConverter.updateBusinessDetails(user, dao, existingUser);
+					BillBusinessConverter.updateBusinessDetails(user, dao, dbUser);
 				} else {
 					response.setResponse(ERROR_CODE_GENERIC, ERROR_MOBILE_PRESENT);
 				}
@@ -182,8 +181,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 
 	public BillServiceResponse updateBusinessItem(BillServiceRequest request) {
 		BillServiceResponse response = new BillServiceResponse();
-		BillItem item = request.getItem();
-		if(request.getBusiness() == null || request.getBusiness().getId() == null || item == null) {
+		//BillItem item = request.getItem();
+		if(request.getBusiness() == null || request.getBusiness().getId() == null || CollectionUtils.isEmpty(request.getItems())) {
 			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
 			return response;
 		}
@@ -191,7 +190,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
-			BillBusinessConverter.updateBusinessItem(item, session, request.getBusiness());
+			for(BillItem item: request.getItems()) {
+				BillBusinessConverter.updateBusinessItem(item, session, request.getBusiness());
+			}
 			tx.commit();
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -400,13 +401,13 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			BillDBUser dbUser = dao.getEntityByKey(BillDBUser.class, USER_DB_ATTR_PHONE, requestUser.getPhone(), true);
-			if(dbUser == null) {
+			BillDBUser dbUser = dao.getEntityByKey(BillDBUser.class, USER_DB_ATTR_PHONE, requestUser.getPhone(), false);
+			if(dbUser == null || StringUtils.equals(STATUS_DELETED, dbUser.getStatus())) {
 				response.setResponse(ERROR_CODE_GENERIC, ERROR_NO_USER);
 				return response;
 			}
 			if(StringUtils.equals(STATUS_PENDING, dbUser.getStatus())) {
-				response.setResponse(ERROR_CODE_GENERIC, ERROR_USER_NOT_APPROVED);
+				response.setResponse(ERROR_NOT_APPROVED, ERROR_USER_NOT_APPROVED);
 				return response;
 			}
 			BillUser user = BillDataConverter.getUserProfile(response, session, dbUser);
@@ -488,8 +489,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		Session session = null;
 		try {
 			session = this.sessionFactory.openSession();
-			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			List<BillDBSubscription> customers = dao.getEntitiesByKey(BillDBSubscription.class, "business.id", request.getBusiness().getId(),  true);
+			BillSubscriptionDAOImpl dao = new BillSubscriptionDAOImpl(session);
+			List<BillDBSubscription> customers = dao.getBusinessSubscriptions(request.getBusiness().getId());
 			response.setUsers(BillDataConverter.getCustomers(customers));
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -567,6 +568,26 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				}
 			}
 			response.setUsers(users);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+	
+	public BillServiceResponse getCustomerProfile(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if(request.getUser() == null || request.getUser().getId() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			BillSubscriptionDAOImpl dao = new BillSubscriptionDAOImpl(session);
+			BillDBSubscription customer = dao.getSubscriptionDetails(request.getUser().getId());
+			response.setUser(BillDataConverter.getCustomerDetails(new NullAwareBeanUtils(), customer));
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {

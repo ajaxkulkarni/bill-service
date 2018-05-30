@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service.bo.domain;
 
+import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 
@@ -12,8 +13,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(Include.NON_EMPTY)
-public class BillBusiness {
+public class BillBusiness implements Serializable {
 	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 5131782007420176838L;
 	private Integer id;
 	private String name;
 	private String description;

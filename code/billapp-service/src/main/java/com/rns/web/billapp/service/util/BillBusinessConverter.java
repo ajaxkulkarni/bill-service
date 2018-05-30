@@ -94,6 +94,8 @@ public class BillBusinessConverter {
 			dbItem.setBusiness(dbBusiness);
 		}
 		if(dbItem.getId() == null) {
+			dbItem.setStatus(BillConstants.STATUS_ACTIVE);
+			dbItem.setCreatedDate(new Date());
 			session.persist(dbItem);
 		}
 	}
