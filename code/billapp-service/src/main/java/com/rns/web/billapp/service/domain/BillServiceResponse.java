@@ -25,7 +25,8 @@ public class BillServiceResponse {
 	private List<BillLocation> locations;
 	private List<BillItem> items;
 	private List<BillUser> users;
-	
+	private List<BillInvoice> invoices;
+	private BillInvoice invoice;
 	
 	public BillServiceResponse() {
 		setStatus(BillConstants.STATUS_OK);
@@ -96,6 +97,22 @@ public class BillServiceResponse {
 
 	public void setUsers(List<BillUser> users) {
 		this.users = users;
+	}
+
+	public List<BillInvoice> getInvoices() {
+		return invoices;
+	}
+
+	public void setInvoices(List<BillInvoice> invoices) {
+		this.invoices = invoices;
+	}
+
+	public BillInvoice getInvoice() {
+		return invoice;
+	}
+
+	public void setInvoice(BillInvoice invoice) {
+		this.invoice = invoice;
 	}
 	
 }

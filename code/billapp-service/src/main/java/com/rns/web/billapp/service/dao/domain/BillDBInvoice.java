@@ -4,6 +4,8 @@ import static javax.persistence.GenerationType.IDENTITY;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -13,6 +15,7 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 @Entity
@@ -32,7 +35,11 @@ public class BillDBInvoice {
 	private Date paidDate;
 	private Date createdDate;
 	private String paymentId;
+	private String paymentRequestId;
 	private String paymentType;
+	private Set<BillDBItemInvoice> items = new HashSet<BillDBItemInvoice>();
+	private BigDecimal paidAmount;
+	private BigDecimal serviceCharge;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -147,6 +154,38 @@ public class BillDBInvoice {
 	}
 	public void setPaymentType(String paymentType) {
 		this.paymentType = paymentType;
+	}
+	
+	@OneToMany(mappedBy = "invoice", fetch = FetchType.LAZY)
+	public Set<BillDBItemInvoice> getItems() {
+		return items;
+	}
+	public void setItems(Set<BillDBItemInvoice> items) {
+		this.items = items;
+	}
+	
+	@Column(name = "payment_request_id")
+	public String getPaymentRequestId() {
+		return paymentRequestId;
+	}
+	public void setPaymentRequestId(String paymentRequestId) {
+		this.paymentRequestId = paymentRequestId;
+	}
+	
+	@Column(name = "paid_amount")
+	public BigDecimal getPaidAmount() {
+		return paidAmount;
+	}
+	public void setPaidAmount(BigDecimal paidAmount) {
+		this.paidAmount = paidAmount;
+	}
+	
+	@Column(name = "service_charge")
+	public BigDecimal getServiceCharge() {
+		return serviceCharge;
+	}
+	public void setServiceCharge(BigDecimal serviceCharge) {
+		this.serviceCharge = serviceCharge;
 	}
 	
 

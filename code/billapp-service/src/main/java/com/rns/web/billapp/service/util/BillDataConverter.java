@@ -14,7 +14,9 @@ import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
+import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
@@ -24,6 +26,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
+import com.rns.web.billapp.service.domain.BillInvoice;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
 
 public class BillDataConverter implements BillConstants {
@@ -156,6 +159,43 @@ public class BillDataConverter implements BillConstants {
 			subsribedItems.add(item);
 		}
 		return subsribedItems;
+	}
+	
+	public static List<BillInvoice> getInvoices(List<BillDBInvoice> invoices) throws IllegalAccessException, InvocationTargetException {
+		List<BillInvoice> userInvoices = new ArrayList<BillInvoice>();
+		if(CollectionUtils.isNotEmpty(invoices)) {
+			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
+			for(BillDBInvoice dbInvoice: invoices) {
+				BillInvoice invoice = getInvoice(beanUtils, dbInvoice);
+				userInvoices.add(invoice);
+			}
+		}
+		return userInvoices;
+	}
+
+	public static BillInvoice getInvoice(NullAwareBeanUtils beanUtils, BillDBInvoice dbInvoice) throws IllegalAccessException, InvocationTargetException {
+		BillInvoice invoice = new BillInvoice();
+		invoice.setInvoiceItems(new ArrayList<BillItem>());
+		beanUtils.copyProperties(invoice, dbInvoice);
+		if(CollectionUtils.isNotEmpty(dbInvoice.getItems())) {
+			for(BillDBItemInvoice dbInvoiceItem: dbInvoice.getItems()) {
+				if(StringUtils.equalsIgnoreCase(STATUS_ACTIVE, dbInvoiceItem.getStatus())) {
+					BillItem invoiceItem = new BillItem();
+					beanUtils.copyProperties(invoiceItem, dbInvoiceItem);
+					BillItem parentItem = new BillItem();
+					if(dbInvoiceItem.getBusinessItem().getParent() != null) {
+						beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem().getParent());
+					} else {
+						beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem());
+					}
+					invoiceItem.setParentItem(parentItem);
+					invoiceItem.setParentItemId(dbInvoiceItem.getSubscribedItem().getId());
+					invoice.getInvoiceItems().add(invoiceItem);
+				}
+			}
+			
+		}
+		return invoice;
 	}
 
 }

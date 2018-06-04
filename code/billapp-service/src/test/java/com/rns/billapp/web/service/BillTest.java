@@ -1,11 +1,15 @@
 package com.rns.billapp.web.service;
 
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.lang3.time.DateUtils;
+import org.codehaus.jackson.JsonGenerationException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
@@ -28,6 +32,7 @@ import com.rns.web.billapp.service.domain.BillInvoice;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
 import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.BillPaymentUtil;
 import com.rns.web.billapp.service.util.CommonUtils;
 
 public class BillTest {
@@ -205,6 +210,16 @@ public class BillTest {
 		invoice.setAmount(new BigDecimal(110));
 		invoice.setPendingBalance(new BigDecimal(20));
 		invoice.setComments("Pending service charge ..");
+		List<BillItem> items = new ArrayList<BillItem>();
+		BillItem item1 = new BillItem();
+		item1.setId(3);
+		item1.setQuantity(BigDecimal.TEN);
+		item1.setPrice(new BigDecimal(100));
+		BillItem parent1 = new BillItem();
+		parent1.setId(1);
+		item1.setParentItem(parent1);
+		items.add(item1);
+		invoice.setInvoiceItems(items);
 		
 		BillUser user = new BillUser();
 		BillSubscription currentSubscription = new BillSubscription();
@@ -297,5 +312,34 @@ public class BillTest {
 	@Test
 	public void testInvoiceRoutine() {
 		scheduler.calculateInvoices();
+	}
+	
+	@Test
+	public void testGetAllCustomerInvoices() throws JsonGenerationException, JsonMappingException, IOException {
+		BillServiceRequest request = new BillServiceRequest();
+		BillUser user = new BillUser();
+		user.setId(1);
+		request.setUser(user);
+		System.out.println(new ObjectMapper().writeValueAsString(userbo.getCustomerInvoices(request).getInvoices()));
+	}
+	
+	@Test
+	public void testPaymentUrl() throws InterruptedException {
+		BillServiceRequest request = new BillServiceRequest();
+		BillInvoice invoice = new BillInvoice();
+		invoice.setId(3);
+		request.setInvoice(invoice);
+		request.setRequestType("EMAIL");
+		userbo.sendCustomerInvoice(request);
+		Thread.sleep(10000);
+	}
+	
+	@Test
+	public void testGetToken() {
+		BillServiceRequest request = new BillServiceRequest();
+		BillUser user = new BillUser();
+		user.setId(16);
+		request.setUser(user);
+		userbo.updatePaymentCredentials(request);
 	}
 }

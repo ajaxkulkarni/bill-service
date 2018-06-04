@@ -1,13 +1,13 @@
 package com.rns.web.billapp.service.util;
 
 public interface BillConstants {
-	
+
 	String ROOT_FOLDER_LOCATION = "/home/service/BillData/";
-	
+
 	String DATE_FORMAT = "yyyy-MM-dd";
 	Integer STATUS_OK = 200;
 	String RESPONSE_OK = "OK";
-	
+
 	Integer ERROR_CODE_FATAL = -999;
 	Integer ERROR_CODE_GENERIC = -111;
 	Integer ERROR_NOT_APPROVED = -222;
@@ -15,20 +15,25 @@ public interface BillConstants {
 	int WARNING_CODE_2 = 102;
 	int WARNING_CODE_3 = 103;
 	int WARNING_CODE_4 = 104;
-	
-	
+
 	String WARNING_NO_BUSINESS = "No business information found. Please complete your business details.";
 	String WARNING_NO_FINANCIALS = "No financial/ bank information found. Please complete your bank details to enable payment.";
-	
+
 	String ERROR_INSUFFICIENT_FIELDS = "Insufficient fields! Please send all the required fields!";
 	String ERROR_NO_USER = "User profile was not found!";
 	String ERROR_IN_PROCESSING = "Some error occurred while processing ..";
 	String ERROR_MOBILE_PRESENT = "The mobile number is already registered!";
 	String ERROR_INVALID_ITEM = "The product you selected does not exist!";
 	String ERROR_USER_NOT_APPROVED = "Your profile is not approved by the Admin team yet. You'll get a confirmation soon as we do.";
-	
-	
+	String ERROR_INVOICE_NOT_FOUND = "Invalid invoice details!";
+
 	String MSG_REGISTERED_SUCCESS = "Your profile has been registered successfully! Our team will review your profile and contact you further to approve it.";
+
+	double PAYMENT_CHARGE_PERCENT = 0.02;
+	double PAYMENT_CHARGE_FIXED = 3;
+	String PAYMENT_ONLINE = "Online";
+	String PAYMENT_OFFLINE = "Offline";
+	String PAYMENT_STATUS_CREDIT = "Credit";
 	
 	String STATUS_DELETED = "D";
 	String STATUS_ACTIVE = "A";
@@ -42,5 +47,10 @@ public interface BillConstants {
 	String FREQ_MONTHLY = "MONTHLY";
 	String FREQ_WEEKLY = "WEELKLY";
 	
+	String MAIL_TYPE_INVOICE = "InvoiceMail";
+	String MAIL_TYPE_PAYMENT_RESULT = "PaymentMail";
+	String MAIL_TYPE_PAYMENT_RESULT_VENDOR = "PaymentMailVendor";
+
+	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
 
 }

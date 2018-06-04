@@ -14,6 +14,9 @@ public interface BillUserBo {
 	BillServiceResponse updateCustomerItem(BillServiceRequest request);
 	BillServiceResponse updateCustomerItemTemporary(BillServiceRequest request);
 	BillServiceResponse updateCustomerInvoice(BillServiceRequest request);
+	BillServiceResponse sendCustomerInvoice(BillServiceRequest request);
+	BillServiceResponse updatePaymentCredentials(BillServiceRequest request);
+	BillServiceResponse completePayment(BillServiceRequest request);
 	
 	/*Read APIs*/
 	
@@ -24,5 +27,6 @@ public interface BillUserBo {
 	BillServiceResponse getAllBusinessCustomers(BillServiceRequest request);
 	BillServiceResponse loadDeliveries(BillServiceRequest request);
 	BillServiceResponse getCustomerProfile(BillServiceRequest request);
+	BillServiceResponse getCustomerInvoices(BillServiceRequest request);
 	
 }

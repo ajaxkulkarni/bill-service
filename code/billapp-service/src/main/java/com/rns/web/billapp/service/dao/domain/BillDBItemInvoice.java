@@ -16,29 +16,18 @@ import javax.persistence.ManyToOne;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "subscription_items")
-public class BillDBItemSubscription {
+@Table(name = "invoice_items")
+public class BillDBItemInvoice {
 	
 	private Integer id;
-	private String frequency;
-	private String weekDays;
-	private String monthDays;
 	private Date createdDate;
 	private String status;
-	private String comments;
 	private BigDecimal quantity;
 	private BigDecimal price;
-	private BillDBSubscription subscription;
+	private BillDBInvoice invoice;
 	private BillDBItemBusiness businessItem;
+	private BillDBItemSubscription subscribedItem;
 	
-	
-	public BillDBItemSubscription(Integer subscribedItemId) {
-		this.id = subscribedItemId;
-	}
-	
-	public BillDBItemSubscription() {
-	
-	}
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -50,30 +39,6 @@ public class BillDBItemSubscription {
 		this.id = id;
 	}
 	
-	
-	@Column(name = "frequency")
-	public String getFrequency() {
-		return frequency;
-	}
-	public void setFrequency(String frequency) {
-		this.frequency = frequency;
-	}
-	
-	@Column(name = "week_days")
-	public String getWeekDays() {
-		return weekDays;
-	}
-	public void setWeekDays(String weekDays) {
-		this.weekDays = weekDays;
-	}
-	
-	@Column(name = "month_days")
-	public String getMonthDays() {
-		return monthDays;
-	}
-	public void setMonthDays(String monthDays) {
-		this.monthDays = monthDays;
-	}
 	
 	@Column(name = "created_date")
 	public Date getCreatedDate() {
@@ -91,14 +56,6 @@ public class BillDBItemSubscription {
 		this.status = status;
 	}
 	
-	@Column(name = "comments")
-	public String getComments() {
-		return comments;
-	}
-	public void setComments(String comments) {
-		this.comments = comments;
-	}
-	
 	@Column(name = "quantity")
 	public BigDecimal getQuantity() {
 		return quantity;
@@ -107,13 +64,21 @@ public class BillDBItemSubscription {
 		this.quantity = quantity;
 	}
 	
-	@ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
-	@JoinColumn(name = "subscription")
-	public BillDBSubscription getSubscription() {
-		return subscription;
+	@Column(name = "amount")
+	public BigDecimal getPrice() {
+		return price;
 	}
-	public void setSubscription(BillDBSubscription subscription) {
-		this.subscription = subscription;
+	public void setPrice(BigDecimal price) {
+		this.price = price;
+	}
+	
+	@ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
+	@JoinColumn(name = "invoice")
+	public BillDBInvoice getInvoice() {
+		return invoice;
+	}
+	public void setInvoice(BillDBInvoice invoice) {
+		this.invoice = invoice;
 	}
 	
 	@ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
@@ -125,12 +90,13 @@ public class BillDBItemSubscription {
 		this.businessItem = businessItem;
 	}
 	
-	@Column(name = "price")
-	public BigDecimal getPrice() {
-		return price;
+	@ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
+	@JoinColumn(name = "subscribed_item")
+	public BillDBItemSubscription getSubscribedItem() {
+		return subscribedItem;
 	}
-	public void setPrice(BigDecimal price) {
-		this.price = price;
+	public void setSubscribedItem(BillDBItemSubscription subscribedItem) {
+		this.subscribedItem = subscribedItem;
 	}
 	
 }

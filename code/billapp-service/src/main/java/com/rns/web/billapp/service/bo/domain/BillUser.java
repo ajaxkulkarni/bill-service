@@ -1,14 +1,11 @@
 package com.rns.web.billapp.service.bo.domain;
 
-import java.io.IOException;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
-import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.JsonMappingException;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -40,6 +37,7 @@ public class BillUser implements Serializable {
 	private BillBusiness currentBusiness;
 	private BillSubscription currentSubscription;
 	private String address;
+	private BigDecimal serviceCharge;
 	
 	public Integer getId() {
 		return id;
@@ -139,8 +137,14 @@ public class BillUser implements Serializable {
 	public void setAddress(String address) {
 		this.address = address;
 	}
+	public BigDecimal getServiceCharge() {
+		return serviceCharge;
+	}
+	public void setServiceCharge(BigDecimal serviceCharge) {
+		this.serviceCharge = serviceCharge;
+	}
 	
-	@Override
+	/*@Override
 	public String toString() {
 		try {
 			return new ObjectMapper().writer().writeValueAsString(this);
@@ -152,6 +156,6 @@ public class BillUser implements Serializable {
 			e.printStackTrace();
 		}
 		return super.toString();
-	}
+	}*/
 	
 }

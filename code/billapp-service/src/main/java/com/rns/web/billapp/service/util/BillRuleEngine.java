@@ -1,6 +1,8 @@
 package com.rns.web.billapp.service.util;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -8,9 +10,11 @@ import org.apache.commons.collections.CollectionUtils;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
+import com.rns.web.billapp.service.domain.BillInvoice;
 
 public class BillRuleEngine {
 
+	
 	public static boolean isDelivery(List<BillUserLog> logs, BillDBItemSubscription subscription) {
 		if(CollectionUtils.isEmpty(logs)) {
 			return true;
@@ -46,6 +50,23 @@ public class BillRuleEngine {
 			}*/
 		}
 		//return noOrder;
+	}
+
+
+	public static void calculatePayable(BillInvoice invoice) {
+		MathContext mc = new MathContext(2, RoundingMode.HALF_UP);
+		invoice.setPayable(invoice.getAmount());
+		if(invoice.getPendingBalance() != null) {
+			invoice.setPayable(invoice.getPayable().add(invoice.getPendingBalance()));
+		}
+		if(invoice.getCreditBalance() != null) {
+			invoice.setPayable(invoice.getPayable().subtract(invoice.getCreditBalance()));
+		}
+		if(invoice.getServiceCharge() != null) {
+			invoice.setPayable(invoice.getPayable().add(invoice.getServiceCharge()));
+		}
+		invoice.setInternetFees(invoice.getPayable().multiply(new BigDecimal(BillConstants.PAYMENT_CHARGE_PERCENT), mc).add(new BigDecimal(BillConstants.PAYMENT_CHARGE_FIXED), mc));
+		invoice.setPayable(invoice.getPayable().add(invoice.getInternetFees()));
 	}
 	
 }

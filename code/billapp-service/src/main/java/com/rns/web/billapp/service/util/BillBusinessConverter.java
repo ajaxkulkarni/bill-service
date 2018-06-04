@@ -7,19 +7,26 @@ import java.util.Set;
 
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
+import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
+import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
+import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
+import com.rns.web.billapp.service.domain.BillInvoice;
 
 public class BillBusinessConverter {
 	
@@ -97,6 +104,42 @@ public class BillBusinessConverter {
 			dbItem.setStatus(BillConstants.STATUS_ACTIVE);
 			dbItem.setCreatedDate(new Date());
 			session.persist(dbItem);
+		}
+	}
+	
+	public static void setInvoiceItems(BillInvoice invoice, Session session, BillDBInvoice dbInvoice) {
+		if(CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
+			for(BillItem item: invoice.getInvoiceItems()) {
+				BillDBItemInvoice invoiceItem = null;
+				if(dbInvoice.getId() != null) {
+					invoiceItem = new BillInvoiceDaoImpl(session).getInvoiceItem(dbInvoice.getId(), item.getId());
+				}
+				if(invoiceItem == null) {
+					invoiceItem = new BillDBItemInvoice();
+					invoiceItem.setCreatedDate(new Date());
+					invoiceItem.setStatus(BillConstants.STATUS_ACTIVE);
+					invoiceItem.setSubscribedItem(new BillDBItemSubscription(item.getId()));
+					if(item.getParentItem() != null) {
+						invoiceItem.setBusinessItem(new BillDBItemBusiness(item.getParentItem().getId()));
+					}
+					invoiceItem.setInvoice(dbInvoice);
+				}
+				invoiceItem.setPrice(item.getPrice());
+				invoiceItem.setQuantity(item.getQuantity());
+				if(invoiceItem.getId() == null) {
+					session.persist(invoiceItem);
+				}
+			}
+		}
+	}
+	
+	public static void setPaymentCredentials(BillDBUser dbUser, BillPaymentCredentials instaResponse) {
+		if(instaResponse != null) {
+			if(StringUtils.isNotBlank(instaResponse.getInstaId())) {
+				dbUser.setInstaId(instaResponse.getInstaId());
+			}
+			dbUser.setRefreshToken(instaResponse.getRefresh_token());
+			dbUser.setAccessToken(instaResponse.getAccess_token());
 		}
 	}
 

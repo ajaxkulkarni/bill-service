@@ -26,6 +26,7 @@ public class BillFinancialDetails implements Serializable {
 	private Date createdDate;
 	private String accountNumber;
 	private String status;
+	private String accountHolderName;
 	
 	public Integer getId() {
 		return id;
@@ -68,6 +69,12 @@ public class BillFinancialDetails implements Serializable {
 	}
 	public void setStatus(String status) {
 		this.status = status;
+	}
+	public String getAccountHolderName() {
+		return accountHolderName;
+	}
+	public void setAccountHolderName(String accountHolderName) {
+		this.accountHolderName = accountHolderName;
 	}
 	
 }

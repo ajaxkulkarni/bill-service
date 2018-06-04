@@ -31,6 +31,14 @@ public class BillDBItemBusiness {
 	private BillDBItemParent parent;
 	private BillDBUserBusiness business;
 	
+	public BillDBItemBusiness(Integer businessItemId) {
+		this.id = businessItemId;
+	}
+	
+	public BillDBItemBusiness() {
+	
+	}
+	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
 	@Column(name = "id", unique = true, nullable = false)

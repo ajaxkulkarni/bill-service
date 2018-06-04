@@ -26,6 +26,7 @@ public class BillDBUserFinancialDetails {
 	private String accountNumber;
 	private String status;
 	private BillDBUser user;
+	private String accountHolderName;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -92,6 +93,14 @@ public class BillDBUserFinancialDetails {
 	}
 	public void setStatus(String status) {
 		this.status = status;
+	}
+	
+	@Column(name = "account_holder_name")
+	public String getAccountHolderName() {
+		return accountHolderName;
+	}
+	public void setAccountHolderName(String accountHolderName) {
+		this.accountHolderName = accountHolderName;
 	}
 	
 }

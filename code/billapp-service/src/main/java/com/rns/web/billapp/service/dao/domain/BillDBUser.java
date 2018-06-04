@@ -25,6 +25,9 @@ public class BillDBUser {
 	private String aadharFilePath;
 	private String status;
 	private String profilePic;
+	private String instaId;
+	private String refreshToken;
+	private String accessToken;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -116,6 +119,30 @@ public class BillDBUser {
 	}
 	public void setProfilePic(String profilePic) {
 		this.profilePic = profilePic;
+	}
+	
+	@Column(name = "insta_id")
+	public String getInstaId() {
+		return instaId;
+	}
+	public void setInstaId(String instaId) {
+		this.instaId = instaId;
+	}
+	
+	@Column(name = "refresh_token")
+	public String getRefreshToken() {
+		return refreshToken;
+	}
+	public void setRefreshToken(String refreshToken) {
+		this.refreshToken = refreshToken;
+	}
+	
+	@Column(name = "access_token")
+	public String getAccessToken() {
+		return accessToken;
+	}
+	public void setAccessToken(String accessToken) {
+		this.accessToken = accessToken;
 	}
 	
 }
