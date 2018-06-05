@@ -3,6 +3,7 @@ package com.rns.web.billapp.service.dao.impl;
 import java.util.List;
 
 import org.hibernate.Criteria;
+import org.hibernate.FetchMode;
 import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.SimpleExpression;
@@ -48,6 +49,7 @@ public class BillSubscriptionDAOImpl {
 		Criteria criteria = session.createCriteria(BillDBSubscription.class)
 				 .add(Restrictions.eq("id", subscriptionId))
 				 .add(activeCriteria());
+		criteria.setFetchMode("location", FetchMode.JOIN);
 		criteria.createCriteria("subscriptions", JoinType.LEFT_OUTER_JOIN)/*.add(activeCriteria())*/;
 		return (BillDBSubscription) criteria.uniqueResult();
 		

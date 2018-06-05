@@ -29,6 +29,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
+import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
@@ -530,71 +531,27 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 
 	public BillServiceResponse loadDeliveries(BillServiceRequest request) {
 		BillServiceResponse response = new BillServiceResponse();
-		if (request.getBusiness() == null || request.getBusiness().getId() == null) {
+		if (request.getBusiness() == null || request.getBusiness().getId() == null || request.getRequestedDate() == null) {
 			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
 			return response;
 		}
 		Session session = null;
 		try {
 			session = this.sessionFactory.openSession();
-
-			List<BillDBItemBusiness> items = new BillGenericDaoImpl(session).getEntitiesByKey(BillDBItemBusiness.class, "business.id",
-					request.getBusiness().getId(), true);
-			if (CollectionUtils.isEmpty(items)) {
-				return response;
-			}
-
-			// change log for the business
-			BillLogDAOImpl dao = new BillLogDAOImpl(session);
-
-			List<BillDBUserLog> logs = new ArrayList<BillDBUserLog>();
-			if (CollectionUtils.isNotEmpty(items)) {
-				for (BillDBItemBusiness businessItem : items) {
-
-					BillDBUserLog userLog = new BillDBUserLog();
-					BillDBUserBusiness dbBusiness = new BillDBUserBusiness();
-					dbBusiness.setId(request.getBusiness().getId());
-					userLog.setBusiness(dbBusiness);
-					userLog.setFromDate(request.getRequestedDate());
-					userLog.setBusinessItem(businessItem);
-					userLog.setParentItem(businessItem.getParent());
-
-					BillDBUserLog businessLog = dao.getLatestBusinessItemQuantityLog(userLog);
-					if (businessLog != null) {
-						logs.add(businessLog);
-					}
-
-					BillDBUserLog subscriptionLog = dao.getLatestSubscribedItemQuantityLog(userLog);
-
-					if (subscriptionLog != null) {
-						logs.add(subscriptionLog);
-					}
-
-					if (userLog.getParentItem() != null) {
-						BillDBUserLog parentItemLog = dao.getLatestParentItemsQuantityLog(userLog);
-						if (parentItemLog != null) {
-							logs.add(parentItemLog);
-						}
-					}
-
-				}
-			}
-
 			List<BillUser> users = new ArrayList<BillUser>();
 			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
-			List<BillDBSubscription> orders = new BillVendorDaoImpl(session).getDeliveries(request.getBusiness().getId());
+			List<BillDBOrders> orders = new BillVendorDaoImpl(session).getOrders(request.getRequestedDate(), request.getBusiness().getId());
 			System.out.println("Fetching done..");
 			if (CollectionUtils.isNotEmpty(orders)) {
-				for (BillDBSubscription subscription : orders) {
+				for (BillDBOrders order : orders) {
 					BillUser user = new BillUser();
-					beanUtils.copyProperties(user, subscription);
+					beanUtils.copyProperties(user, order.getSubscription());
 					BillSubscription currentSubscription = new BillSubscription();
-					currentSubscription.setItems(BillDataConverter.getSubscribedItems(new ArrayList<BillDBItemSubscription>(subscription.getSubscriptions())));
+					currentSubscription.setItems(BillDataConverter.getOrderItems(order.getOrderItems()));
+					currentSubscription.setId(order.getSubscription().getId());
+					currentSubscription.setAmount(order.getAmount());
 					user.setCurrentSubscription(currentSubscription);
-					/*
-					 * if(BillRuleEngine.isDelivery(logs, currentSubscription))
-					 * { users.add(user); }
-					 */
+					users.add(user);
 				}
 			}
 			response.setUsers(users);

@@ -3,6 +3,7 @@ package com.rns.web.billapp.service.dao.impl;
 import java.util.List;
 
 import org.hibernate.Criteria;
+import org.hibernate.FetchMode;
 import org.hibernate.Session;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.sql.JoinType;
@@ -46,6 +47,15 @@ public class BillInvoiceDaoImpl {
 		Criteria criteria = session.createCriteria(BillDBInvoice.class)
 				 .add(Restrictions.eq("subscription.id", subscriptionId));
 		criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
+		return criteria.list();
+	}
+
+	public List<BillDBInvoice> getAllInvoicesForMonth(Integer month, Integer year) {
+		Criteria criteria = session.createCriteria(BillDBInvoice.class)
+								.add(Restrictions.eq("month", month))
+								.add(Restrictions.eq("year", year));
+		criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
+		criteria.setFetchMode("subscription", FetchMode.JOIN);
 		return criteria.list();
 	}
 

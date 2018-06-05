@@ -3,6 +3,7 @@ package com.rns.web.billapp.service.util;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -20,6 +21,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
+import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
@@ -128,6 +130,11 @@ public class BillDataConverter implements BillConstants {
 		beanUtils.copyProperties(customer, dbCustomer);
 		if(dbCustomer.getSubscriptions() != null) {
 			subscription.setItems(getSubscribedItems(new ArrayList<BillDBItemSubscription>(dbCustomer.getSubscriptions())));
+			if(dbCustomer.getLocation() != null) {
+				BillLocation area = new BillLocation();
+				beanUtils.copyProperties(area, dbCustomer.getLocation());
+				subscription.setArea(area);
+			}
 		}
 		customer.setCurrentSubscription(subscription);
 		customer.setId(dbCustomer.getId());
@@ -196,6 +203,33 @@ public class BillDataConverter implements BillConstants {
 			
 		}
 		return invoice;
+	}
+
+	public static List<BillItem> getOrderItems(Set<BillDBOrderItems> items) throws IllegalAccessException, InvocationTargetException {
+		if(CollectionUtils.isEmpty(items)) {
+			return null;
+		}
+		List<BillItem> orderedItems = new ArrayList<BillItem>();
+		NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
+		for (BillDBOrderItems orderItem : items) {
+			if(!StringUtils.equals(STATUS_ACTIVE, orderItem.getStatus())) {
+				continue;
+			}
+			BillItem parentItem = new BillItem();
+			BillItem item = new BillItem();
+			beanUtils.copyProperties(item, orderItem);
+			if(orderItem.getBusinessItem().getParent() != null) {
+				beanUtils.copyProperties(parentItem, orderItem.getBusinessItem().getParent());
+				item.setParentItemId(orderItem.getBusinessItem().getParent().getId());
+			} else {
+				beanUtils.copyProperties(parentItem, orderItem.getBusinessItem());
+			}
+			parentItem.setId(orderItem.getBusinessItem().getId());
+			item.setParentItem(parentItem);
+			item.setId(orderItem.getId());
+			orderedItems.add(item);
+		}
+		return orderedItems;
 	}
 
 }

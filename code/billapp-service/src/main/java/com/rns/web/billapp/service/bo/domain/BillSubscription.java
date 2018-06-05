@@ -26,6 +26,8 @@ public class BillSubscription implements Serializable {
 	private String status;
 	private BillLocation area;
 	private List<BillItem> items;
+	private BigDecimal amount;
+	private BigDecimal quantity;
 	
 	public Integer getId() {
 		return id;
@@ -62,6 +64,18 @@ public class BillSubscription implements Serializable {
 	}
 	public void setItems(List<BillItem> items) {
 		this.items = items;
+	}
+	public BigDecimal getAmount() {
+		return amount;
+	}
+	public void setAmount(BigDecimal amount) {
+		this.amount = amount;
+	}
+	public BigDecimal getQuantity() {
+		return quantity;
+	}
+	public void setQuantity(BigDecimal quantity) {
+		this.quantity = quantity;
 	}
 	
 }

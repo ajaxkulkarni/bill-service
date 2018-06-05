@@ -18,12 +18,15 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillSchedulerBo;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
+import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.util.BillConstants;
@@ -99,7 +102,11 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		//TODO: Get holidays
 		List<BillUserLog> logs = getLogsForDate(session, date);
 		
-		List<BillDBOrders> orders = vendorDaoImpl.getOrders(date);
+		List<BillDBOrders> orders = vendorDaoImpl.getOrders(date, null);
+		
+		Integer month = CommonUtils.getCalendarValue(date, Calendar.MONTH);
+		Integer year = CommonUtils.getCalendarValue(date, Calendar.YEAR);
+		List<BillDBInvoice> invoices = new BillInvoiceDaoImpl(session).getAllInvoicesForMonth(month, year);
 		
 		//LoggingUtil.logMessage("Deactivating existing orders for - " + date, LoggingUtil.schedulerLogger);
 		
@@ -107,9 +114,12 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		
 		for(BillDBSubscription subscription: subscriptions) {
 			BillDBOrders currentOrder = findOrder(orders, subscription, date);
+			BillDBInvoice invoice = findInvoice(invoices, subscription, month, year);
 			if(CollectionUtils.isEmpty(subscription.getSubscriptions())) {
 				if(currentOrder.getId() != null) {
 					currentOrder.setStatus(STATUS_DELETED);
+					deductInvoiceAmount(currentOrder.getAmount(), invoice);
+					currentOrder.setAmount(BigDecimal.ZERO);
 				}
 				continue;
 			}
@@ -117,6 +127,10 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 			BigDecimal orderTotal = BigDecimal.ZERO;
 			for(BillDBItemSubscription itemSub: subscription.getSubscriptions()) {
 				BillDBOrderItems item = findItem(currentOrder, itemSub);
+				BigDecimal previousQuantity = item.getQuantity();
+				BigDecimal previousAmount = item.getAmount();
+				
+				BillDBItemInvoice invoiceItem = findItem(invoice, itemSub);
 				item.setQuantity(itemSub.getQuantity());
 				if(itemSub.getQuantity() == null || itemSub.getQuantity().equals(BigDecimal.ZERO)) {
 					item.setQuantity(BigDecimal.ZERO);
@@ -142,8 +156,12 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 						orderTotal = orderTotal.add(itemPrice);
 					}
 				}
+				updateInvoiceItem(invoiceItem, invoice, item, previousAmount, previousQuantity);
 				if(item.getId() == null) {
 					session.persist(item);
+				}
+				if(invoiceItem.getId() == null) {
+					session.persist(invoiceItem);
 				}
 			}
 			if(noDeliveries == subscription.getSubscriptions().size()) {
@@ -155,10 +173,82 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 			if(currentOrder.getId() == null) {
 				session.persist(currentOrder);
 			}
-			LoggingUtil.logMessage("..... Generated invoice for .." + subscription.getId() + " Invoice ID .." + currentOrder.getId(), LoggingUtil.schedulerLogger);
+			if(invoice.getId() == null) {
+				session.persist(invoice);
+			}
+			LoggingUtil.logMessage("..... Generated invoice for .." + subscription.getId() + " Order ID .." + currentOrder.getId() + " .. Invoice ID " +  invoice.getId(), LoggingUtil.schedulerLogger);
+		}
+	}
+	private void updateInvoiceItem(BillDBItemInvoice invoiceItem, BillDBInvoice invoice, BillDBOrderItems item, BigDecimal previousAmount, BigDecimal previousQuantity) {
+		if(invoiceItem.getPrice() != null && invoiceItem.getQuantity() != null) {
+			if(previousAmount != null && previousQuantity != null) {
+				//Means this order was generated before.. so undo previous calculations
+				invoiceItem.setPrice(invoiceItem.getPrice().subtract(previousAmount));
+				invoiceItem.setQuantity(invoiceItem.getQuantity().subtract(previousQuantity));
+				invoice.setAmount(invoice.getAmount().subtract(previousAmount));
+			}
+		}
+		if(item.getQuantity() != null) {
+			if(invoiceItem.getQuantity() == null) {
+				invoiceItem.setQuantity(BigDecimal.ZERO);
+			}
+			invoiceItem.setQuantity(invoiceItem.getQuantity().add(item.getQuantity()));
+		}
+		if(item.getAmount() != null) {
+			if(invoiceItem.getPrice() == null) {
+				invoiceItem.setPrice(BigDecimal.ZERO);
+			}
+			if(invoice.getAmount() == null) {
+				invoice.setAmount(BigDecimal.ZERO);
+			}
+			invoiceItem.setPrice(invoiceItem.getPrice().add(item.getAmount()));
+			invoice.setAmount(invoice.getAmount().add(item.getAmount()));
+		}
+	}
+	private BillDBItemInvoice findItem(BillDBInvoice invoice, BillDBItemSubscription itemSub) {
+		BillDBItemInvoice item = new BillDBItemInvoice();
+		item.setCreatedDate(new Date());
+		item.setStatus(STATUS_ACTIVE);
+		item.setBusinessItem(itemSub.getBusinessItem());
+		item.setSubscribedItem(itemSub);
+		item.setInvoice(invoice);
+		if(CollectionUtils.isEmpty(invoice.getItems())) {
+			return item;
+		}
+		for(BillDBItemInvoice itemInvoice: invoice.getItems()) {
+			if(itemSub.getId() != null && itemInvoice.getSubscribedItem() != null && itemInvoice.getSubscribedItem().getId() == itemSub.getId()) {
+				return itemInvoice;
+			}
+		}
+		return item;
+	}
+	private void deductInvoiceAmount(BigDecimal amount, BillDBInvoice invoice) {
+		if(invoice.getAmount() != null) {
+			if(amount == null) {
+				return;
+			}
+			//Means this order was generated before.. so undo previous calculations
+			invoice.setAmount(invoice.getAmount().subtract(amount));
 		}
 	}
 	
+	private BillDBInvoice findInvoice(List<BillDBInvoice> invoices, BillDBSubscription subscription, Integer month, Integer year) {
+		BillDBInvoice invoice = new BillDBInvoice();
+		invoice.setCreatedDate(new Date());
+		invoice.setStatus(INVOICE_STATUS_PENDING);
+		invoice.setMonth(month);
+		invoice.setYear(year);
+		invoice.setSubscription(subscription);
+		if(CollectionUtils.isEmpty(invoices)) {
+			return invoice;
+		}
+		for(BillDBInvoice inv: invoices) {
+			if(subscription.getId() != null && inv.getSubscription().getId() == subscription.getId()) {
+				return inv;
+			}
+		}
+		return invoice;
+	}
 	private BillDBOrderItems findItem(BillDBOrders currentOrder, BillDBItemSubscription itemSub) {
 		BillDBOrderItems item = new BillDBOrderItems();
 		item.setCreatedDate(new Date());

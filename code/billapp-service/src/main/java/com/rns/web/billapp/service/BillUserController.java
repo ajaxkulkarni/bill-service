@@ -250,4 +250,12 @@ public class BillUserController {
 		
 		return Response.temporaryRedirect(url).build();
 	}
+	
+	@POST
+	@Path("/getDeliveries")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getDeliveries(BillServiceRequest request){
+		return userBo.loadDeliveries(request);
+	}
 }

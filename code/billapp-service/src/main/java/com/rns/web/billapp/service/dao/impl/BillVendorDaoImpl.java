@@ -32,7 +32,7 @@ public class BillVendorDaoImpl {
 	
 	public List<BillDBSubscription> getDeliveries(Integer businessId) {
 		Criteria criteria = session.createCriteria(BillDBSubscription.class)
-				 .add(Restrictions.eq("status", BillConstants.STATUS_ACTIVE));
+				 /*.add(Restrictions.eq("status", BillConstants.STATUS_ACTIVE))*/;
 				 //.add(Restrictions.eq("subscriptions.businessItem.status", BillConstants.STATUS_ACTIVE))
 				 //.add(Restrictions.eq("subscriptions.businessItem.parent.status", BillConstants.STATUS_ACTIVE));
 				
@@ -51,11 +51,18 @@ public class BillVendorDaoImpl {
 		return criteria.list();
 	}
 	
-	public List<BillDBOrders> getOrders(Date date) {
+	public List<BillDBOrders> getOrders(Date date, Integer businessId) {
 		Criteria criteria = session.createCriteria(BillDBOrders.class)
 				 .add(Restrictions.ge("orderDate", DateUtils.addDays(date, -1)))
 				 .add(Restrictions.le("orderDate", CommonUtils.startDate(DateUtils.addDays(date, 1))));
-		criteria.setFetchMode("orderItems", FetchMode.JOIN);
+		Criteria itemCriteria = criteria.setFetchMode("orderItems", FetchMode.JOIN);
+		Criteria businessItemCriteria = itemCriteria.setFetchMode("businessItem", FetchMode.JOIN);
+		businessItemCriteria.setFetchMode("parent", FetchMode.JOIN);
+		Criteria businessCriteria = criteria.setFetchMode("business", FetchMode.JOIN);
+		if(businessId != null) {
+			businessCriteria.add(Restrictions.eq("id", businessId));
+		}
+		criteria.setFetchMode("subscription", FetchMode.JOIN);
 		return criteria.list();
 	}
 
