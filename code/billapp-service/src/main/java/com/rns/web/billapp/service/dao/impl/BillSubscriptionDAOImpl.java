@@ -2,6 +2,7 @@ package com.rns.web.billapp.service.dao.impl;
 
 import java.util.List;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.hibernate.Criteria;
 import org.hibernate.FetchMode;
 import org.hibernate.Session;
@@ -41,7 +42,13 @@ public class BillSubscriptionDAOImpl {
 				 .add(activeCriteria());
 		criteria.createCriteria("business").add(activeCriteria()).add(Restrictions.eq("id", businessId));
 		criteria.createCriteria("subscriptions", JoinType.LEFT_OUTER_JOIN)/*.add(activeCriteria())*/;
-		return criteria.list();
+		//criteria.setFetchMode("subscriptions", FetchMode.EAGER);
+		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		List<BillDBSubscription> subscriptions = criteria.list();
+		if(CollectionUtils.isEmpty(subscriptions)) {
+			return null;
+		}
+		return subscriptions;
 		
 	}
 
