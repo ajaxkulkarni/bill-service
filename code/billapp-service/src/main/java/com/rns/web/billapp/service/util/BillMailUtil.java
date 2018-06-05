@@ -81,13 +81,14 @@ public class BillMailUtil implements BillConstants, Runnable {
 		Properties props = new Properties();
 
 		props.put("mail.smtp.auth", MAIL_AUTH);
-		// props.put("mail.smtp.socketFactory.port", "465"); //PROD
-		// props.put("mail.smtp.socketFactory.class",
-		// "javax.net.ssl.SSLSocketFactory"); //PROD
-		props.put("mail.smtp.starttls.enable", "true");
+		props.put("mail.smtp.socketFactory.port", "465"); //PROD
+		props.put("mail.smtp.socketFactory.class","javax.net.ssl.SSLSocketFactory"); //PROD
+		//props.put("mail.smtp.starttls.enable", "true");
 		props.put("mail.smtp.host", MAIL_HOST);
 		props.put("mail.smtp.port", MAIL_PORT);
 
+		LoggingUtil.logMessage("Mail credentials being used .." + MAIL_ID + " -- " + MAIL_PASSWORD);
+		
 		Session session = Session.getInstance(props, new javax.mail.Authenticator() {
 			protected PasswordAuthentication getPasswordAuthentication() {
 				return new PasswordAuthentication(MAIL_ID, MAIL_PASSWORD);
