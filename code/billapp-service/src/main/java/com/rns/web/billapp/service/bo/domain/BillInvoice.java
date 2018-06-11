@@ -1,4 +1,4 @@
-package com.rns.web.billapp.service.domain;
+package com.rns.web.billapp.service.bo.domain;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -9,7 +9,6 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.rns.web.billapp.service.bo.domain.BillItem;
 
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)

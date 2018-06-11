@@ -26,6 +26,17 @@ public class BillSubscriptionDAOImpl {
 		return session;
 	}
 	
+	public BillDBSubscription getActiveSubscription(String phone, Integer businessItemId) {
+		 Criteria criteria = session.createCriteria(BillDBSubscription.class)
+				 .add(Restrictions.eq("phone", phone))
+				 .add(Restrictions.eq("business.id", businessItemId));
+        Object result = criteria.uniqueResult();
+        if(result != null) {
+       	 return (BillDBSubscription) result;
+        }
+        return null;
+	}
+	
 	public BillDBItemSubscription getActiveItemSubscription(Integer subscriptionId, Integer businessItemId) {
 		 Criteria criteria = session.createCriteria(BillDBItemSubscription.class)
 				 .add(Restrictions.eq("subscription.id", subscriptionId))

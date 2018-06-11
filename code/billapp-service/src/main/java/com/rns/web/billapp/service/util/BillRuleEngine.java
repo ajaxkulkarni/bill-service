@@ -7,10 +7,10 @@ import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
 
+import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
-import com.rns.web.billapp.service.domain.BillInvoice;
 
 public class BillRuleEngine {
 
