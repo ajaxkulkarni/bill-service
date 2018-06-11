@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.rns.web.billapp.service.bo.api.BillAdminBo;
+import com.rns.web.billapp.service.bo.api.BillSchedulerBo;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
@@ -47,6 +48,17 @@ public class BillAdminController {
 	
 	public void setAdminBo(BillAdminBo adminBo) {
 		this.adminBo = adminBo;
+	}
+	
+	@Autowired(required = true)
+	@Qualifier(value = "schedulerBo")
+	BillSchedulerBo schedulerBo;
+	
+	public BillSchedulerBo getSchedulerBo() {
+		return schedulerBo;
+	}
+	public void setSchedulerBo(BillSchedulerBo schedulerBo) {
+		this.schedulerBo = schedulerBo;
 	}
 	
 	@POST
@@ -121,6 +133,14 @@ public class BillAdminController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse getAllItems() {
 		return adminBo.getAllparentItems(new BillServiceRequest());
+	}
+	
+	@POST
+	@Path("/generateOrders")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse generateOrders(BillServiceRequest request) {
+		return schedulerBo.calculateInvoices(request.getRequestedDate());
 	}
 	
 	

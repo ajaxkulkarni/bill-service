@@ -28,6 +28,8 @@ public class BillSubscription implements Serializable {
 	private List<BillItem> items;
 	private BigDecimal amount;
 	private BigDecimal quantity;
+	private Integer billsDue;
+	private Date lastBillPaid;
 	
 	public Integer getId() {
 		return id;
@@ -76,6 +78,18 @@ public class BillSubscription implements Serializable {
 	}
 	public void setQuantity(BigDecimal quantity) {
 		this.quantity = quantity;
+	}
+	public Integer getBillsDue() {
+		return billsDue;
+	}
+	public void setBillsDue(Integer billsDue) {
+		this.billsDue = billsDue;
+	}
+	public Date getLastBillPaid() {
+		return lastBillPaid;
+	}
+	public void setLastBillPaid(Date lastBillPaid) {
+		this.lastBillPaid = lastBillPaid;
 	}
 	
 }

@@ -65,6 +65,5 @@ public class BillSubscriptionDAOImpl {
 	private SimpleExpression activeCriteria() {
 		return Restrictions.eq("status", BillConstants.STATUS_ACTIVE);
 	}
-
-
+	
 }

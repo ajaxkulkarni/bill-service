@@ -28,5 +28,7 @@ public interface BillUserBo {
 	BillServiceResponse loadDeliveries(BillServiceRequest request);
 	BillServiceResponse getCustomerProfile(BillServiceRequest request);
 	BillServiceResponse getCustomerInvoices(BillServiceRequest request);
+	BillServiceResponse getDailySummary(BillServiceRequest request);
+	BillServiceResponse getInvoiceSummary(BillServiceRequest request);
 	
 }

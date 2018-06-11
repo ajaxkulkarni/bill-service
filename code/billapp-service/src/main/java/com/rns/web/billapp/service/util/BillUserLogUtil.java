@@ -132,7 +132,7 @@ public class BillUserLogUtil implements BillConstants {
 			log.setParentItemId((Integer) row[9]);
 			log.setBusinessId((Integer) row[10]);
 			log.setWeeklyPricing((String) row[11]);
-			
+			logs.add(log);
 		}
 		return logs;
 	}

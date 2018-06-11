@@ -1,6 +1,7 @@
 package com.rns.web.billapp.service.util;
 
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -97,16 +98,24 @@ public class BillDataConverter implements BillConstants {
 		List<BillItem> businessItems = new ArrayList<BillItem>();
 		NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
 		for (BillDBItemBusiness item : items) {
-			BillItem businessItem = new BillItem();
-			beanUtils.copyProperties(businessItem, item);
-			if(item.getParent() != null) {
-				BillItem parent = new BillItem();
-				beanUtils.copyProperties(parent, item.getParent());
-				businessItem.setParentItem(parent);
-			}
+			BillItem businessItem = getBusinessItem(beanUtils, item);
 			businessItems.add(businessItem);
 		}
 		return businessItems;
+	}
+
+	public static BillItem getBusinessItem(NullAwareBeanUtils beanUtils, BillDBItemBusiness item) throws IllegalAccessException, InvocationTargetException {
+		if(item == null) {
+			return null;
+		}
+		BillItem businessItem = new BillItem();
+		beanUtils.copyProperties(businessItem, item);
+		if(item.getParent() != null) {
+			BillItem parent = new BillItem();
+			beanUtils.copyProperties(parent, item.getParent());
+			businessItem.setParentItem(parent);
+		}
+		return businessItem;
 	}
 
 	public static List<BillUser> getCustomers(List<BillDBSubscription> customers) throws IllegalAccessException, InvocationTargetException {
@@ -213,6 +222,9 @@ public class BillDataConverter implements BillConstants {
 		NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
 		for (BillDBOrderItems orderItem : items) {
 			if(!StringUtils.equals(STATUS_ACTIVE, orderItem.getStatus())) {
+				continue;
+			}
+			if(orderItem.getQuantity() == null || orderItem.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
 				continue;
 			}
 			BillItem parentItem = new BillItem();

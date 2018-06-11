@@ -258,4 +258,20 @@ public class BillUserController {
 	public BillServiceResponse getDeliveries(BillServiceRequest request){
 		return userBo.loadDeliveries(request);
 	}
+	
+	@POST
+	@Path("/getOrderSummary")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getOrderSummary(BillServiceRequest request){
+		return userBo.getDailySummary(request);
+	}
+	
+	@POST
+	@Path("/getInvoiceSummary")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getInvoiceSummary(BillServiceRequest request){
+		return userBo.getInvoiceSummary(request);
+	}
 }

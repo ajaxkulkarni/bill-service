@@ -30,6 +30,7 @@ public class BillDBItemSubscription {
 	private BigDecimal price;
 	private BillDBSubscription subscription;
 	private BillDBItemBusiness businessItem;
+	private String priceType;
 	
 	
 	public BillDBItemSubscription(Integer subscribedItemId) {
@@ -131,6 +132,15 @@ public class BillDBItemSubscription {
 	}
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	@Column(name = "price_type")
+	public String getPriceType() {
+		return priceType;
+	}
+
+	public void setPriceType(String priceType) {
+		this.priceType = priceType;
 	}
 	
 }

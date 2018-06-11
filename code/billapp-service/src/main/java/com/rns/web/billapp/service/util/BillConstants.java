@@ -39,6 +39,8 @@ public interface BillConstants {
 	String STATUS_ACTIVE = "A";
 	String STATUS_PENDING = "P";
 	String INVOICE_STATUS_PENDING = "Pending";
+	String INVOICE_STATUS_PAID = "Credit";
+	
 	String USER_DB_ATTR_PHONE = "phone";
 	String ID_ATTR = "id";
 	String LOG_CHANGE_TEMP = "TEMP";
@@ -50,6 +52,7 @@ public interface BillConstants {
 	String MAIL_TYPE_INVOICE = "InvoiceMail";
 	String MAIL_TYPE_PAYMENT_RESULT = "PaymentMail";
 	String MAIL_TYPE_PAYMENT_RESULT_VENDOR = "PaymentMailVendor";
+	String MAIL_TYPE_REGISTRATION = "RegistrationSuccess";
 
 	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
 

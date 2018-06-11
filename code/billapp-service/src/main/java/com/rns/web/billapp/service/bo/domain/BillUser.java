@@ -11,6 +11,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.rns.web.billapp.service.domain.BillFile;
+import com.rns.web.billapp.service.domain.BillInvoice;
 
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -38,6 +39,7 @@ public class BillUser implements Serializable {
 	private BillSubscription currentSubscription;
 	private String address;
 	private BigDecimal serviceCharge;
+	private BillInvoice currentInvoice;
 	
 	public Integer getId() {
 		return id;
@@ -142,6 +144,12 @@ public class BillUser implements Serializable {
 	}
 	public void setServiceCharge(BigDecimal serviceCharge) {
 		this.serviceCharge = serviceCharge;
+	}
+	public BillInvoice getCurrentInvoice() {
+		return currentInvoice;
+	}
+	public void setCurrentInvoice(BillInvoice currentInvoice) {
+		this.currentInvoice = currentInvoice;
 	}
 	
 	/*@Override

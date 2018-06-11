@@ -3,6 +3,7 @@ package com.rns.web.billapp.service.bo.impl;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.List;
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
@@ -34,10 +36,8 @@ import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
-import com.rns.web.billapp.service.dao.domain.BillDBUserLog;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
-import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillSubscriptionDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillInvoice;
@@ -550,6 +550,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					currentSubscription.setItems(BillDataConverter.getOrderItems(order.getOrderItems()));
 					currentSubscription.setId(order.getSubscription().getId());
 					currentSubscription.setAmount(order.getAmount());
+					currentSubscription.setStatus(order.getStatus());
 					user.setCurrentSubscription(currentSubscription);
 					users.add(user);
 				}
@@ -574,7 +575,18 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			BillSubscriptionDAOImpl dao = new BillSubscriptionDAOImpl(session);
 			BillDBSubscription customer = dao.getSubscriptionDetails(request.getUser().getId());
-			response.setUser(BillDataConverter.getCustomerDetails(new NullAwareBeanUtils(), customer));
+			BillUser customerDetails = BillDataConverter.getCustomerDetails(new NullAwareBeanUtils(), customer);
+			//Additional info for profile
+			BillSubscription currentSubscription = customerDetails.getCurrentSubscription();
+			if(currentSubscription != null) {
+				BillInvoiceDaoImpl billInvoiceDaoImpl = new BillInvoiceDaoImpl(session);
+				currentSubscription.setBillsDue(billInvoiceDaoImpl.getInvoiceCountByStatus(currentSubscription.getId(), INVOICE_STATUS_PENDING));
+				BillDBInvoice latestPaid = billInvoiceDaoImpl.getLatestPaidInvoice(currentSubscription.getId());
+				if(latestPaid != null) {
+					currentSubscription.setLastBillPaid(latestPaid.getPaidDate());
+				}
+			}
+			response.setUser(customerDetails);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {
@@ -735,6 +747,80 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		vendorMail.setInvoice(currentInvoice);
 		executor.execute(customerMail);
 		executor.execute(vendorMail);
+	}
+
+	public BillServiceResponse getDailySummary(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if (request.getBusiness() == null || request.getBusiness().getId() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			BillVendorDaoImpl dao = new BillVendorDaoImpl(session);
+			List<Object[]> result = dao.getItemOrderSummary(request.getRequestedDate(), request.getBusiness().getId());
+			List<BillItem> items = new ArrayList<BillItem>();
+			if(CollectionUtils.isNotEmpty(result)) {
+				for(Object[] row: result) {
+					if(ArrayUtils.isEmpty(row)) {
+						continue;
+					}
+					BigDecimal total = (BigDecimal) row[0];
+					BillDBItemBusiness businessItem = (BillDBItemBusiness) row[1];
+					BillDBOrders order = (BillDBOrders) row[2];
+					BillItem item = BillDataConverter.getBusinessItem(new NullAwareBeanUtils(), businessItem);
+					if(item != null) {
+						item.setQuantity(total);
+						items.add(item);
+					}
+					
+				}
+			}
+			response.setItems(items);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getInvoiceSummary(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if (request.getBusiness() == null || request.getBusiness().getId() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerInvoiceSummary(request.getRequestedDate(), request.getBusiness().getId());
+			List<BillUser> users = new ArrayList<BillUser>();
+			if(CollectionUtils.isNotEmpty(result)) {
+				for(Object[] row: result) {
+					if(ArrayUtils.isEmpty(row)) {
+						continue;
+					}
+					BigDecimal total = (BigDecimal) row[0];
+					BillDBSubscription subscription = (BillDBSubscription) row[1];
+					BillInvoice invoice = new BillInvoice();
+					invoice.setAmount(total);
+					BillUser user = new BillUser();
+					new NullAwareBeanUtils().copyProperties(user, subscription);
+					user.setCurrentInvoice(invoice);
+					users.add(user);
+				}
+			}
+			response.setUsers(users);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
 	}
 
 }

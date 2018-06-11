@@ -29,6 +29,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
+import com.rns.web.billapp.service.domain.BillServiceResponse;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillRuleEngine;
 import com.rns.web.billapp.service.util.BillUserLogUtil;
@@ -72,7 +73,8 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		}
 	}
 	
-	public void calculateInvoices(Date date) {
+	public BillServiceResponse calculateInvoices(Date date) {
+		BillServiceResponse response = new BillServiceResponse();
 		Session session = null;
 		try {
 			session = this.sessionFactory.openSession();
@@ -82,11 +84,12 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			LoggingUtil.logMessage(ExceptionUtils.getStackTrace(e), LoggingUtil.schedulerLogger);
-			
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
 		} finally {
 			CommonUtils.closeSession(session);
 			LoggingUtil.logMessage("##### END OF INVOICE CALCULATION FOR - " + date + " ##########", LoggingUtil.schedulerLogger);
 		}
+		return response;
 	}
 	
 	private void calculateInvoice(Session session, Date date) {
@@ -149,6 +152,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 				}
 				if(item.getQuantity() != null && item.getQuantity().equals(BigDecimal.ZERO)) {
 					noDeliveries++;
+					item.setAmount(BigDecimal.ZERO);
 				} else {
 					BigDecimal itemPrice = calculatePrice(itemSub, cal);
 					if(itemPrice != null) {
@@ -286,6 +290,14 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 	
 	private BigDecimal calculatePrice(BillDBItemSubscription itemSub, Calendar cal) {
 		if(itemSub.getPrice() != null) {
+			if(StringUtils.equals(itemSub.getPriceType(), FREQ_MONTHLY)) {
+				//Only deduct on the first day of each month
+				if(cal.get(Calendar.DAY_OF_MONTH) == 1) {
+					return itemSub.getPrice();
+				} else {
+					return BigDecimal.ZERO;
+				}
+			}
 			return itemSub.getPrice();
 		}
 		BillDBItemBusiness businessItem = itemSub.getBusinessItem();
@@ -339,7 +351,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 			logs.addAll(parentItemLogs);
 		}
 		List<BillUserLog> subscribedItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getSubscribedItemQuantityLogs(dateString));
-		if(CollectionUtils.isNotEmpty(parentItemLogs)) {
+		if(CollectionUtils.isNotEmpty(subscribedItemLogs)) {
 			logs.addAll(subscribedItemLogs);
 		}
 		List<BillUserLog> businessItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getBusinessItemQuantityLogs(dateString));
