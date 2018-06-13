@@ -143,5 +143,13 @@ public class BillAdminController {
 		return schedulerBo.calculateInvoices(request.getRequestedDate());
 	}
 	
+	@POST
+	@Path("/updateUserStatus")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse approveVendor(BillServiceRequest request) {
+		return adminBo.updateUserStatus(request);
+	}
+	
 	
 }

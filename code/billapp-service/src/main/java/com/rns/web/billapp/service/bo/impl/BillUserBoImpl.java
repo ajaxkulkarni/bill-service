@@ -50,6 +50,7 @@ import com.rns.web.billapp.service.util.BillMailUtil;
 import com.rns.web.billapp.service.util.BillPaymentUtil;
 import com.rns.web.billapp.service.util.BillPropertyUtil;
 import com.rns.web.billapp.service.util.BillRuleEngine;
+import com.rns.web.billapp.service.util.BillSMSUtil;
 import com.rns.web.billapp.service.util.BillUserLogUtil;
 import com.rns.web.billapp.service.util.CommonUtils;
 import com.rns.web.billapp.service.util.LoggingUtil;
@@ -100,6 +101,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillBusinessConverter.updateBusinessDetails(user, dao, dbUser);
 					BillPaymentCredentials instaResponse = BillPaymentUtil.createNewUser(user, null);
 					BillBusinessConverter.setPaymentCredentials(dbUser, instaResponse);
+					//New user ; send email and SMS
+					BillSMSUtil.sendSMS(user, null, MAIL_TYPE_REGISTRATION);
+					executor.execute(new BillMailUtil(MAIL_TYPE_REGISTRATION , user));
 				} else {
 					response.setResponse(ERROR_CODE_GENERIC, ERROR_MOBILE_PRESENT);
 				}
@@ -261,12 +265,21 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				dbSubscription.setLocation(location);
 			}
 			if (dbSubscription.getBusiness() == null && business != null) {
-				BillDBUserBusiness dbBusiness = new BillDBUserBusiness();
+				BillDBUserBusiness dbBusiness = dao.getEntityByKey(BillDBUserBusiness.class, ID_ATTR, business.getId(), true);
+				if(dbBusiness == null) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+					return response;
+				}
+				business.setName(dbBusiness.getName());
 				dbBusiness.setId(business.getId());
 				dbSubscription.setBusiness(dbBusiness);
 			}
 			if (dbSubscription.getId() == null) {
 				session.persist(dbSubscription);
+				//New customer
+				user.setCurrentBusiness(business);
+				executor.execute(new BillMailUtil(MAIL_TYPE_NEW_CUSTOMER, user));
+				BillSMSUtil.sendSMS(user, null, MAIL_TYPE_NEW_CUSTOMER);
 			}
 			tx.commit();
 		} catch (Exception e) {
@@ -657,6 +670,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					mailUtil.setUser(customer);
 					mailUtil.setInvoice(invoice);
 					executor.execute(mailUtil);
+					response.setResponse(BillSMSUtil.sendSMS(customer, invoice, MAIL_TYPE_INVOICE));
 				}
 				response.setUser(customer);
 				response.setInvoice(invoice);
@@ -747,6 +761,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		vendorMail.setInvoice(currentInvoice);
 		executor.execute(customerMail);
 		executor.execute(vendorMail);
+		BillSMSUtil.sendSMS(customer, currentInvoice, MAIL_TYPE_PAYMENT_RESULT);
+		BillSMSUtil.sendSMS(vendor, currentInvoice, MAIL_TYPE_PAYMENT_RESULT_VENDOR);
 	}
 
 	public BillServiceResponse getDailySummary(BillServiceRequest request) {

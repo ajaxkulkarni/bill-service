@@ -53,6 +53,8 @@ public interface BillConstants {
 	String MAIL_TYPE_PAYMENT_RESULT = "PaymentMail";
 	String MAIL_TYPE_PAYMENT_RESULT_VENDOR = "PaymentMailVendor";
 	String MAIL_TYPE_REGISTRATION = "RegistrationSuccess";
+	String MAIL_TYPE_APPROVAL = "ProfileApproved";
+	String MAIL_TYPE_NEW_CUSTOMER = "CustomerAdded";
 
 	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
 

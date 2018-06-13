@@ -8,13 +8,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import javax.activation.DataHandler;
+import javax.activation.DataSource;
+import javax.activation.FileDataSource;
+import javax.mail.BodyPart;
 import javax.mail.Message;
 import javax.mail.MessagingException;
+import javax.mail.Multipart;
 import javax.mail.PasswordAuthentication;
 import javax.mail.Session;
 import javax.mail.Transport;
 import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
+import javax.mail.internet.MimeMultipart;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -57,6 +64,11 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	public BillMailUtil() {
 
+	}
+
+	public BillMailUtil(String mailType, BillUser user2) {
+		this.type = mailType;
+		this.user = user2;
 	}
 
 	public void sendMail() {
@@ -104,27 +116,12 @@ public class BillMailUtil implements BillConstants, Runnable {
 			String subject = message.getSubject();
 			BillBusiness currentBusiness = user.getCurrentBusiness();
 			if (user != null) {
-				result = StringUtils.replace(result, "{name}", CommonUtils.getStringValue(user.getName()));
-				result = StringUtils.replace(result, "{email}", CommonUtils.getStringValue(user.getEmail()));
-				result = StringUtils.replace(result, "{phone}", CommonUtils.getStringValue(user.getPhone()));
-				if (currentBusiness != null) {
-					result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
-				}
+				result = prepareUserInfo(result, user);
 				subject = StringUtils.replace(subject, "{name}", CommonUtils.getStringValue(user.getName()));
 			}
 
 			if (invoice != null) {
-				result = StringUtils.replace(result, "{invoiceId}", CommonUtils.getStringValue(invoice.getId()));
-				result = StringUtils.replace(result, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
-				result = StringUtils.replace(result, "{year}", CommonUtils.getStringValue(invoice.getYear()));
-				result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(invoice.getAmount()));
-				result = StringUtils.replace(result, "{serviceCharge}", CommonUtils.getStringValue(invoice.getServiceCharge()));
-				result = StringUtils.replace(result, "{pending}", CommonUtils.getStringValue(invoice.getPendingBalance()));
-				result = StringUtils.replace(result, "{credit}", CommonUtils.getStringValue(invoice.getCreditBalance()));
-				result = StringUtils.replace(result, "{internetFees}", CommonUtils.getStringValue(invoice.getInternetFees()));
-				result = StringUtils.replace(result, "{payable}", CommonUtils.getStringValue(invoice.getPayable()));
-				result = StringUtils.replace(result, "{createdDate}", CommonUtils.convertDate(invoice.getCreatedDate()));
-				result = StringUtils.replace(result, "{paymentUrl}", CommonUtils.getStringValue(invoice.getPaymentUrl()));
+				result = prepareInvoiceInfo(result, invoice);
 
 				subject = StringUtils.replace(subject, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
 				subject = StringUtils.replace(subject, "{year}", CommonUtils.getStringValue(invoice.getYear()));
@@ -162,9 +159,6 @@ public class BillMailUtil implements BillConstants, Runnable {
 					subject = StringUtils.replace(subject, "{status}", "failed");
 				}
 
-				result = StringUtils.replace(result, "{paidAmount}", CommonUtils.getStringValue(invoice.getPaidAmount()));
-				result = StringUtils.replace(result, "{paymentId}", CommonUtils.getStringValue(invoice.getPaymentId()));
-				
 			}
 
 			if (currentBusiness != null) {
@@ -175,8 +169,19 @@ public class BillMailUtil implements BillConstants, Runnable {
 			if (StringUtils.isNotBlank(messageText)) {
 				result = StringUtils.replace(result, "{message}", messageText);
 			}
-			// message.setContent(result, "text/html");
-			message.setContent(result, "text/html; charset=utf-8");
+			
+			Multipart multipart = new MimeMultipart();
+			BodyPart messageBodyPart = new MimeBodyPart();
+			messageBodyPart.setContent(result, "text/html; charset=utf-8");
+			multipart.addBodyPart(messageBodyPart);
+			BodyPart image = new MimeBodyPart();
+			DataSource fds = new FileDataSource(BillMailUtil.class.getClassLoader().getResource("email/PayPerBill.png").getPath());
+			image.setDataHandler(new DataHandler(fds));
+			image.setHeader("Content-ID", "<image>");
+			multipart.addBodyPart(image);
+			
+			message.setContent(multipart);
+			//message.setContent(result, "text/html; charset=utf-8");
 			/*
 			 * if(StringUtils.contains(type, "Admin")) {
 			 * message.setRecipients(Message.RecipientType.TO,
@@ -202,6 +207,33 @@ public class BillMailUtil implements BillConstants, Runnable {
 		}
 
 		return "";
+	}
+
+	public static String prepareInvoiceInfo(String result, BillInvoice invoice) {
+		result = StringUtils.replace(result, "{invoiceId}", CommonUtils.getStringValue(invoice.getId()));
+		result = StringUtils.replace(result, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
+		result = StringUtils.replace(result, "{year}", CommonUtils.getStringValue(invoice.getYear()));
+		result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(invoice.getAmount()));
+		result = StringUtils.replace(result, "{serviceCharge}", CommonUtils.getStringValue(invoice.getServiceCharge()));
+		result = StringUtils.replace(result, "{pending}", CommonUtils.getStringValue(invoice.getPendingBalance()));
+		result = StringUtils.replace(result, "{credit}", CommonUtils.getStringValue(invoice.getCreditBalance()));
+		result = StringUtils.replace(result, "{internetFees}", CommonUtils.getStringValue(invoice.getInternetFees()));
+		result = StringUtils.replace(result, "{payable}", CommonUtils.getStringValue(invoice.getPayable()));
+		result = StringUtils.replace(result, "{createdDate}", CommonUtils.convertDate(invoice.getCreatedDate()));
+		result = StringUtils.replace(result, "{paymentUrl}", CommonUtils.getStringValue(invoice.getPaymentUrl()));
+		result = StringUtils.replace(result, "{paidAmount}", CommonUtils.getStringValue(invoice.getPaidAmount()));
+		result = StringUtils.replace(result, "{paymentId}", CommonUtils.getStringValue(invoice.getPaymentId()));
+		return result;
+	}
+
+	public static String prepareUserInfo(String result, BillUser user) {
+		result = StringUtils.replace(result, "{name}", CommonUtils.getStringValue(user.getName()));
+		result = StringUtils.replace(result, "{email}", CommonUtils.getStringValue(user.getEmail()));
+		result = StringUtils.replace(result, "{phone}", CommonUtils.getStringValue(user.getPhone()));
+		if (user.getCurrentBusiness() != null) {
+			result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(user.getCurrentBusiness().getName()));
+		}
+		return result;
 	}
 
 	private String getEmails(List<String> users) {
@@ -265,10 +297,12 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	private static Map<String, String> MAIL_TEMPLATES = Collections.unmodifiableMap(new HashMap<String, String>() {
 		{
-			put(MAIL_TYPE_INVOICE, "invoice.html");
+			put(MAIL_TYPE_INVOICE, "invoice_new.html");
 			put(MAIL_TYPE_PAYMENT_RESULT, "payment_result.html");
 			put(MAIL_TYPE_PAYMENT_RESULT_VENDOR, "payment_result.html");
 			put(MAIL_TYPE_REGISTRATION, "registration.html");
+			put(MAIL_TYPE_APPROVAL, "profile_approved.html");
+			put(MAIL_TYPE_NEW_CUSTOMER, "customer_added.html");
 		}
 	});
 
@@ -278,6 +312,8 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_PAYMENT_RESULT, "Your Bill payment for {month} {year} of Rs. {amount} to {businessName} is {status}");
 			put(MAIL_TYPE_PAYMENT_RESULT_VENDOR, "Your Bill payment for {month} {year} of Rs. {amount} by {name} is {status}");
 			put(MAIL_TYPE_REGISTRATION, "Welcome to Pay Per Bill family!");
+			put(MAIL_TYPE_APPROVAL, "Congratulations! Your account has been verified and approved!");
+			put(MAIL_TYPE_NEW_CUSTOMER, "{businessName} has added you as a customer to their Pay Per Bill account");
 		}
 	});
 

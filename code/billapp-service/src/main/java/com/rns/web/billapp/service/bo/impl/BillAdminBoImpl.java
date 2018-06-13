@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.beanutils.BeanUtils;
+import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
@@ -17,14 +19,21 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillAdminBo;
 import com.rns.web.billapp.service.bo.domain.BillItem;
+import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
+import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
+import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
+import com.rns.web.billapp.service.util.BillBusinessConverter;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
+import com.rns.web.billapp.service.util.BillMailUtil;
+import com.rns.web.billapp.service.util.BillPaymentUtil;
+import com.rns.web.billapp.service.util.BillSMSUtil;
 import com.rns.web.billapp.service.util.BillUserLogUtil;
 import com.rns.web.billapp.service.util.CommonUtils;
 import com.rns.web.billapp.service.util.LoggingUtil;
@@ -138,6 +147,40 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
 			List<BillDBItemParent> items = dao.getEntities(BillDBItemParent.class,  true);
 			response.setItems(BillDataConverter.getItems(items));
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse updateUserStatus(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		BillUser user = request.getUser();
+		if (user == null || user.getId() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
+			BillDBUser existingUser = dao.getEntityByKey(BillDBUser.class, ID_ATTR, user.getId(), false);
+			if(existingUser != null) {
+				NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+				nullAwareBeanUtils.copyProperties(existingUser, user);
+				if(StringUtils.equals(STATUS_ACTIVE, user.getStatus())) {
+					BillUser approvedUser = new BillUser();
+					nullAwareBeanUtils.copyProperties(approvedUser, existingUser);
+					//User activated notification
+					executor.execute(new BillMailUtil(MAIL_TYPE_APPROVAL, approvedUser));
+					BillSMSUtil.sendSMS(approvedUser, null, MAIL_TYPE_APPROVAL);
+				}
+			}
+			tx.commit();
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
