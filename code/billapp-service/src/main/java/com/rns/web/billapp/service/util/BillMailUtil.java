@@ -141,6 +141,8 @@ public class BillMailUtil implements BillConstants, Runnable {
 						builder.append(invoiceItemRow);
 					}
 					result = StringUtils.replace(result, "{invoiceItems}", builder.toString());
+				} else {
+					result = StringUtils.replace(result, "{invoiceItems}", "");
 				}
 				
 				String businessName = "";
