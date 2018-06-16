@@ -27,6 +27,7 @@ import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
@@ -39,6 +40,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillSubscriptionDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
@@ -120,6 +122,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						BillPaymentCredentials instaResponse = BillPaymentUtil.createNewUser(currentUser, existingUser.getRefreshToken());
 						BillBusinessConverter.setPaymentCredentials(existingUser, instaResponse);
 					}
+					session.persist(existingUser);
 				} else {
 					response.setResponse(ERROR_CODE_GENERIC, ERROR_NO_USER);
 				}
@@ -833,6 +836,43 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getCustomerActivity(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if (request.getUser() == null || request.getUser().getId() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			BillLogDAOImpl dao = new BillLogDAOImpl(session);
+			BillDBSubscription userSubscription = new BillSubscriptionDAOImpl(session).getSubscriptionDetails(request.getUser().getId());
+			if(userSubscription != null) {
+				if(CollectionUtils.isNotEmpty(userSubscription.getSubscriptions())) {
+					for(BillDBItemSubscription subItem: userSubscription.getSubscriptions()) {
+						List<BillUserLog> parentItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getParentItemQuantityLogs(dateString));
+						if(CollectionUtils.isNotEmpty(parentItemLogs)) {
+							logs.addAll(parentItemLogs);
+						}
+						List<BillUserLog> subscribedItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getSubscribedItemQuantityLogs(dateString));
+						if(CollectionUtils.isNotEmpty(subscribedItemLogs)) {
+							logs.addAll(subscribedItemLogs);
+						}
+						List<BillUserLog> businessItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getBusinessItemQuantityLogs(dateString));
+						if(CollectionUtils.isNotEmpty(parentItemLogs)) {
+							logs.addAll(businessItemLogs);
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {
 			CommonUtils.closeSession(session);
 		}
