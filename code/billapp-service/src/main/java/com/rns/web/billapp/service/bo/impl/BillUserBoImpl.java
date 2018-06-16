@@ -855,10 +855,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			BillDBSubscription userSubscription = new BillSubscriptionDAOImpl(session).getSubscriptionDetails(request.getUser().getId());
 			if(userSubscription != null) {
 				if(CollectionUtils.isNotEmpty(userSubscription.getSubscriptions())) {
-					for(BillDBItemSubscription subItem: userSubscription.getSubscriptions()) {
+					/*for(BillDBItemSubscription subItem: userSubscription.getSubscriptions()) {
 						List<BillUserLog> parentItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getParentItemQuantityLogs(dateString));
 						if(CollectionUtils.isNotEmpty(parentItemLogs)) {
-							logs.addAll(parentItemLogs);
+							//logs.addAll(parentItemLogs);
 						}
 						List<BillUserLog> subscribedItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getSubscribedItemQuantityLogs(dateString));
 						if(CollectionUtils.isNotEmpty(subscribedItemLogs)) {
@@ -868,7 +868,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						if(CollectionUtils.isNotEmpty(parentItemLogs)) {
 							logs.addAll(businessItemLogs);
 						}
-					}
+					}*/
 				}
 			}
 		} catch (Exception e) {
