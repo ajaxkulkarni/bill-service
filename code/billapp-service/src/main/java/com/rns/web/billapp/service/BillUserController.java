@@ -272,4 +272,12 @@ public class BillUserController {
 	public BillServiceResponse getInvoiceSummary(BillServiceRequest request){
 		return userBo.getInvoiceSummary(request);
 	}
+	
+	@POST
+	@Path("/getCustomerActivity")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getCustomerActivity(BillServiceRequest request){
+		return userBo.getCustomerActivity(request);
+	}
 }

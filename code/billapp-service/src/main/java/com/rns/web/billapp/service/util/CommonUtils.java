@@ -180,15 +180,29 @@ public class CommonUtils {
 		return c.getTime();
 	}
 	
-	public static Date getMonthFirstDate() {
+	public static Date getMonthFirstDate(Integer month, Integer year) {
 		Calendar c = Calendar.getInstance();
+		if(month != null) {
+			c.set(Calendar.MONTH, month - 1);
+		}
+		if(year != null) {
+			c.set(Calendar.YEAR, year);
+		}
 		c.set(Calendar.DAY_OF_MONTH, 1);
+		setZero(c);
 		return c.getTime();
 	}
 	
-	public static Date getMonthLastDate() {
+	public static Date getMonthLastDate(Integer month,  Integer year) {
 		Calendar c = Calendar.getInstance();
+		if(month != null) {
+			c.set(Calendar.MONTH, month - 1);
+		}
+		if(year != null) {
+			c.set(Calendar.YEAR, year);
+		}
 		c.set(Calendar.DAY_OF_MONTH, c.getActualMaximum(Calendar.DAY_OF_MONTH));
+		setZero(c);
 		return c.getTime();
 	}
 	
@@ -213,12 +227,17 @@ public class CommonUtils {
 		}
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(date);
+		setZero(cal);
+		return cal.getTime();
+	}
+
+
+	private static void setZero(Calendar cal) {
 		cal.set(Calendar.MINUTE, 0);
 		cal.set(Calendar.HOUR_OF_DAY, 0);
 		cal.set(Calendar.HOUR, 0);
 		cal.set(Calendar.SECOND, 0);
 		cal.set(Calendar.MILLISECOND, 0);
-		return cal.getTime();
 	}
 	
 	public static Date endDate(Date date) {
@@ -228,12 +247,17 @@ public class CommonUtils {
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(date);
 		cal.add(Calendar.DATE, 1);
-		cal.set(Calendar.MINUTE, 0);
-		cal.set(Calendar.HOUR, 0);
-		cal.set(Calendar.HOUR_OF_DAY, 0);
-		cal.set(Calendar.SECOND, 0);
-		cal.set(Calendar.MILLISECOND, 0);
+		setZero(cal);
 		return cal.getTime();
+	}
+
+
+	public static String convertDate(Date date, String dateFormat) {
+		try {
+			return new SimpleDateFormat(dateFormat).format(date);
+		} catch (Exception e) {
+		}
+		return null;
 	}
 	
 }

@@ -3,6 +3,7 @@ package com.rns.web.billapp.service.dao.impl;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Criteria;
 import org.hibernate.FetchMode;
@@ -12,6 +13,7 @@ import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.SQLCriterion;
 import org.hibernate.sql.JoinType;
 
+import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
@@ -77,4 +79,17 @@ public class BillVendorDaoImpl {
 		query.setInteger("businessId", businessId);
 		return query.list();
 	}
+	
+	public BillDBItemBusiness getBusinessItemByParent(Integer parentId, Integer businessId) {
+		 Criteria criteria = session.createCriteria(BillDBItemBusiness.class)
+				 .add(Restrictions.eq("business.id", businessId))
+				 .add(Restrictions.eq("parent.id", parentId))
+				 .add(BillGenericDaoImpl.activeCriteria());
+		 List<BillDBItemBusiness> list = criteria.list();
+		 if(CollectionUtils.isEmpty(list)) {
+			 return null;
+		 }
+		 return list.get(0);
+	}
+	
 }

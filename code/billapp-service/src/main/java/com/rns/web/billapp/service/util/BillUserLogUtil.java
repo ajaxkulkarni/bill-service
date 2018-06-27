@@ -1,9 +1,12 @@
 package com.rns.web.billapp.service.util;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -135,6 +138,31 @@ public class BillUserLogUtil implements BillConstants {
 			logs.add(log);
 		}
 		return logs;
+	}
+	
+	public static List<BillUserLog> getBillUserLogs(List<BillDBUserLog> resultset) throws IllegalAccessException, InvocationTargetException {
+		if(CollectionUtils.isEmpty(resultset)) {
+			return null;
+		}
+		Set<BillUserLog> userLogs = new HashSet<BillUserLog>();
+		for(BillDBUserLog log: resultset) {
+			BillUserLog userLog = new BillUserLog();
+			NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+			nullAwareBeanUtils.copyProperties(userLog, log);
+			if(log.getBusinessItem() != null) {
+				BillItem logItem = new BillItem();
+				if(log.getBusinessItem().getParent() != null) {
+					nullAwareBeanUtils.copyProperties(logItem, log.getBusinessItem().getParent());
+				} else {
+					nullAwareBeanUtils.copyProperties(logItem, log.getBusinessItem());
+				}
+				userLog.setItem(logItem);
+			} else if (log.getParentItem() != null) {
+				
+			}
+			userLogs.add(userLog);
+		}
+		return new ArrayList<BillUserLog>(userLogs);
 	}
 	
 }

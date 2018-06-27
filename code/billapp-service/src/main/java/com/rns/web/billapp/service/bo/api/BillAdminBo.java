@@ -12,5 +12,6 @@ public interface BillAdminBo {
 	BillServiceResponse updateItem(BillServiceRequest request);
 	InputStream getImage(BillItem item);
 	BillServiceResponse getAllparentItems(BillServiceRequest request);
+	BillServiceResponse uploadVendorData(BillServiceRequest request);
 	
 }

@@ -6,7 +6,9 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.BeanUtilsBean;
@@ -24,6 +26,7 @@ import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
+import com.rns.web.billapp.service.bo.domain.BillOrder;
 import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -38,6 +41,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
+import com.rns.web.billapp.service.dao.domain.BillDBUserLog;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
@@ -851,24 +855,52 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		Session session = null;
 		try {
 			session = this.sessionFactory.openSession();
-			BillLogDAOImpl dao = new BillLogDAOImpl(session);
+			BillLogDAOImpl billLogDAOImpl = new BillLogDAOImpl(session);
 			BillDBSubscription userSubscription = new BillSubscriptionDAOImpl(session).getSubscriptionDetails(request.getUser().getId());
 			if(userSubscription != null) {
+				Set<BillUserLog> logs = new HashSet<BillUserLog>();
+				BillDBUserLog userLog = new BillDBUserLog();
+				Date monthFirstDate = CommonUtils.getMonthFirstDate(request.getInvoice().getMonth(), request.getInvoice().getYear());
+				userLog.setFromDate(monthFirstDate);
+				Date monthLastDate = CommonUtils.getMonthLastDate(request.getInvoice().getMonth(), request.getInvoice().getYear());
+				userLog.setToDate(monthLastDate);
+				userLog.setBusiness(userSubscription.getBusiness());
+				List<BillUserLog> businessItemLogs = BillUserLogUtil.getBillUserLogs(billLogDAOImpl.getLogsBetweenRange(userLog));
+				if(CollectionUtils.isNotEmpty(businessItemLogs)) {
+					logs.addAll(businessItemLogs);
+				}
+				userLog.setBusiness(null);
+				userLog.setSubscription(userSubscription);
+				List<BillUserLog> subscribedItemLogs = BillUserLogUtil.getBillUserLogs(billLogDAOImpl.getLogsBetweenRange(userLog));
+				if(CollectionUtils.isNotEmpty(subscribedItemLogs)) {
+					logs.addAll(subscribedItemLogs);
+				}
 				if(CollectionUtils.isNotEmpty(userSubscription.getSubscriptions())) {
-					/*for(BillDBItemSubscription subItem: userSubscription.getSubscriptions()) {
-						List<BillUserLog> parentItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getParentItemQuantityLogs(dateString));
-						if(CollectionUtils.isNotEmpty(parentItemLogs)) {
-							//logs.addAll(parentItemLogs);
+					userLog.setSubscription(null);
+					for(BillDBItemSubscription subItem: userSubscription.getSubscriptions()) {
+						if(subItem.getBusinessItem().getParent() != null) {
+							userLog.setParentItem(subItem.getBusinessItem().getParent());
+							List<BillUserLog> parentItemLogs = BillUserLogUtil.getBillUserLogs(billLogDAOImpl.getLogsBetweenRange(userLog));
+							if(CollectionUtils.isNotEmpty(parentItemLogs)) {
+								logs.addAll(parentItemLogs);
+							}
 						}
-						List<BillUserLog> subscribedItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getSubscribedItemQuantityLogs(dateString));
-						if(CollectionUtils.isNotEmpty(subscribedItemLogs)) {
-							logs.addAll(subscribedItemLogs);
-						}
-						List<BillUserLog> businessItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getBusinessItemQuantityLogs(dateString));
-						if(CollectionUtils.isNotEmpty(parentItemLogs)) {
-							logs.addAll(businessItemLogs);
-						}
-					}*/
+						
+					}
+				}
+				response.setLogs(new ArrayList<BillUserLog>(logs));
+				List<BillDBOrders> orders = new BillSubscriptionDAOImpl(session).getOrders(monthFirstDate, monthLastDate, userSubscription.getId());
+				List<BillOrder> ordersList = new ArrayList<BillOrder>();
+				if(CollectionUtils.isNotEmpty(orders)) {
+					for(BillDBOrders dbOrder: orders) {
+						BillOrder order = new BillOrder();
+						new NullAwareBeanUtils().copyProperties(order, dbOrder);
+						order.setOrderDateString(CommonUtils.convertDate(order.getOrderDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
+						order.setItems(BillDataConverter.getOrderItems(dbOrder.getOrderItems()));
+						ordersList.add(order);
+						
+					}
+					response.setOrders(ordersList);
 				}
 			}
 		} catch (Exception e) {

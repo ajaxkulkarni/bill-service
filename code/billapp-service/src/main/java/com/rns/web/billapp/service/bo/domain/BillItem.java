@@ -36,6 +36,7 @@ public class BillItem implements Serializable {
 	private String weeklyPricing;
 	private Integer parentItemId;
 	private BillFile image;
+	private String priceType;
 	
 	public Integer getId() {
 		return id;
@@ -132,6 +133,12 @@ public class BillItem implements Serializable {
 	}
 	public void setImage(BillFile image) {
 		this.image = image;
+	}
+	public String getPriceType() {
+		return priceType;
+	}
+	public void setPriceType(String priceType) {
+		this.priceType = priceType;
 	}
 	
 }

@@ -24,6 +24,7 @@ import org.springframework.stereotype.Component;
 
 import com.rns.web.billapp.service.bo.api.BillAdminBo;
 import com.rns.web.billapp.service.bo.api.BillSchedulerBo;
+import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
@@ -65,7 +66,7 @@ public class BillAdminController {
 	@Path("/updateParentItem")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse updateUserBasicInfo(
+	public BillServiceResponse updateParentItem(
 		@FormDataParam("image") InputStream image, @FormDataParam("image") FormDataContentDisposition imageFileDetails,
 		@FormDataParam("item") String item) {
 		LoggingUtil.logObject("Parent Item update request", item);
@@ -151,5 +152,28 @@ public class BillAdminController {
 		return adminBo.updateUserStatus(request);
 	}
 	
+	@POST
+	@Path("/uploadCustomers")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse uploadCustomers(
+		@FormDataParam("data") InputStream customerData, @FormDataParam("data") FormDataContentDisposition customerDataDetails,
+		@FormDataParam("businessId") Integer businessId) {
+		BillServiceResponse response = new BillServiceResponse();
+		if(customerData != null) {
+			BillFile file = new BillFile();
+			file.setFileData(customerData);
+			file.setFileSize(new BigDecimal((customerDataDetails.getSize())));
+			file.setFileType(customerDataDetails.getType());
+			file.setFilePath(customerDataDetails.getFileName());
+			BillServiceRequest request = new BillServiceRequest();
+			request.setFile(file);
+			BillBusiness business = new BillBusiness();
+			business.setId(businessId);
+			request.setBusiness(business);
+			response = adminBo.uploadVendorData(request);
+		}
+		return response;
+	}
 	
 }

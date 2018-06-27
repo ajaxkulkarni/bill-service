@@ -10,7 +10,9 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
+import com.rns.web.billapp.service.bo.domain.BillOrder;
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.util.BillConstants;
 
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -28,6 +30,8 @@ public class BillServiceResponse {
 	private List<BillUser> users;
 	private List<BillInvoice> invoices;
 	private BillInvoice invoice;
+	private List<BillUserLog> logs;
+	private List<BillOrder> orders; 
 	
 	public BillServiceResponse() {
 		setStatus(BillConstants.STATUS_OK);
@@ -114,6 +118,22 @@ public class BillServiceResponse {
 
 	public void setInvoice(BillInvoice invoice) {
 		this.invoice = invoice;
+	}
+
+	public List<BillUserLog> getLogs() {
+		return logs;
+	}
+
+	public void setLogs(List<BillUserLog> logs) {
+		this.logs = logs;
+	}
+
+	public List<BillOrder> getOrders() {
+		return orders;
+	}
+
+	public void setOrders(List<BillOrder> orders) {
+		this.orders = orders;
 	}
 	
 }

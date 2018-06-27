@@ -2,6 +2,8 @@ package com.rns.web.billapp.service.dao.impl;
 
 import java.util.List;
 
+import javax.persistence.criteria.Expression;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.hibernate.Criteria;
 import org.hibernate.Query;
@@ -90,18 +92,42 @@ public class BillLogDAOImpl {
 	}
 
 	public List<Object[]> getParentItemQuantityLogs(String date) {
-        Query query = session.createSQLQuery("select * from ( select * from user_log where parent_item is not null AND from_date <= '" + date + "' AND to_date >= '" + date + "' order by from_Date, created_Date desc) as logs group by parent_Item");
+        Query query = session.createSQLQuery("select * from ( select * from user_log where parent_item is not null AND from_date <=:date AND to_date >=:date order by from_Date, created_Date desc) as logs group by parent_Item");
+        query.setString("date", date);
         return query.list();
 	}
 	
 	public List<Object[]> getBusinessItemQuantityLogs(String date) {
-        Query query = session.createSQLQuery("select * from ( select * from user_log where item is not null AND subscription is null AND from_date <= '" + date + "' AND to_date >= '" + date + "' order by from_Date, created_Date desc) as logs group by item");
+        Query query = session.createSQLQuery("select * from ( select * from user_log where item is not null AND subscription is null AND from_date <=:date AND to_date >=:date order by from_Date, created_Date desc) as logs group by item");
+        query.setString("date", date);
         return query.list();
 	}
 	
 	public List<Object[]> getSubscribedItemQuantityLogs(String date) {
-        Query query = session.createSQLQuery("select * from ( select * from user_log where subscription is not null AND from_date <= '" + date + "' AND to_date >= '" + date + "' order by from_Date, created_Date desc) as logs group by subscription");
+        Query query = session.createSQLQuery("select * from ( select * from user_log where subscription is not null AND from_date <=:date AND to_date >=:date order by from_Date, created_Date desc) as logs group by subscription");
+        query.setString("date", date);
         return query.list();
 	}
 	
+	public List<BillDBUserLog> getLogsBetweenRange(BillDBUserLog userLog) {
+		Criteria criteria = session.createCriteria(BillDBUserLog.class)
+				.add(Restrictions.or
+				(Restrictions.and(Restrictions.ge("fromDate", userLog.getFromDate()), Restrictions.le("fromDate", userLog.getToDate())),
+				Restrictions.and(Restrictions.ge("toDate", userLog.getFromDate()), Restrictions.le("toDate", userLog.getToDate()))))
+				.add(Restrictions.isNotNull("quantityChange"))
+				.add(Restrictions.isNotNull("toDate"))
+				.addOrder(Order.desc("fromDate"))
+				.addOrder(Order.desc("createdDate"));
+		if(userLog.getParentItem() != null && userLog.getParentItem().getId() != null) {
+			criteria.add(Restrictions.eq("parentItem.id", userLog.getParentItem().getId()));
+		}
+		if(userLog.getBusiness() != null && userLog.getBusiness().getId() != null) {
+			criteria.add(Restrictions.eq("business.id", userLog.getBusiness().getId()));
+		}
+		if(userLog.getSubscription() != null && userLog.getSubscription().getId() != null) {
+			criteria.add(Restrictions.eq("subscription.id", userLog.getSubscription().getId()));
+		}
+		List<BillDBUserLog> list = criteria.list();
+		return list;
+	}
 }

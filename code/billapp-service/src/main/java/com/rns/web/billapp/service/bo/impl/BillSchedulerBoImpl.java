@@ -154,7 +154,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 					noDeliveries++;
 					item.setAmount(BigDecimal.ZERO);
 				} else {
-					BigDecimal itemPrice = calculatePrice(itemSub, cal);
+					BigDecimal itemPrice = calculatePrice(itemSub, cal, previousAmount);
 					if(itemPrice != null) {
 						item.setAmount(itemPrice);
 						orderTotal = orderTotal.add(itemPrice);
@@ -288,11 +288,11 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		return billDBOrders;
 	}
 	
-	private BigDecimal calculatePrice(BillDBItemSubscription itemSub, Calendar cal) {
+	private BigDecimal calculatePrice(BillDBItemSubscription itemSub, Calendar cal, BigDecimal previousAmount) {
 		if(itemSub.getPrice() != null) {
 			if(StringUtils.equals(itemSub.getPriceType(), FREQ_MONTHLY)) {
-				//Only deduct on the first day of each month
-				if(cal.get(Calendar.DAY_OF_MONTH) == 1) {
+				//Only deduct ONCE each month
+				if(previousAmount == null || previousAmount.compareTo(BigDecimal.ZERO) == 0) {
 					return itemSub.getPrice();
 				} else {
 					return BigDecimal.ZERO;

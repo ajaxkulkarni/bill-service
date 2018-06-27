@@ -27,6 +27,7 @@ public class BillServiceRequest {
 	private String requestType;
 	private Date requestedDate;
 	private List<BillItem> items;
+	private BillFile file;
 	
 	public BillUser getUser() {
 		return user;
@@ -90,6 +91,14 @@ public class BillServiceRequest {
 
 	public void setItems(List<BillItem> items) {
 		this.items = items;
+	}
+
+	public BillFile getFile() {
+		return file;
+	}
+
+	public void setFile(BillFile file) {
+		this.file = file;
 	}
 
 }

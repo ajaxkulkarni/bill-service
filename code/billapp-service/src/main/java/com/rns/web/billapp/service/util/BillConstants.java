@@ -5,6 +5,7 @@ public interface BillConstants {
 	String ROOT_FOLDER_LOCATION = "/home/service/BillData/";
 
 	String DATE_FORMAT = "yyyy-MM-dd";
+	String DATE_FORMAT_DISPLAY_NO_YEAR = "MMM dd";
 	Integer STATUS_OK = 200;
 	String RESPONSE_OK = "OK";
 
