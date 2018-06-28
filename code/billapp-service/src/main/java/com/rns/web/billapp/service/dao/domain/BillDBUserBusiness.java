@@ -31,6 +31,7 @@ public class BillDBUserBusiness {
 	private String status;
 	private String address;
 	private Set<BillDBLocation> locations = new HashSet<BillDBLocation>();
+	private String identificationNumber;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -107,6 +108,14 @@ public class BillDBUserBusiness {
 	}
 	public void setLocations(Set<BillDBLocation> locations) {
 		this.locations = locations;
+	}
+	
+	@Column(name = "identification_no")
+	public String getIdentificationNumber() {
+		return identificationNumber;
+	}
+	public void setIdentificationNumber(String identificationNumber) {
+		this.identificationNumber = identificationNumber;
 	}
 	
 

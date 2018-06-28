@@ -28,6 +28,7 @@ public class BillBusiness implements Serializable {
 	private String address;
 	private List<BillLocation> businessLocations;
 	private List<BillItem> items;
+	private String identificationNumber;
 
 	public Integer getId() {
 		return id;
@@ -82,6 +83,12 @@ public class BillBusiness implements Serializable {
 	}
 	public void setItems(List<BillItem> items) {
 		this.items = items;
+	}
+	public String getIdentificationNumber() {
+		return identificationNumber;
+	}
+	public void setIdentificationNumber(String identificationNumber) {
+		this.identificationNumber = identificationNumber;
 	}
 	
 }
