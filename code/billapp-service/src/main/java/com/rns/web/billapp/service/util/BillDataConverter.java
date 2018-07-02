@@ -272,6 +272,7 @@ public class BillDataConverter implements BillConstants {
 		nullAwareBeanUtils.copyProperties(sector, billDBUserBusiness.getSector());
 		BillUser owner = new BillUser();
 		nullAwareBeanUtils.copyProperties(owner, billDBUserBusiness.getUser());
+		business.setOwner(owner);
 		business.setBusinessSector(sector);
 		nullAwareBeanUtils.copyProperties(business, billDBUserBusiness);
 		return business;
