@@ -113,7 +113,7 @@ public class BillExcelUtil {
 					subscription.setStatus(BillConstants.STATUS_ACTIVE);
 					session.persist(subscription);
 					if(row.getCell(colItems) != null) {
-						String[] items = StringUtils.split(row.getCell(colItems).getStringCellValue(), ",");
+						String[] items = StringUtils.split(dataFormatter.formatCellValue(row.getCell(colItems)), ",");
 						if(ArrayUtils.isNotEmpty(items)) {
 							for(String item: items) {
 								if(StringUtils.isBlank(item)) {
