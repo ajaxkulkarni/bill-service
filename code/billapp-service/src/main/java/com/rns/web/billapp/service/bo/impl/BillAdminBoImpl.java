@@ -16,11 +16,14 @@ import org.hibernate.Transaction;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillAdminBo;
+import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillItem;
+import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
+import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
@@ -196,7 +199,18 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
-			BillExcelUtil.uploadCustomers(request.getFile().getFileData(), request.getBusiness(), session);
+			BillDBUserBusiness billDBUserBusiness = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), true);
+			if(billDBUserBusiness != null) {
+				BillBusiness business = new BillBusiness();
+				BillSector sector = new BillSector();
+				NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+				nullAwareBeanUtils.copyProperties(sector, billDBUserBusiness.getSector());
+				BillUser owner = new BillUser();
+				nullAwareBeanUtils.copyProperties(owner, billDBUserBusiness.getUser());
+				business.setBusinessSector(sector);
+				nullAwareBeanUtils.copyProperties(business, billDBUserBusiness);
+				BillExcelUtil.uploadCustomers(request.getFile().getFileData(), business, session, executor);
+			}
 			tx.commit();
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));

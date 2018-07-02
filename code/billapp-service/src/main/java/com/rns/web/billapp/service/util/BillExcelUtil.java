@@ -2,10 +2,9 @@ package com.rns.web.billapp.service.util;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -17,8 +16,10 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.hibernate.Session;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
@@ -39,7 +40,7 @@ public class BillExcelUtil {
 	private static final String TITLE_ITEMS = "Items";
 	private static final String TITLE_SERVICE_CHARGE = "Service charge";
 
-	public static void uploadCustomers(InputStream excel, BillBusiness business, Session session) throws InvalidFormatException, IOException {
+	public static void uploadCustomers(InputStream excel, BillBusiness business, Session session, ThreadPoolTaskExecutor executor) throws InvalidFormatException, IOException, IllegalAccessException, InvocationTargetException {
 		Workbook workbook = WorkbookFactory.create(excel);
 
 		Sheet sheet = workbook.getSheetAt(0);
@@ -112,6 +113,14 @@ public class BillExcelUtil {
 					subscription.setCreatedDate(new Date());
 					subscription.setStatus(BillConstants.STATUS_ACTIVE);
 					session.persist(subscription);
+					BillUser customer = new BillUser();
+					new NullAwareBeanUtils().copyProperties(customer, subscription);
+					customer.setCurrentBusiness(business);
+					if(StringUtils.isNotBlank(subscription.getEmail())) {
+						executor.execute(new BillMailUtil(BillConstants.MAIL_TYPE_NEW_CUSTOMER, customer));
+					}
+					BillSMSUtil.sendSMS(customer, null, BillConstants.MAIL_TYPE_NEW_CUSTOMER);
+					LoggingUtil.logMessage("Added customer ..." + customer.getName());
 					if(row.getCell(colItems) != null) {
 						String[] items = StringUtils.split(dataFormatter.formatCellValue(row.getCell(colItems)), ",");
 						if(ArrayUtils.isNotEmpty(items)) {

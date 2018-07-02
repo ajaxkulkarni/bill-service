@@ -64,7 +64,7 @@ public class BillSMSUtil implements BillConstants {
 			put(MAIL_TYPE_PAYMENT_RESULT_VENDOR, "The Bill payment for {month} {year} of Rs. {amount} by {name} is {status}");
 			put(MAIL_TYPE_REGISTRATION, "Hello {name}! Welcome to Pay Per Bill family! Pay Per Bill will help your business to be more efficient and profitable by going online.");
 			put(MAIL_TYPE_APPROVAL, "Congratulations {name}! Your Pay Per Bill account has been verified and approved! You can start accepting payments once you complete your bank details on the app.");
-			put(MAIL_TYPE_NEW_CUSTOMER, "Hello {name}! {businessName} has added you as a customer to their Pay Per Bill account. You can start tracking and paying your bills for {businessName} online from now.");
+			put(MAIL_TYPE_NEW_CUSTOMER, "Hello {name}! {businessName} has added you as a customer to their Pay Per Bill account. You can start tracking and paying your {sector} bills online now. For more details - contact your vendor {vendorContact}");
 			put(MAIL_TYPE_PAUSE_CUSTOMER, "Hello {name}! {businessName} has paused the delivery for {itemName} from {startDate} to {toDate}.");
 		}
 	});
