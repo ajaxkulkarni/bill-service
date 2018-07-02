@@ -279,6 +279,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					return response;
 				}
 				business.setName(dbBusiness.getName());
+				business = BillDataConverter.getBusiness(dbBusiness);
 				dbBusiness.setId(business.getId());
 				dbSubscription.setBusiness(dbBusiness);
 			}

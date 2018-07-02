@@ -15,6 +15,7 @@ import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
+import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
@@ -263,5 +264,19 @@ public class BillDataConverter implements BillConstants {
 		nullAwareBeanUtils.copyProperties(item, itemSub);
 		return item;
 	}
+	
+	public static BillBusiness getBusiness(BillDBUserBusiness billDBUserBusiness) throws IllegalAccessException, InvocationTargetException {
+		BillBusiness business = new BillBusiness();
+		BillSector sector = new BillSector();
+		NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+		nullAwareBeanUtils.copyProperties(sector, billDBUserBusiness.getSector());
+		BillUser owner = new BillUser();
+		nullAwareBeanUtils.copyProperties(owner, billDBUserBusiness.getUser());
+		business.setBusinessSector(sector);
+		nullAwareBeanUtils.copyProperties(business, billDBUserBusiness);
+		return business;
+	}
+
+
 
 }

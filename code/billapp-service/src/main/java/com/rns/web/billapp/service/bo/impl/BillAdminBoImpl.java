@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.List;
 
@@ -201,14 +202,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			Transaction tx = session.beginTransaction();
 			BillDBUserBusiness billDBUserBusiness = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), true);
 			if(billDBUserBusiness != null) {
-				BillBusiness business = new BillBusiness();
-				BillSector sector = new BillSector();
-				NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
-				nullAwareBeanUtils.copyProperties(sector, billDBUserBusiness.getSector());
-				BillUser owner = new BillUser();
-				nullAwareBeanUtils.copyProperties(owner, billDBUserBusiness.getUser());
-				business.setBusinessSector(sector);
-				nullAwareBeanUtils.copyProperties(business, billDBUserBusiness);
+				BillBusiness business = BillDataConverter.getBusiness(billDBUserBusiness);
 				BillExcelUtil.uploadCustomers(request.getFile().getFileData(), business, session, executor);
 			}
 			tx.commit();
@@ -220,7 +214,6 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		}
 		return response;
 	}
-
 
 
 }
