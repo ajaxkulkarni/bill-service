@@ -251,7 +251,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 				result = StringUtils.replace(result, "{sector}", CommonUtils.getStringValue(user.getCurrentBusiness().getBusinessSector().getName()));
 			}
 			if(user.getCurrentBusiness().getOwner() != null) {
-				result = StringUtils.replace(result, "{vendorContact}", CommonUtils.getStringValue(user.getCurrentBusiness().getOwner().getPhone()));
+				result = StringUtils.replace(result, "{vendorContact}", StringUtils.substringAfter(CommonUtils.getStringValue(user.getCurrentBusiness().getOwner().getPhone()), "+91"));
 			}
 		}
 		return result;
