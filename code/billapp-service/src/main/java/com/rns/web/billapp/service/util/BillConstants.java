@@ -8,7 +8,8 @@ public interface BillConstants {
 	String DATE_FORMAT_DISPLAY_NO_YEAR = "MMM dd";
 	Integer STATUS_OK = 200;
 	String RESPONSE_OK = "OK";
-
+	String REQUEST_TYPE_EMAIL = "EMAIL";
+	
 	Integer ERROR_CODE_FATAL = -999;
 	Integer ERROR_CODE_GENERIC = -111;
 	Integer ERROR_NOT_APPROVED = -222;
@@ -56,6 +57,8 @@ public interface BillConstants {
 	String MAIL_TYPE_REGISTRATION = "RegistrationSuccess";
 	String MAIL_TYPE_APPROVAL = "ProfileApproved";
 	String MAIL_TYPE_NEW_CUSTOMER = "CustomerAdded";
+	String MAIL_TYPE_PAUSE_CUSTOMER = "PauseDeliveryCustomer";
+	String MAIL_TYPE_PAUSE_BUSINESS = "PauseDeliveryBusiness";
 
 	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
 

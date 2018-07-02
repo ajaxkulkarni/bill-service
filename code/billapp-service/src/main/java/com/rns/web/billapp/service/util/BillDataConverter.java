@@ -243,5 +243,25 @@ public class BillDataConverter implements BillConstants {
 		}
 		return orderedItems;
 	}
+	
+	public static BillItem getItem(BillDBItemSubscription itemSub) throws IllegalAccessException, InvocationTargetException {
+		if(itemSub == null) {
+			return null;
+		}
+		BillItem item = new BillItem();
+		NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+		if(itemSub.getBusinessItem() != null) {
+			if(itemSub.getBusinessItem().getParent() != null) {
+				nullAwareBeanUtils.copyProperties(item, itemSub.getBusinessItem().getParent());
+				item.setParentItemId(itemSub.getBusinessItem().getParent().getId());
+			}
+			BillItem parentItem = new BillItem();
+			nullAwareBeanUtils.copyProperties(item, itemSub.getBusinessItem());
+			nullAwareBeanUtils.copyProperties(parentItem, itemSub.getBusinessItem());
+			item.setParentItem(parentItem);
+		} 
+		nullAwareBeanUtils.copyProperties(item, itemSub);
+		return item;
+	}
 
 }

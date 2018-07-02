@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service.dao.impl;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -18,6 +19,7 @@ import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.CommonUtils;
 
 public class BillInvoiceDaoImpl {
 
@@ -92,10 +94,25 @@ public class BillInvoiceDaoImpl {
 		return (BillDBInvoice) list.get(0);
 	}
 	
-	public List<Object[]> getCustomerInvoiceSummary(Date date, Integer businessId) {
-		Query query = session.createQuery("select sum(invoice.amount),invoice.subscription from BillDBInvoice invoice where invoice.status!=:paid AND invoice.subscription.business.id=:businessId group by invoice.subscription.id");
+	public BillDBInvoice getLatestUnPaidInvoice(Integer subscriptionId) {
+		Criteria criteria = session.createCriteria(BillDBInvoice.class)
+				 .add(Restrictions.eq("subscription.id", subscriptionId))
+				 .add(Restrictions.ne("status", BillConstants.INVOICE_STATUS_PAID))
+				 .add(Restrictions.ne("month", CommonUtils.getCalendarValue(new Date(), Calendar.MONTH)))
+				 .addOrder(Order.desc("createdDate"));
+		List list = criteria.list();
+		if(CollectionUtils.isEmpty(list)) {
+			return null;
+		}
+		return (BillDBInvoice) list.get(0);
+	}
+	
+	public List<Object[]> getCustomerInvoiceSummary(Date date, Integer businessId, Integer currentMonth, Integer currentYear) {
+		Query query = session.createQuery("select sum(invoice.amount),invoice.subscription from BillDBInvoice invoice where invoice.status!=:paid AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) invoice.subscription.business.id=:businessId group by invoice.subscription.id");
 		query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
 		query.setInteger("businessId", businessId);
+		query.setInteger("currentMonth", currentMonth);
+		query.setInteger("currentYear", currentYear);
 		return query.list();
 	}
 

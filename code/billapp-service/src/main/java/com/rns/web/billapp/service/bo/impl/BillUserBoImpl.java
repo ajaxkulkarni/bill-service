@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -372,6 +373,14 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				if (dbSubscribedItem != null) {
 					// Update change log
 					BillUserLogUtil.updateBillItemLog(item, session, dao, dbSubscribedItem);
+					BillItem logItem = BillDataConverter.getItem(dbSubscribedItem);
+					logItem.setChangeLog(item.getChangeLog());
+					BillUser billUser = new BillUser();
+					new NullAwareBeanUtils().copyProperties(billUser, dbSubscribedItem.getSubscription());
+					BillBusiness business = new BillBusiness();
+					business.setName(dbSubscribedItem.getSubscription().getBusiness().getName());
+					billUser.setCurrentBusiness(business);
+					sendLogUpdate(logItem, billUser);
 				}
 			} else if (item.getParentItem() != null && item.getParentItem().getId() != null) {
 				BillDBItemBusiness businessItem = dao.getEntityByKey(BillDBItemBusiness.class, ID_ATTR, item.getParentItem().getId(), false);
@@ -395,6 +404,15 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			CommonUtils.closeSession(session);
 		}
 		return response;
+	}
+
+	private void sendLogUpdate(BillItem item, BillUser billUser) {
+		List<BillItem> items = new ArrayList<BillItem>();
+		items.add(item);
+		billUser.getCurrentBusiness().setItems(items);
+		BillMailUtil billMailUtil = new BillMailUtil(MAIL_TYPE_PAUSE_CUSTOMER, billUser);
+		executor.execute(billMailUtil);
+		BillSMSUtil.sendSMS(billUser, null, MAIL_TYPE_PAUSE_CUSTOMER);
 	}
 
 	public BillServiceResponse updateCustomerInvoice(BillServiceRequest request) {
@@ -666,7 +684,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					credentials.setInstaId(vendor.getInstaId());
 					BillRuleEngine.calculatePayable(invoice);
 				}
-				if(!StringUtils.equalsIgnoreCase("EMAIL", request.getRequestType())) {
+				if(!StringUtils.equalsIgnoreCase(REQUEST_TYPE_EMAIL, request.getRequestType())) {
 					credentials = BillPaymentUtil.createPaymentRequest(customer, credentials, invoice, true);
 					invoice.setPaymentUrl(credentials.getLongUrl());
 					dbInvoice.setPaymentRequestId(credentials.getPaymentRequestId());
@@ -819,7 +837,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		Session session = null;
 		try {
 			session = this.sessionFactory.openSession();
-			List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerInvoiceSummary(request.getRequestedDate(), request.getBusiness().getId());
+			List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerInvoiceSummary(request.getRequestedDate(), request.getBusiness().getId(), CommonUtils.getCalendarValue(new Date(), Calendar.MONTH), CommonUtils.getCalendarValue(new Date(), Calendar.YEAR));
 			List<BillUser> users = new ArrayList<BillUser>();
 			if(CollectionUtils.isNotEmpty(result)) {
 				for(Object[] row: result) {
@@ -830,10 +848,22 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillDBSubscription subscription = (BillDBSubscription) row[1];
 					BillInvoice invoice = new BillInvoice();
 					invoice.setAmount(total);
-					BillUser user = new BillUser();
-					new NullAwareBeanUtils().copyProperties(user, subscription);
-					user.setCurrentInvoice(invoice);
-					users.add(user);
+					BillUser customer = new BillUser();
+					new NullAwareBeanUtils().copyProperties(customer, subscription);
+					customer.setCurrentInvoice(invoice);
+					users.add(customer);
+					if(StringUtils.equals(REQUEST_TYPE_EMAIL, request.getRequestType()) && total != null && total.compareTo(BigDecimal.ZERO) > 0) {
+						BillDBInvoice lastUnpaid = new BillInvoiceDaoImpl(session).getLatestUnPaidInvoice(subscription.getId());
+						if(lastUnpaid != null) {
+							
+							invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + lastUnpaid.getId());
+							BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
+							mailUtil.setUser(customer);
+							mailUtil.setInvoice(invoice);
+							executor.execute(mailUtil);
+							response.setResponse(BillSMSUtil.sendSMS(customer, invoice, MAIL_TYPE_INVOICE));
+						}
+					}
 				}
 			}
 			response.setUsers(users);

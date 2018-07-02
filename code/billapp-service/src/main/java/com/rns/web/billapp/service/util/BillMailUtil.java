@@ -125,7 +125,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 				subject = StringUtils.replace(subject, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
 				subject = StringUtils.replace(subject, "{year}", CommonUtils.getStringValue(invoice.getYear()));
-				subject = StringUtils.replace(subject, "{amount}", CommonUtils.getStringValue(invoice.getAmount()));
+				subject = StringUtils.replace(subject, "{amount}", CommonUtils.getStringValue(invoice.getPayable()));
 				
 				if(CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
 					String invoiceItemsTemplate = CommonUtils.readFile("email/invoice_items.html");
@@ -166,6 +166,19 @@ public class BillMailUtil implements BillConstants, Runnable {
 			if (currentBusiness != null) {
 				result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
 				subject = StringUtils.replace(subject, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
+				if(CollectionUtils.isNotEmpty(currentBusiness.getItems())) {
+					StringBuilder itemBuilder = new StringBuilder();
+					for(BillItem item: currentBusiness.getItems()) {
+						itemBuilder.append(item.getName()).append(",");
+						if(item.getChangeLog() != null) {
+							result = StringUtils.replace(result, "{fromDate}", CommonUtils.convertDate(item.getChangeLog().getFromDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
+							result = StringUtils.replace(result, "{toDate}", CommonUtils.convertDate(item.getChangeLog().getToDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
+						}
+					}
+					result = StringUtils.replace(result, "{itemName}", StringUtils.removeEnd(itemBuilder.toString(), ","));
+				} else {
+					result = StringUtils.replace(result, "{itemName}", "");
+				}
 			}
 
 			if (StringUtils.isNotBlank(messageText)) {
@@ -305,6 +318,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_REGISTRATION, "registration.html");
 			put(MAIL_TYPE_APPROVAL, "profile_approved.html");
 			put(MAIL_TYPE_NEW_CUSTOMER, "customer_added.html");
+			put(MAIL_TYPE_PAUSE_CUSTOMER, "customer_pause_delivery.html");
 		}
 	});
 
@@ -316,6 +330,8 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_REGISTRATION, "Welcome to Pay Per Bill family!");
 			put(MAIL_TYPE_APPROVAL, "Congratulations! Your account has been verified and approved!");
 			put(MAIL_TYPE_NEW_CUSTOMER, "{businessName} has added you as a customer to their Pay Per Bill account");
+			put(MAIL_TYPE_PAUSE_CUSTOMER, "{businessName} has paused your delivery");
+			
 		}
 	});
 
