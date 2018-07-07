@@ -173,9 +173,9 @@ public class BillPaymentUtil {
 		request.add("webhook", BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_WEBHOOK));
 		BigDecimal internetHandlingFees = invoice.getPayable().multiply(new BigDecimal(BillConstants.PAYMENT_CHARGE_PERCENT), new MathContext(2, RoundingMode.HALF_UP));
 		request.add("partner_fee_type", "fixed");
-		//request.add("partner_fee", internetHandlingFees.negate().toString());
+		request.add("partner_fee", internetHandlingFees.negate().toString());
 		
-		LoggingUtil.logMessage("Partner commission ==>" + internetHandlingFees.negate().toString());
+		LoggingUtil.logMessage("Partner commission is ==>" + internetHandlingFees.negate().toString());
 
 		ClientResponse response = webResource.type(MediaType.APPLICATION_FORM_URLENCODED).header(AUTHORIZATION_HEADER, "Bearer " + credentials.getAccess_token())
 				.post(ClientResponse.class, request);
