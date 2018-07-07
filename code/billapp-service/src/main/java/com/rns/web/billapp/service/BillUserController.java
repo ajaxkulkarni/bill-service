@@ -7,6 +7,9 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.StringTokenizer;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -24,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import com.ccavenue.security.AesCryptUtil;
 import com.rns.web.billapp.service.bo.api.BillUserBo;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -31,6 +35,7 @@ import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
 import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.BillPropertyUtil;
 import com.rns.web.billapp.service.util.LoggingUtil;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
@@ -43,30 +48,29 @@ public class BillUserController {
 	@Autowired(required = true)
 	@Qualifier(value = "userBo")
 	BillUserBo userBo;
-	
+
 	public void setUserBo(BillUserBo userBo) {
 		this.userBo = userBo;
 	}
-	
+
 	public BillUserBo getUserBo() {
 		return userBo;
 	}
-	
+
 	@POST
 	@Path("/updateUserBasicInfo")
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse updateUserBasicInfo(
-		@FormDataParam("pan") InputStream panCardFile, @FormDataParam("pan") FormDataContentDisposition panCardFileDetails,
-		@FormDataParam("aadhar") InputStream aadharCardFile, @FormDataParam("aadhar") FormDataContentDisposition aadharCardFileDetails,
-		@FormDataParam("user") String user) {
+	public BillServiceResponse updateUserBasicInfo(@FormDataParam("pan") InputStream panCardFile,
+			@FormDataParam("pan") FormDataContentDisposition panCardFileDetails, @FormDataParam("aadhar") InputStream aadharCardFile,
+			@FormDataParam("aadhar") FormDataContentDisposition aadharCardFileDetails, @FormDataParam("user") String user) {
 		LoggingUtil.logObject("User update request", user);
 		ObjectMapper mapper = new ObjectMapper();
 		BillServiceResponse response = new BillServiceResponse();
 		try {
 			BillUser billUser = mapper.readValue(user, BillUser.class);
-			if(billUser != null) {
-				if(panCardFile != null) {
+			if (billUser != null) {
+				if (panCardFile != null) {
 					BillFile file = new BillFile();
 					file.setFileData(panCardFile);
 					file.setFileSize(new BigDecimal((panCardFileDetails.getSize())));
@@ -74,7 +78,7 @@ public class BillUserController {
 					file.setFilePath(panCardFileDetails.getFileName());
 					billUser.setPanFile(file);
 				}
-				if(aadharCardFile != null) {
+				if (aadharCardFile != null) {
 					BillFile file = new BillFile();
 					file.setFileData(aadharCardFile);
 					file.setFileSize(new BigDecimal((aadharCardFileDetails.getSize())));
@@ -88,7 +92,7 @@ public class BillUserController {
 			} else {
 				response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
 			}
-			
+
 		} catch (JsonParseException e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
@@ -102,132 +106,138 @@ public class BillUserController {
 		LoggingUtil.logObject("User update response", response);
 		return response;
 	}
-	
+
 	@POST
 	@Path("/loadProfile")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse loadProfile(BillServiceRequest request){
+	public BillServiceResponse loadProfile(BillServiceRequest request) {
 		return userBo.loadProfile(request);
 	}
-	
+
 	@POST
 	@Path("/getAllAreas")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse getAreas(BillServiceRequest request){
+	public BillServiceResponse getAreas(BillServiceRequest request) {
 		return userBo.getAllAreas();
 	}
-	
+
 	@POST
 	@Path("/updateUserProfile")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse updateUserProfile(BillServiceRequest request){
+	public BillServiceResponse updateUserProfile(BillServiceRequest request) {
 		return userBo.updateUserInfo(request);
 	}
-	
+
 	@POST
 	@Path("/updateBankDetails")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse updateBankDetails(BillServiceRequest request){
+	public BillServiceResponse updateBankDetails(BillServiceRequest request) {
 		return userBo.updateUserFinancialInfo(request);
 	}
-	
+
 	@POST
 	@Path("/loadBusinessItems")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse loadBusinessItems(BillServiceRequest request){
+	public BillServiceResponse loadBusinessItems(BillServiceRequest request) {
 		return userBo.getBusinessItems(request);
 	}
-	
+
 	@POST
 	@Path("/loadSectorItems")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse loadSectorItems(BillServiceRequest request){
+	public BillServiceResponse loadSectorItems(BillServiceRequest request) {
 		return userBo.getSectorItems(request);
 	}
-	
+
 	@POST
 	@Path("/updateBusinessItem")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse updateBusinessItem(BillServiceRequest request){
+	public BillServiceResponse updateBusinessItem(BillServiceRequest request) {
 		return userBo.updateBusinessItem(request);
 	}
-	
+
 	@POST
 	@Path("/getAllCustomers")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse getAllCustomers(BillServiceRequest request){
+	public BillServiceResponse getAllCustomers(BillServiceRequest request) {
 		return userBo.getAllBusinessCustomers(request);
 	}
-	
+
 	@POST
 	@Path("/updateCustomer")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse updateCustomer(BillServiceRequest request){
+	public BillServiceResponse updateCustomer(BillServiceRequest request) {
 		return userBo.updateCustomerInfo(request);
 	}
-	
+
 	@POST
 	@Path("/getCustomerProfile")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse getCustomerProfile(BillServiceRequest request){
+	public BillServiceResponse getCustomerProfile(BillServiceRequest request) {
 		return userBo.getCustomerProfile(request);
 	}
-	
+
 	@POST
 	@Path("/updateCustomerItem")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse updateCustomerItem(BillServiceRequest request){
+	public BillServiceResponse updateCustomerItem(BillServiceRequest request) {
 		return userBo.updateCustomerItem(request);
 	}
-	
+
 	@POST
 	@Path("/updateCustomerItemTemp")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse updateCustomerItemTemp(BillServiceRequest request){
+	public BillServiceResponse updateCustomerItemTemp(BillServiceRequest request) {
 		return userBo.updateCustomerItemTemporary(request);
 	}
-	
+
 	@POST
 	@Path("/getCustomerInvoices")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse getCustomerInvoices(BillServiceRequest request){
+	public BillServiceResponse getCustomerInvoices(BillServiceRequest request) {
 		return userBo.getCustomerInvoices(request);
 	}
-	
+
 	@POST
 	@Path("/updateCustomerInvoice")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse updateCustomerInvoice(BillServiceRequest request){
+	public BillServiceResponse updateCustomerInvoice(BillServiceRequest request) {
 		return userBo.updateCustomerInvoice(request);
 	}
-	
+
 	@POST
 	@Path("/sendInvoice")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse sendInvoice(BillServiceRequest request){
+	public BillServiceResponse sendInvoice(BillServiceRequest request) {
 		return userBo.sendCustomerInvoice(request);
 	}
-	
-	//{amount=[105.00], fees=[2.00], shorturl=[], purpose=[January 2018 monthly payment], buyer_phone=[+911122112211], buyer_name=[Anand], payment_request_id=[1337c3d8fcc94be992c70827bc052461], mac=[9ae3e3e13488a282b4f6322b0a9d5ae0d883c0fb], buyer=[ajinkyashiva@gmail.com], payment_id=[MOJO8603005A85529733], longurl=[https://test.instamojo.com/@crkstructural/1337c3d8fcc94be992c70827bc052461], currency=[INR], status=[Credit]}
+
+	// {amount=[105.00], fees=[2.00], shorturl=[], purpose=[January 2018 monthly
+	// payment], buyer_phone=[+911122112211], buyer_name=[Anand],
+	// payment_request_id=[1337c3d8fcc94be992c70827bc052461],
+	// mac=[9ae3e3e13488a282b4f6322b0a9d5ae0d883c0fb],
+	// buyer=[ajinkyashiva@gmail.com], payment_id=[MOJO8603005A85529733],
+	// longurl=[https://test.instamojo.com/@crkstructural/1337c3d8fcc94be992c70827bc052461],
+	// currency=[INR], status=[Credit]}
 	@POST
 	@Path("/paymentResult")
-	//@Produces(MediaType.APPLICATION_JSON)
-	public Response paymentResult(MultivaluedMap<String, String> formParams){
+	// @Produces(MediaType.APPLICATION_JSON)
+	public Response paymentResult(MultivaluedMap<String, String> formParams) {
 		URI url = null;
 		try {
 			LoggingUtil.logMessage("Payment result -- " + formParams);
@@ -236,48 +246,96 @@ public class BillUserController {
 			invoice.setPaymentId(formParams.get("payment_id").get(0).toString());
 			invoice.setStatus(formParams.get("status").get(0).toString());
 			invoice.setAmount(new BigDecimal(formParams.get("amount").get(0).toString()));
+			invoice.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_INSTA);
 			BillServiceRequest request = new BillServiceRequest();
 			request.setInvoice(invoice);
 			BillServiceResponse response = userBo.completePayment(request);
-			url = new URI(URLEncoder.encode(response.getInvoice().getPaymentUrl() , "UTF-8"));
+			url = new URI(response.getInvoice().getPaymentUrl());
 		} catch (URISyntaxException e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
-		} catch (UnsupportedEncodingException e) {
-			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
-		}
-		
+		} 
+
 		return Response.temporaryRedirect(url).build();
 	}
-	
+
 	@POST
 	@Path("/getDeliveries")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse getDeliveries(BillServiceRequest request){
+	public BillServiceResponse getDeliveries(BillServiceRequest request) {
 		return userBo.loadDeliveries(request);
 	}
-	
+
 	@POST
 	@Path("/getOrderSummary")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse getOrderSummary(BillServiceRequest request){
+	public BillServiceResponse getOrderSummary(BillServiceRequest request) {
 		return userBo.getDailySummary(request);
 	}
-	
+
 	@POST
 	@Path("/getInvoiceSummary")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse getInvoiceSummary(BillServiceRequest request){
+	public BillServiceResponse getInvoiceSummary(BillServiceRequest request) {
 		return userBo.getInvoiceSummary(request);
 	}
-	
+
 	@POST
 	@Path("/getCustomerActivity")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse getCustomerActivity(BillServiceRequest request){
+	public BillServiceResponse getCustomerActivity(BillServiceRequest request) {
 		return userBo.getCustomerActivity(request);
+	}
+
+	@POST
+	@Path("/hdfc/paymentResult")
+	// @Produces(MediaType.APPLICATION_JSON)
+	public Response hdfcPaymentResult(MultivaluedMap<String, String> formParams) {
+		URI url = null;
+		try {
+			LoggingUtil.logMessage("Payment result -- " + formParams);
+			AesCryptUtil aesUtil = new AesCryptUtil(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_KEY));
+			String decResp = aesUtil.decrypt(formParams.getFirst("encResp"));
+			StringTokenizer tokenizer = new StringTokenizer(decResp, "&");
+			String pair = null, pname = null, pvalue = null;
+			Map<String, String> responseMap = new HashMap<String, String>();
+			while (tokenizer.hasMoreTokens()) {
+				pair = (String) tokenizer.nextToken();
+				if (pair != null) {
+					StringTokenizer strTok = new StringTokenizer(pair, "=");
+					pname = "";
+					pvalue = "";
+					if (strTok.hasMoreTokens()) {
+						pname = (String) strTok.nextToken();
+						if (strTok.hasMoreTokens()) {
+							pvalue = (String) strTok.nextToken();
+						}
+						System.out.println(pname + " -- " + pvalue);
+						responseMap.put(pname , pvalue);
+					}
+					
+				}
+			}
+			BillInvoice invoice = new BillInvoice();
+			invoice.setId(new Integer(responseMap.get("order_id")));
+			invoice.setPaymentRequestId(responseMap.get("bank_ref_no"));
+			invoice.setPaymentId(responseMap.get("tracking_id"));
+			invoice.setStatus(responseMap.get("order_status"));
+			invoice.setAmount(new BigDecimal(responseMap.get("amount")));
+			invoice.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_HDFC);
+			invoice.setPaymentMode(responseMap.get("payment_mode"));
+			BillServiceRequest request = new BillServiceRequest();
+			request.setInvoice(invoice);
+			BillServiceResponse response = userBo.completePayment(request);
+			LoggingUtil.logMessage("Redirect after payment to --" + response.getInvoice().getPaymentUrl());
+			url = new URI(response.getInvoice().getPaymentUrl());
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+
+		return Response.temporaryRedirect(url).build();
 	}
 }

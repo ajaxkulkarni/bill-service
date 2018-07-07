@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -688,6 +689,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				if(!StringUtils.equalsIgnoreCase(REQUEST_TYPE_EMAIL, request.getRequestType())) {
 					credentials = BillPaymentUtil.createPaymentRequest(customer, credentials, invoice, true);
 					invoice.setPaymentUrl(credentials.getLongUrl());
+					BillPaymentUtil.prepareHdfcRequest(invoice, customer);
 					dbInvoice.setPaymentRequestId(credentials.getPaymentRequestId());
 					BillBusinessConverter.setPaymentCredentials(vendor, credentials);
 				} else {
@@ -747,16 +749,24 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			Transaction tx = session.beginTransaction();
 			BillInvoice currentInvoice = request.getInvoice();
 			BillDBInvoice invoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, "paymentRequestId", currentInvoice.getPaymentRequestId(), false);
+			if(invoice == null) {
+				invoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, ID_ATTR, currentInvoice.getId(), false);
+				invoice.setPaymentRequestId(currentInvoice.getPaymentRequestId());
+			}
 			invoice.setStatus(currentInvoice.getStatus());
 			invoice.setPaidDate(new Date());
 			invoice.setPaymentId(currentInvoice.getPaymentId());
 			invoice.setPaidAmount(currentInvoice.getAmount());
 			invoice.setPaymentType(PAYMENT_ONLINE);
+			invoice.setPaymentMedium(currentInvoice.getPaymentMedium());
+			invoice.setPaymentMode(currentInvoice.getPaymentMode());
+			if(StringUtils.equalsIgnoreCase("Success", invoice.getStatus())) {
+				invoice.setStatus(BillConstants.INVOICE_STATUS_PAID);
+			}
 			NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
 			nullAwareBeanUtils.copyProperties(currentInvoice, invoice);
-			currentInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + currentInvoice.getStatus() + "/" + invoice.getSubscription().getBusiness().getName() + "/" + invoice.getAmount() + "/" + invoice.getPaymentId());
+			currentInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + URLEncoder.encode((currentInvoice.getStatus() + "/" + invoice.getSubscription().getBusiness().getName() + "/" + invoice.getAmount() + "/" + invoice.getPaymentId()), "UTF-8"));
 			response.setInvoice(currentInvoice);
-			
 			sendEmails(currentInvoice, invoice, nullAwareBeanUtils);
 			
 			tx.commit();

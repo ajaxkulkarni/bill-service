@@ -2,6 +2,9 @@ package com.rns.web.billapp.service.util;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -13,6 +16,7 @@ import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 
+import com.ccavenue.security.AesCryptUtil;
 import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
@@ -167,9 +171,11 @@ public class BillPaymentUtil {
 		request.add("phone", customer.getPhone());
 		//request.add("redirect_url", customer.getName());
 		request.add("webhook", BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_WEBHOOK));
+		BigDecimal internetHandlingFees = invoice.getPayable().multiply(new BigDecimal(BillConstants.PAYMENT_CHARGE_PERCENT), new MathContext(2, RoundingMode.HALF_UP));
 		request.add("partner_fee_type", "fixed");
-		request.add("partner_fee", "2.00");
+		request.add("partner_fee", internetHandlingFees.negate().toString());
 		
+		LoggingUtil.logMessage("Partner commission ==>" + internetHandlingFees.negate().toString());
 
 		ClientResponse response = webResource.type(MediaType.APPLICATION_FORM_URLENCODED).header(AUTHORIZATION_HEADER, "Bearer " + credentials.getAccess_token())
 				.post(ClientResponse.class, request);
@@ -192,4 +198,57 @@ public class BillPaymentUtil {
 		return BillConstants.MONTHS[invoice.getMonth() - 1] + " " + invoice.getYear() + " monthly payment";
 	}
 
+	public static void prepareHdfcRequest(BillInvoice invoice, BillUser customer) {
+		AesCryptUtil crypt = new AesCryptUtil(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_KEY));
+		invoice.setHdfcRequest(crypt.encrypt("tid=" + invoice.getId() 
+				+ "&merchant_id=" + BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_MERCHANT_ID)
+				+ "&order_id=" + invoice.getId()
+				+ "&currency=INR"
+				+ "&amount=" + invoice.getAmount()
+				+ "&redirect_url=" + BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_PAYMENT_RESULT)
+				+ "&cancel_url=" + BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_PAYMENT_RESULT)
+				+ "&language=EN"
+				+ "&billing_name=" + customer.getName()
+				+ "&billing_address=" + customer.getAddress()
+				+ "&billing_city=Pune"
+				+ "&billing_state=Maharashtra"
+				/*+ "&billing_zip="*/
+				+ "&billing_country=India"
+				+ "&billing_tel=" + customer.getPhone()
+				+ "&billing_email=" + customer.getEmail()
+				+ "&delivery_name=" + customer.getName()
+				+ "&delivery_address=" + customer.getAddress()
+				+ "&delivery_city=Pune"
+				+ "&delivery_state=Maharashtra"
+				/*+ "&billing_zip="*/
+				+ "&delivery_country=India"
+				+ "&delivery_tel=" + customer.getPhone()
+				+ "&delivery_email=" + customer.getEmail()));
+	
+		invoice.setHdfcAccessCode(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_ACCESS_CODE));
+		invoice.setHdfcPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_URL));
+		
+		ClientConfig config = new DefaultClientConfig();
+		config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
+		Client client = Client.create(config);
+		client.setFollowRedirects(true);
+		client.addFilter(new LoggingFilter(System.out));
+		
+		String url = BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_URL);
+		WebResource webResource = client.resource(url);
+
+		LoggingUtil.logMessage("Calling HDFC payment request URL ==>" + url);
+
+		MultivaluedMap<String, String> request = new MultivaluedMapImpl();
+		request.add("encRequest", invoice.getHdfcRequest());
+		request.add("access_code", invoice.getHdfcAccessCode());
+
+		ClientResponse response = webResource.post(ClientResponse.class, request);
+		
+		String entity = response.getEntity(String.class);
+		LoggingUtil.logMessage("Output from HDFC Payment request URL ...." + response.getStatus() + " RESP:" + entity + " \n");
+		
+		
+	}
+	
 }

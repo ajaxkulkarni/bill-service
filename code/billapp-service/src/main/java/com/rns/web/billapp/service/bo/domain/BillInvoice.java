@@ -35,6 +35,11 @@ public class BillInvoice {
 	private BigDecimal internetFees;
 	private String paymentUrl;
 	private BigDecimal paidAmount;
+	private String hdfcPaymentUrl;
+	private String hdfcRequest;
+	private String hdfcAccessCode;
+	private String paymentMedium;
+	private String paymentMode;
 	
 	public Integer getId() {
 		return id;
@@ -155,6 +160,36 @@ public class BillInvoice {
 	}
 	public void setPaidAmount(BigDecimal paidAmount) {
 		this.paidAmount = paidAmount;
+	}
+	public String getHdfcPaymentUrl() {
+		return hdfcPaymentUrl;
+	}
+	public void setHdfcPaymentUrl(String hdfcPaymentUrl) {
+		this.hdfcPaymentUrl = hdfcPaymentUrl;
+	}
+	public String getHdfcRequest() {
+		return hdfcRequest;
+	}
+	public void setHdfcRequest(String hdfcRequest) {
+		this.hdfcRequest = hdfcRequest;
+	}
+	public String getHdfcAccessCode() {
+		return hdfcAccessCode;
+	}
+	public void setHdfcAccessCode(String hdfcAccessCode) {
+		this.hdfcAccessCode = hdfcAccessCode;
+	}
+	public String getPaymentMedium() {
+		return paymentMedium;
+	}
+	public void setPaymentMedium(String paymentMedium) {
+		this.paymentMedium = paymentMedium;
+	}
+	public String getPaymentMode() {
+		return paymentMode;
+	}
+	public void setPaymentMode(String paymentMode) {
+		this.paymentMode = paymentMode;
 	}
 	
 }

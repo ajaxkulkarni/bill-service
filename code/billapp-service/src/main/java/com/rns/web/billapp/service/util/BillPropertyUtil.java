@@ -21,8 +21,12 @@ public class BillPropertyUtil {
 	public static final String PAYMENT_WEBHOOK = "payment.webhook";
 	public static final String PAYMENT_RESULT = "payment.result";
 	public static final String PAYMENT_LINK = "payment.link";
+	public static final String HDFC_KEY = "hdfc.working.key";
+	public static final String HDFC_MERCHANT_ID = "hdfc.merchant.id";
+	public static final String HDFC_ACCESS_CODE = "hdfc.access.code";
+	public static final String HDFC_URL = "hdfc.url";
+	public static final String HDFC_PAYMENT_RESULT = "hdfc.payment.webhook";
 	
-
 	public static String getProperty(String name) {
 		try {
 			//File file = new File(BillPaymentUtil.class.getClassLoader().getResource("app.properties").getFile());

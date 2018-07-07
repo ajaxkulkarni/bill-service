@@ -17,6 +17,9 @@ public interface BillConstants {
 	int WARNING_CODE_2 = 102;
 	int WARNING_CODE_3 = 103;
 	int WARNING_CODE_4 = 104;
+	String PAYMENT_MEDIUM_HDFC = "HDFC";
+	String PAYMENT_MEDIUM_INSTA = "INSTA";
+	
 
 	String WARNING_NO_BUSINESS = "No business information found. Please complete your business details.";
 	String WARNING_NO_FINANCIALS = "No financial/ bank information found. Please complete your bank details to enable payment.";

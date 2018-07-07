@@ -150,7 +150,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 					 businessName = CommonUtils.getStringValue(currentBusiness.getName());
 				}
 				
-				if(StringUtils.equals(BillConstants.PAYMENT_STATUS_CREDIT, invoice.getStatus())) {
+				if(StringUtils.equals(BillConstants.INVOICE_STATUS_PAID, invoice.getStatus())) {
 					result = StringUtils.replace(result, "{status}", "Successful");	
 					result = StringUtils.replace(result, "{message}", "This bill payment for " + BillPaymentUtil.invoicePurpose(invoice) + " to vendor " + businessName + " is successful.");
 					subject = StringUtils.replace(subject, "{status}", "successful");

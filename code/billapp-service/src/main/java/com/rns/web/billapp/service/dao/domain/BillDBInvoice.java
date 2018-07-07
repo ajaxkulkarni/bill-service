@@ -40,6 +40,8 @@ public class BillDBInvoice {
 	private Set<BillDBItemInvoice> items = new HashSet<BillDBItemInvoice>();
 	private BigDecimal paidAmount;
 	private BigDecimal serviceCharge;
+	private String paymentMedium;
+	private String paymentMode;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -186,6 +188,22 @@ public class BillDBInvoice {
 	}
 	public void setServiceCharge(BigDecimal serviceCharge) {
 		this.serviceCharge = serviceCharge;
+	}
+	
+	@Column(name = "payment_partner")
+	public String getPaymentMedium() {
+		return paymentMedium;
+	}
+	public void setPaymentMedium(String paymentMedium) {
+		this.paymentMedium = paymentMedium;
+	}
+	
+	@Column(name = "payment_mode")
+	public String getPaymentMode() {
+		return paymentMode;
+	}
+	public void setPaymentMode(String paymentMode) {
+		this.paymentMode = paymentMode;
 	}
 	
 
