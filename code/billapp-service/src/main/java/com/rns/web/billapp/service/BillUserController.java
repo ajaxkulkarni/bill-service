@@ -338,4 +338,13 @@ public class BillUserController {
 
 		return Response.temporaryRedirect(url).build();
 	}
+	
+	@POST
+	@Path("/updatePaymentCredentials")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateUserCredentials(BillServiceRequest request) {
+		return userBo.updatePaymentCredentials(request);
+	}
+	
 }
