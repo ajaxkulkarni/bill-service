@@ -68,8 +68,9 @@ public class BillRuleEngine {
 		BigDecimal internetHandlingFees = invoice.getPayable().multiply(new BigDecimal(BillConstants.PAYMENT_CHARGE_PERCENT), mc).add(new BigDecimal(BillConstants.PAYMENT_CHARGE_FIXED), mc);
 		//Add GST 18%
 		internetHandlingFees = internetHandlingFees.add(internetHandlingFees.multiply(new BigDecimal(0.18), mc), mc);
-		//invoice.setInternetFees(internetHandlingFees);
-		//invoice.setPayable(invoice.getPayable().add(invoice.getInternetFees()));
+		internetHandlingFees = BigDecimal.ZERO; //TODO: Change later
+		invoice.setInternetFees(internetHandlingFees);
+		invoice.setPayable(invoice.getPayable().add(invoice.getInternetFees()));
 	}
 	
 }
