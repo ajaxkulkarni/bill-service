@@ -108,7 +108,7 @@ public class BillInvoiceDaoImpl {
 	}
 	
 	public List<Object[]> getCustomerInvoiceSummary(Date date, Integer businessId, Integer currentMonth, Integer currentYear) {
-		Query query = session.createQuery("select sum(invoice.amount),invoice.subscription from BillDBInvoice invoice where invoice.status!=:paid AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) invoice.subscription.business.id=:businessId group by invoice.subscription.id");
+		Query query = session.createQuery("select sum(invoice.amount),invoice.subscription from BillDBInvoice invoice where invoice.status!=:paid AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) AND invoice.subscription.business.id=:businessId group by invoice.subscription.id");
 		query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
 		query.setInteger("businessId", businessId);
 		query.setInteger("currentMonth", currentMonth);
