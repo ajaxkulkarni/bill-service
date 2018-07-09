@@ -455,10 +455,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			}
 			BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice);
 			tx.commit();
-			if(dbInvoice.getSubscription() != null) {
-				BillUser customer = new BillUser();
-				nullAware.copyProperties(customer, dbInvoice.getSubscription());
-				executor.execute(new BillMailUtil(MAIL_TYPE_PAYMENT_RESULT, customer));
+			if(dbInvoice.getSubscription() != null && invoicePaid) {
+				nullAware.copyProperties(invoice, dbInvoice);
+				sendEmails(invoice, dbInvoice, nullAware);
 			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
