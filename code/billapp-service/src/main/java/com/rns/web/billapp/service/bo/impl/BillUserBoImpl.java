@@ -435,10 +435,15 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			Transaction tx = session.beginTransaction();
 			BillInvoiceDaoImpl dao = new BillInvoiceDaoImpl(session);
 			BillDBInvoice dbInvoice = dao.getInvoiceForMonth(currentSubscription.getId(), invoice.getMonth(), invoice.getYear());
+			boolean invoicePaid = false;
 			if (dbInvoice == null) {
 				dbInvoice = new BillDBInvoice();
 				invoice.setStatus(INVOICE_STATUS_PENDING);
 				invoice.setCreatedDate(new Date());
+			} else {
+				if(!StringUtils.equals(invoice.getStatus(), dbInvoice.getStatus()) && StringUtils.equals(INVOICE_STATUS_PAID, invoice.getStatus())) {
+					invoicePaid = true;
+				}
 			}
 			NullAwareBeanUtils nullAware = new NullAwareBeanUtils();
 			nullAware.copyProperties(dbInvoice, invoice);
@@ -450,6 +455,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			}
 			BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice);
 			tx.commit();
+			if(dbInvoice.getSubscription() != null) {
+				BillUser customer = new BillUser();
+				nullAware.copyProperties(customer, dbInvoice.getSubscription());
+				executor.execute(new BillMailUtil(MAIL_TYPE_PAYMENT_RESULT, customer));
+			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
