@@ -443,6 +443,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			} else {
 				if(!StringUtils.equals(invoice.getStatus(), dbInvoice.getStatus()) && StringUtils.equals(INVOICE_STATUS_PAID, invoice.getStatus())) {
 					invoicePaid = true;
+					BillRuleEngine.calculatePayable(invoice);
+					invoice.setPaidAmount(invoice.getPayable());
 				}
 			}
 			NullAwareBeanUtils nullAware = new NullAwareBeanUtils();
@@ -800,6 +802,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		customer.setCurrentBusiness(business);
 		BillMailUtil customerMail = new BillMailUtil(MAIL_TYPE_PAYMENT_RESULT);
 		customerMail.setUser(customer);
+		currentInvoice.setPayable(invoice.getPaidAmount());
 		customerMail.setInvoice(currentInvoice);
 		BillMailUtil vendorMail = new BillMailUtil(MAIL_TYPE_PAYMENT_RESULT_VENDOR);
 		vendorMail.setUser(vendor);
