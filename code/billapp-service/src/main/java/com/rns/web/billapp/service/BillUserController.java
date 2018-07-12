@@ -313,7 +313,7 @@ public class BillUserController {
 						if (strTok.hasMoreTokens()) {
 							pvalue = (String) strTok.nextToken();
 						}
-						System.out.println(pname + " -- " + pvalue);
+						LoggingUtil.logMessage("HDFC payment result parameter - " + pname + " -- " + pvalue);
 						responseMap.put(pname , pvalue);
 					}
 					
