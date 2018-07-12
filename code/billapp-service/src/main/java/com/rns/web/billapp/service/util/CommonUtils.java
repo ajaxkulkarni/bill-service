@@ -113,7 +113,11 @@ public class CommonUtils {
 		}
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(date1);
-		return cal.get(value);
+		int result = cal.get(value);
+		if(Calendar.MONTH == value) {
+			result++;
+		}
+		return result;
 	}
 
 	public static String getStringValue(Integer value) {
