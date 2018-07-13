@@ -13,6 +13,7 @@ import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Projection;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
+import org.hibernate.criterion.SimpleExpression;
 import org.hibernate.sql.JoinType;
 
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -54,16 +55,22 @@ public class BillInvoiceDaoImpl {
 
 	public List<BillDBInvoice> getAllInvoices(Integer subscriptionId) {
 		Criteria criteria = session.createCriteria(BillDBInvoice.class)
-				 .add(Restrictions.eq("subscription.id", subscriptionId));
+				 .add(Restrictions.eq("subscription.id", subscriptionId))
+				 .add(invoiceNotDeleted());
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
 		return criteria.list();
 	}
 
+	private SimpleExpression invoiceNotDeleted() {
+		return Restrictions.ne("status", BillConstants.INVOICE_STATUS_DELETED);
+	}
+
 	public List<BillDBInvoice> getAllInvoicesForMonth(Integer month, Integer year) {
 		Criteria criteria = session.createCriteria(BillDBInvoice.class)
 								.add(Restrictions.eq("month", month))
-								.add(Restrictions.eq("year", year));
+								.add(Restrictions.eq("year", year))
+								.add(invoiceNotDeleted());
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
 		criteria.setFetchMode("subscription", FetchMode.JOIN);
@@ -73,7 +80,8 @@ public class BillInvoiceDaoImpl {
 	public Integer getInvoiceCountByStatus(Integer subscriptionId, String status) {
 		Criteria criteria = session.createCriteria(BillDBInvoice.class)
 				 .add(Restrictions.eq("subscription.id", subscriptionId))
-				 .add(Restrictions.eq("status", status));
+				 .add(Restrictions.eq("status", status))
+				 .add(invoiceNotDeleted());
 		criteria.setProjection(Projections.rowCount());
 		Long count = (Long) criteria.uniqueResult();
 		if(count != null) {
@@ -98,6 +106,7 @@ public class BillInvoiceDaoImpl {
 		Criteria criteria = session.createCriteria(BillDBInvoice.class)
 				 .add(Restrictions.eq("subscription.id", subscriptionId))
 				 .add(Restrictions.ne("status", BillConstants.INVOICE_STATUS_PAID))
+				 .add(invoiceNotDeleted())
 				 .add(Restrictions.ne("month", CommonUtils.getCalendarValue(new Date(), Calendar.MONTH)))
 				 .addOrder(Order.desc("createdDate"));
 		List list = criteria.list();
@@ -108,11 +117,12 @@ public class BillInvoiceDaoImpl {
 	}
 	
 	public List<Object[]> getCustomerInvoiceSummary(Date date, Integer businessId, Integer currentMonth, Integer currentYear) {
-		Query query = session.createQuery("select sum(invoice.amount),invoice.subscription from BillDBInvoice invoice where invoice.status!=:paid AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) AND invoice.subscription.business.id=:businessId group by invoice.subscription.id");
+		Query query = session.createQuery("select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance) from BillDBInvoice invoice where invoice.status!=:paid AND invoice.status!=:deleted AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) AND invoice.subscription.business.id=:businessId group by invoice.subscription.id");
 		query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
 		query.setInteger("businessId", businessId);
 		query.setInteger("currentMonth", currentMonth);
 		query.setInteger("currentYear", currentYear);
+		query.setString("deleted", BillConstants.INVOICE_STATUS_DELETED);
 		return query.list();
 	}
 

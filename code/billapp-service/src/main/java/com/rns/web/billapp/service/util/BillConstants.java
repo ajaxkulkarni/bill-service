@@ -45,6 +45,7 @@ public interface BillConstants {
 	String STATUS_PENDING = "P";
 	String INVOICE_STATUS_PENDING = "Pending";
 	String INVOICE_STATUS_PAID = "Credit";
+	String INVOICE_STATUS_DELETED = "Deleted";
 	
 	String USER_DB_ATTR_PHONE = "phone";
 	String ID_ATTR = "id";

@@ -893,6 +893,16 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillDBSubscription subscription = (BillDBSubscription) row[1];
 					BillInvoice invoice = new BillInvoice();
 					invoice.setAmount(total);
+					if(row[2] != null) {
+						invoice.setPendingBalance((BigDecimal) row[2]);
+					}
+					if(row[3] != null) {
+						invoice.setServiceCharge((BigDecimal) row[3]);
+					}
+					if(row[4] != null) {
+						invoice.setCreditBalance((BigDecimal) row[4]);
+					}
+					BillRuleEngine.calculatePayable(invoice);
 					BillUser customer = new BillUser();
 					new NullAwareBeanUtils().copyProperties(customer, subscription);
 					customer.setCurrentInvoice(invoice);

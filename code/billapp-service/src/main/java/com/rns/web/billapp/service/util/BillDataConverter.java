@@ -185,6 +185,7 @@ public class BillDataConverter implements BillConstants {
 			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
 			for(BillDBInvoice dbInvoice: invoices) {
 				BillInvoice invoice = getInvoice(beanUtils, dbInvoice);
+				BillRuleEngine.calculatePayable(invoice);
 				userInvoices.add(invoice);
 			}
 		}
