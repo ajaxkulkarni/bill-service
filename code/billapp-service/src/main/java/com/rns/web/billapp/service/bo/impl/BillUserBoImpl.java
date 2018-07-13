@@ -18,6 +18,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -458,11 +460,21 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				session.persist(dbInvoice);
 			}
 			BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice);
-			tx.commit();
-			if(dbInvoice.getSubscription() != null && invoicePaid) {
+			if(dbInvoice.getSubscription() != null) {
 				nullAware.copyProperties(invoice, dbInvoice);
-				sendEmails(invoice, dbInvoice, nullAware);
+				if(invoicePaid) {
+					sendEmails(invoice, dbInvoice, nullAware);
+				}
+				//Update payment URL
+				BillRuleEngine.calculatePayable(invoice);
+				BillDBUser vendor = dbInvoice.getSubscription().getBusiness().getUser();
+				BillPaymentCredentials credentials = new BillPaymentCredentials();
+				BillDataConverter.setCredentials(vendor, credentials);
+				BillUser customer = new BillUser();
+				nullAware.copyProperties(customer, dbInvoice.getSubscription());
+				updatePaymentURL(invoice, dbInvoice, vendor, customer, credentials);
 			}
+			tx.commit();
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
@@ -694,17 +706,15 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					beanUtils.copyProperties(business, dbInvoice.getSubscription().getBusiness());
 					customer.setCurrentBusiness(business);
 					vendor = dbInvoice.getSubscription().getBusiness().getUser();
-					credentials.setAccess_token(vendor.getAccessToken());
-					credentials.setRefresh_token(vendor.getRefreshToken());
-					credentials.setInstaId(vendor.getInstaId());
+					BillDataConverter.setCredentials(vendor, credentials);
 					BillRuleEngine.calculatePayable(invoice);
 				}
 				if(!StringUtils.equalsIgnoreCase(REQUEST_TYPE_EMAIL, request.getRequestType())) {
-					credentials = BillPaymentUtil.createPaymentRequest(customer, credentials, invoice, true);
-					invoice.setPaymentUrl(credentials.getLongUrl());
 					BillPaymentUtil.prepareHdfcRequest(invoice, customer);
-					dbInvoice.setPaymentRequestId(credentials.getPaymentRequestId());
-					BillBusinessConverter.setPaymentCredentials(vendor, credentials);
+					//Only if InstaMojo payment request is not already generated
+					if(StringUtils.isBlank(invoice.getPaymentUrl())) {
+						updatePaymentURL(invoice, dbInvoice, vendor, customer, credentials);
+					}
 				} else {
 					invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + invoice.getId());
 					BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
@@ -727,6 +737,16 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		}
 		return response;
 	}
+
+	private void updatePaymentURL(BillInvoice invoice, BillDBInvoice dbInvoice, BillDBUser vendor, BillUser customer, BillPaymentCredentials credentials)
+			throws JsonParseException, JsonMappingException, IOException {
+		credentials = BillPaymentUtil.createPaymentRequest(customer, credentials, invoice, true);
+		invoice.setPaymentUrl(credentials.getLongUrl());
+		dbInvoice.setPaymentUrl(credentials.getLongUrl());
+		dbInvoice.setPaymentRequestId(credentials.getPaymentRequestId());
+		BillBusinessConverter.setPaymentCredentials(vendor, credentials);
+	}
+
 
 	public BillServiceResponse updatePaymentCredentials(BillServiceRequest request) {
 		BillServiceResponse response = new BillServiceResponse();

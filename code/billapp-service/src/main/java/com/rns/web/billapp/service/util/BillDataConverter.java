@@ -15,6 +15,7 @@ import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
+import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
 import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -278,5 +279,10 @@ public class BillDataConverter implements BillConstants {
 		return business;
 	}
 
+	public static void setCredentials(BillDBUser vendor, BillPaymentCredentials credentials) {
+		credentials.setAccess_token(vendor.getAccessToken());
+		credentials.setRefresh_token(vendor.getRefreshToken());
+		credentials.setInstaId(vendor.getInstaId());
+	}
 
 }

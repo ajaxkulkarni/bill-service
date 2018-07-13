@@ -42,6 +42,7 @@ public class BillDBInvoice {
 	private BigDecimal serviceCharge;
 	private String paymentMedium;
 	private String paymentMode;
+	private String paymentUrl;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -204,6 +205,14 @@ public class BillDBInvoice {
 	}
 	public void setPaymentMode(String paymentMode) {
 		this.paymentMode = paymentMode;
+	}
+	
+	@Column(name = "payment_url")
+	public String getPaymentUrl() {
+		return paymentUrl;
+	}
+	public void setPaymentUrl(String paymentUrl) {
+		this.paymentUrl = paymentUrl;
 	}
 	
 

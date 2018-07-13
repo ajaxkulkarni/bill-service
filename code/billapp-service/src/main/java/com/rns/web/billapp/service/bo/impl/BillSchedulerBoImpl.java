@@ -109,7 +109,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		
 		Integer month = CommonUtils.getCalendarValue(date, Calendar.MONTH);
 		Integer year = CommonUtils.getCalendarValue(date, Calendar.YEAR);
-		List<BillDBInvoice> invoices = new BillInvoiceDaoImpl(session).getAllInvoicesForMonth(month, year);
+		//List<BillDBInvoice> invoices = new BillInvoiceDaoImpl(session).getAllInvoicesForMonth(month, year);
 		
 		//LoggingUtil.logMessage("Deactivating existing orders for - " + date, LoggingUtil.schedulerLogger);
 		
@@ -117,11 +117,11 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		
 		for(BillDBSubscription subscription: subscriptions) {
 			BillDBOrders currentOrder = findOrder(orders, subscription, date);
-			BillDBInvoice invoice = findInvoice(invoices, subscription, month, year);
+			//BillDBInvoice invoice = findInvoice(invoices, subscription, month, year);
 			if(CollectionUtils.isEmpty(subscription.getSubscriptions())) {
 				if(currentOrder.getId() != null) {
 					currentOrder.setStatus(STATUS_DELETED);
-					deductInvoiceAmount(currentOrder.getAmount(), invoice);
+					//deductInvoiceAmount(currentOrder.getAmount(), invoice);
 					currentOrder.setAmount(BigDecimal.ZERO);
 				}
 				continue;
@@ -133,7 +133,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 				BigDecimal previousQuantity = item.getQuantity();
 				BigDecimal previousAmount = item.getAmount();
 				
-				BillDBItemInvoice invoiceItem = findItem(invoice, itemSub);
+				//BillDBItemInvoice invoiceItem = findItem(invoice, itemSub);
 				item.setQuantity(itemSub.getQuantity());
 				if(itemSub.getQuantity() == null || itemSub.getQuantity().equals(BigDecimal.ZERO)) {
 					item.setQuantity(BigDecimal.ZERO);
@@ -160,13 +160,13 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 						orderTotal = orderTotal.add(itemPrice);
 					}
 				}
-				updateInvoiceItem(invoiceItem, invoice, item, previousAmount, previousQuantity);
+				//updateInvoiceItem(invoiceItem, invoice, item, previousAmount, previousQuantity);
 				if(item.getId() == null) {
 					session.persist(item);
 				}
-				if(invoiceItem.getId() == null) {
+				/*if(invoiceItem.getId() == null) {
 					session.persist(invoiceItem);
-				}
+				}*/
 			}
 			if(noDeliveries == subscription.getSubscriptions().size()) {
 				currentOrder.setStatus(STATUS_DELETED);
@@ -177,10 +177,10 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 			if(currentOrder.getId() == null) {
 				session.persist(currentOrder);
 			}
-			if(invoice.getId() == null) {
+			/*if(invoice.getId() == null) {
 				session.persist(invoice);
-			}
-			LoggingUtil.logMessage("..... Generated invoice for .." + subscription.getId() + " Order ID .." + currentOrder.getId() + " .. Invoice ID " +  invoice.getId(), LoggingUtil.schedulerLogger);
+			}*/
+			LoggingUtil.logMessage("..... Generated order for .." + subscription.getId() + " Order ID .." + currentOrder.getId() , LoggingUtil.schedulerLogger);
 		}
 	}
 	private void updateInvoiceItem(BillDBItemInvoice invoiceItem, BillDBInvoice invoice, BillDBOrderItems item, BigDecimal previousAmount, BigDecimal previousQuantity) {

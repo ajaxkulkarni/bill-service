@@ -228,7 +228,7 @@ public class BillPaymentUtil {
 		invoice.setHdfcAccessCode(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_ACCESS_CODE));
 		invoice.setHdfcPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_URL));
 		
-		ClientConfig config = new DefaultClientConfig();
+		/*ClientConfig config = new DefaultClientConfig();
 		config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
 		Client client = Client.create(config);
 		client.setFollowRedirects(true);
@@ -246,7 +246,7 @@ public class BillPaymentUtil {
 		ClientResponse response = webResource.post(ClientResponse.class, request);
 		
 		String entity = response.getEntity(String.class);
-		LoggingUtil.logMessage("Output from HDFC Payment request URL ...." + response.getStatus() + " RESP:" + entity + " \n");
+		LoggingUtil.logMessage("Output from HDFC Payment request URL ...." + response.getStatus() + " RESP:" + entity + " \n");*/
 		
 		
 	}
