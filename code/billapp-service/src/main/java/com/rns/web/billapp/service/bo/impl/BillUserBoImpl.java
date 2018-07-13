@@ -445,6 +445,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					invoicePaid = true;
 					BillRuleEngine.calculatePayable(invoice);
 					invoice.setPaidAmount(invoice.getPayable());
+					invoice.setPaidDate(new Date());
+					invoice.setPaymentType(BillConstants.PAYMENT_OFFLINE);
 				}
 			}
 			NullAwareBeanUtils nullAware = new NullAwareBeanUtils();
