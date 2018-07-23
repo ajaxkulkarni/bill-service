@@ -40,6 +40,7 @@ public class BillInvoice {
 	private String hdfcAccessCode;
 	private String paymentMedium;
 	private String paymentMode;
+	private String paymentMessage;
 	
 	public Integer getId() {
 		return id;
@@ -190,6 +191,12 @@ public class BillInvoice {
 	}
 	public void setPaymentMode(String paymentMode) {
 		this.paymentMode = paymentMode;
+	}
+	public String getPaymentMessage() {
+		return paymentMessage;
+	}
+	public void setPaymentMessage(String paymentMessage) {
+		this.paymentMessage = paymentMessage;
 	}
 	
 }

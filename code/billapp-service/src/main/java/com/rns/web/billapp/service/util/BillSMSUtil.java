@@ -26,21 +26,7 @@ public class BillSMSUtil implements BillConstants {
 		try {
 			LoggingUtil.logMessage("Sending SMS to -- " + user.getPhone());
 			
-			result = SMS_TEXT.get(type);
-			
-			if(user != null) {
-				result = BillMailUtil.prepareUserInfo(result, user);
-			}
-			
-			if(invoice != null) {
-				result = BillMailUtil.prepareInvoiceInfo(result, invoice);
-				if(StringUtils.equals(BillConstants.PAYMENT_STATUS_CREDIT, invoice.getStatus())) {
-					result = StringUtils.replace(result, "{status}", "Successful");	
-				} else {
-					result = StringUtils.replace(result, "{status}", "Failed");	
-				}
-				
-			}
+			result = generateResultMessage(user, invoice, type);
 			ClientConfig config = new DefaultClientConfig();
 			Client client = Client.create(config);
 			String smsUrl = SMS_URL;
@@ -53,6 +39,26 @@ public class BillSMSUtil implements BillConstants {
 			LoggingUtil.logMessage("SMS response -- " + entity);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+		return result;
+	}
+
+	public static String generateResultMessage(BillUser user, BillInvoice invoice, String type) {
+		String result;
+		result = SMS_TEXT.get(type);
+		
+		if(user != null) {
+			result = BillMailUtil.prepareUserInfo(result, user);
+		}
+		
+		if(invoice != null) {
+			result = BillMailUtil.prepareInvoiceInfo(result, invoice);
+			if(StringUtils.equals(BillConstants.PAYMENT_STATUS_CREDIT, invoice.getStatus())) {
+				result = StringUtils.replace(result, "{status}", "Successful");	
+			} else {
+				result = StringUtils.replace(result, "{status}", "Failed");	
+			}
+			
 		}
 		return result;
 	}

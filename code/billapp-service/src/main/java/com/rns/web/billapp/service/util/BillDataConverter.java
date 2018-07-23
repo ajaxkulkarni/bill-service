@@ -186,6 +186,13 @@ public class BillDataConverter implements BillConstants {
 			for(BillDBInvoice dbInvoice: invoices) {
 				BillInvoice invoice = getInvoice(beanUtils, dbInvoice);
 				BillRuleEngine.calculatePayable(invoice);
+				if(dbInvoice.getSubscription() != null && dbInvoice.getSubscription().getBusiness() != null) {
+					invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + invoice.getId());
+					BillUser customer = new BillUser();
+					customer.setCurrentBusiness(getBusiness(dbInvoice.getSubscription().getBusiness()));
+					beanUtils.copyProperties(customer, dbInvoice.getSubscription());
+					invoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customer, invoice, BillConstants.MAIL_TYPE_INVOICE));
+				}
 				userInvoices.add(invoice);
 			}
 		}
