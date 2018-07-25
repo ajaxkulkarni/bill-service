@@ -437,6 +437,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			Transaction tx = session.beginTransaction();
 			BillInvoiceDaoImpl dao = new BillInvoiceDaoImpl(session);
 			BillDBInvoice dbInvoice = dao.getInvoiceForMonth(currentSubscription.getId(), invoice.getMonth(), invoice.getYear());
+			BillDBSubscription customerSubscription = new BillGenericDaoImpl(session).getEntityByKey(BillDBSubscription.class, ID_ATTR, currentSubscription.getId(), true);
+			if(customerSubscription == null) {
+				response.setResponse(ERROR_CODE_FATAL, ERROR_NO_USER);
+				return response;
+			}
 			boolean invoicePaid = false;
 			if (dbInvoice == null) {
 				dbInvoice = new BillDBInvoice();
@@ -454,25 +459,25 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			NullAwareBeanUtils nullAware = new NullAwareBeanUtils();
 			nullAware.copyProperties(dbInvoice, invoice);
 			if (dbInvoice.getSubscription() == null) {
-				dbInvoice.setSubscription(new BillDBSubscription(currentSubscription.getId()));
+				dbInvoice.setSubscription(customerSubscription);
 			}
 			if (dbInvoice.getId() == null) {
 				session.persist(dbInvoice);
 			}
 			BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice);
-			if(dbInvoice.getSubscription() != null) {
+			if(customerSubscription != null) {
 				nullAware.copyProperties(invoice, dbInvoice);
 				if(invoicePaid) {
 					sendEmails(invoice, dbInvoice, nullAware);
 				}
 				//Update payment URL
 				BillRuleEngine.calculatePayable(invoice);
-				LoggingUtil.logMessage("Updating payment URL - " + dbInvoice.getSubscription().getBusiness());
-				BillDBUser vendor = dbInvoice.getSubscription().getBusiness().getUser();
+				LoggingUtil.logMessage("Updating payment URL - " + customerSubscription.getBusiness());
+				BillDBUser vendor = customerSubscription.getBusiness().getUser();
 				BillPaymentCredentials credentials = new BillPaymentCredentials();
 				BillDataConverter.setCredentials(vendor, credentials);
 				BillUser customer = new BillUser();
-				nullAware.copyProperties(customer, dbInvoice.getSubscription());
+				nullAware.copyProperties(customer, customerSubscription);
 				updatePaymentURL(invoice, dbInvoice, vendor, customer, credentials);
 			}
 			tx.commit();

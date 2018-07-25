@@ -31,6 +31,7 @@ public interface BillConstants {
 	String ERROR_INVALID_ITEM = "The product you selected does not exist!";
 	String ERROR_USER_NOT_APPROVED = "Your profile is not approved by the Admin team yet. You'll get a confirmation soon as we do.";
 	String ERROR_INVOICE_NOT_FOUND = "Invalid invoice details!";
+	String ERROR_NO_CUSTOMER = "Customer profile not found!";
 
 	String MSG_REGISTERED_SUCCESS = "Your profile has been registered successfully! Our team will review your profile and contact you further to approve it.";
 
