@@ -467,6 +467,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				}
 				//Update payment URL
 				BillRuleEngine.calculatePayable(invoice);
+				LoggingUtil.logMessage("Updating payment URL - " + dbInvoice.getSubscription().getBusiness());
 				BillDBUser vendor = dbInvoice.getSubscription().getBusiness().getUser();
 				BillPaymentCredentials credentials = new BillPaymentCredentials();
 				BillDataConverter.setCredentials(vendor, credentials);
@@ -829,8 +830,12 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		BillMailUtil vendorMail = new BillMailUtil(MAIL_TYPE_PAYMENT_RESULT_VENDOR);
 		vendorMail.setUser(vendor);
 		vendorMail.setInvoice(currentInvoice);
-		executor.execute(customerMail);
-		executor.execute(vendorMail);
+		if(StringUtils.isNotBlank(customer.getEmail())) {
+			executor.execute(customerMail);
+		}
+		if(StringUtils.isNotBlank(vendor.getEmail())) {
+			executor.execute(vendorMail);
+		}
 		BillSMSUtil.sendSMS(customer, currentInvoice, MAIL_TYPE_PAYMENT_RESULT);
 		BillSMSUtil.sendSMS(vendor, currentInvoice, MAIL_TYPE_PAYMENT_RESULT_VENDOR);
 	}

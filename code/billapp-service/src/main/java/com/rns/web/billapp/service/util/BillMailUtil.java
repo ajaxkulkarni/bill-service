@@ -72,10 +72,15 @@ public class BillMailUtil implements BillConstants, Runnable {
 	}
 
 	public void sendMail() {
+		
+		if(user == null || StringUtils.isBlank(user.getEmail())) {
+			return;
+		}
 
 		Session session = prepareMailSession();
 
 		try {
+			LoggingUtil.logMessage("Sending mail to .." + user.getEmail());
 			Message message = new MimeMessage(session);
 			message.setFrom(new InternetAddress(MAIL_ID, "Pay Per Bill"));
 			prepareMailContent(message);
