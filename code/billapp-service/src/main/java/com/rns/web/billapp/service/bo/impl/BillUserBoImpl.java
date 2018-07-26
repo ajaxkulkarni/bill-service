@@ -901,6 +901,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					}
 					BigDecimal total = (BigDecimal) row[0];
 					BillDBSubscription subscription = (BillDBSubscription) row[1];
+					if(StringUtils.equals(STATUS_DELETED, subscription.getStatus())) {
+						continue;
+					}
 					BillInvoice invoice = new BillInvoice();
 					invoice.setAmount(total);
 					if(row[2] != null) {
