@@ -171,11 +171,11 @@ public class BillPaymentUtil {
 		request.add("phone", customer.getPhone());
 		//request.add("redirect_url", customer.getName());
 		request.add("webhook", BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_WEBHOOK));
-		BigDecimal internetHandlingFees = invoice.getPayable().multiply(new BigDecimal(BillConstants.PAYMENT_CHARGE_PERCENT), new MathContext(2, RoundingMode.HALF_UP));
+		//BigDecimal internetHandlingFees = invoice.getPayable().multiply(new BigDecimal(BillConstants.PAYMENT_CHARGE_PERCENT), new MathContext(2, RoundingMode.HALF_UP));
 		//request.add("partner_fee_type", "fixed");
 		//request.add("partner_fee", "0"); //TODO change later
 		
-		LoggingUtil.logMessage("Partner commission is ==>" + internetHandlingFees.negate().toString());
+		//LoggingUtil.logMessage("Partner commission is ==>" + internetHandlingFees.negate().toString());
 
 		ClientResponse response = webResource.type(MediaType.APPLICATION_FORM_URLENCODED).header(AUTHORIZATION_HEADER, "Bearer " + credentials.getAccess_token())
 				.post(ClientResponse.class, request);
@@ -189,8 +189,10 @@ public class BillPaymentUtil {
 			return createPaymentRequest(customer, credentials, invoice, false);
 		}
 		JsonNode node = new ObjectMapper().readTree(new StringReader(entity));
-		credentials.setLongUrl(node.get("longurl").getTextValue());
-		credentials.setPaymentRequestId(node.get("id").getTextValue());
+		if(node != null && node.get("longurl") != null) {
+			credentials.setLongUrl(node.get("longurl").getTextValue());
+			credentials.setPaymentRequestId(node.get("id").getTextValue());
+		}
 		return credentials;
 	}
 
