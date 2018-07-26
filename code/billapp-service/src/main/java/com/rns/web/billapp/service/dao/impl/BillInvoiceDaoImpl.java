@@ -117,12 +117,13 @@ public class BillInvoiceDaoImpl {
 	}
 	
 	public List<Object[]> getCustomerInvoiceSummary(Date date, Integer businessId, Integer currentMonth, Integer currentYear) {
-		Query query = session.createQuery("select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance) from BillDBInvoice invoice where invoice.status!=:paid AND invoice.status!=:deleted AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) AND invoice.subscription.business.id=:businessId group by invoice.subscription.id");
+		Query query = session.createQuery("select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance) from BillDBInvoice invoice where invoice.status!=:paid AND invoice.status!=:disabled AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) AND invoice.subscription!=:deleted AND invoice.subscription.business.id=:businessId group by invoice.subscription.id");
 		query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
 		query.setInteger("businessId", businessId);
 		query.setInteger("currentMonth", currentMonth);
 		query.setInteger("currentYear", currentYear);
 		query.setString("deleted", BillConstants.INVOICE_STATUS_DELETED);
+		query.setString("disabled", BillConstants.STATUS_DELETED);
 		return query.list();
 	}
 
