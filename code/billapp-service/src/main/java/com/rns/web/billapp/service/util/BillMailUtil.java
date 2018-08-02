@@ -122,6 +122,9 @@ public class BillMailUtil implements BillConstants, Runnable {
 			BillBusiness currentBusiness = user.getCurrentBusiness();
 			if (user != null) {
 				result = prepareUserInfo(result, user);
+				if(currentBusiness != null) {
+					subject = StringUtils.replace(subject, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
+				}
 				subject = StringUtils.replace(subject, "{name}", CommonUtils.getStringValue(user.getName()));
 			}
 
@@ -168,23 +171,6 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 			}
 
-			if (currentBusiness != null) {
-				result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
-				subject = StringUtils.replace(subject, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
-				if(CollectionUtils.isNotEmpty(currentBusiness.getItems())) {
-					StringBuilder itemBuilder = new StringBuilder();
-					for(BillItem item: currentBusiness.getItems()) {
-						itemBuilder.append(item.getName()).append(",");
-						if(item.getChangeLog() != null) {
-							result = StringUtils.replace(result, "{fromDate}", CommonUtils.convertDate(item.getChangeLog().getFromDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
-							result = StringUtils.replace(result, "{toDate}", CommonUtils.convertDate(item.getChangeLog().getToDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
-						}
-					}
-					result = StringUtils.replace(result, "{itemName}", StringUtils.removeEnd(itemBuilder.toString(), ","));
-				} else {
-					result = StringUtils.replace(result, "{itemName}", "");
-				}
-			}
 
 			if (StringUtils.isNotBlank(messageText)) {
 				result = StringUtils.replace(result, "{message}", messageText);
@@ -250,13 +236,31 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{name}", CommonUtils.getStringValue(user.getName()));
 		result = StringUtils.replace(result, "{email}", CommonUtils.getStringValue(user.getEmail()));
 		result = StringUtils.replace(result, "{phone}", CommonUtils.getStringValue(user.getPhone()));
-		if (user.getCurrentBusiness() != null) {
-			result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(user.getCurrentBusiness().getName()));
-			if(user.getCurrentBusiness().getBusinessSector() != null) {
-				result = StringUtils.replace(result, "{sector}", CommonUtils.getStringValue(user.getCurrentBusiness().getBusinessSector().getName()));
+		BillBusiness currentBusiness = user.getCurrentBusiness();
+		if (currentBusiness != null) {
+			result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
+			if(currentBusiness.getBusinessSector() != null) {
+				result = StringUtils.replace(result, "{sector}", CommonUtils.getStringValue(currentBusiness.getBusinessSector().getName()));
 			}
-			if(user.getCurrentBusiness().getOwner() != null) {
-				result = StringUtils.replace(result, "{vendorContact}", StringUtils.substringAfter(CommonUtils.getStringValue(user.getCurrentBusiness().getOwner().getPhone()), "+91"));
+			if(currentBusiness.getOwner() != null) {
+				result = StringUtils.replace(result, "{vendorContact}", StringUtils.substringAfter(CommonUtils.getStringValue(currentBusiness.getOwner().getPhone()), "+91"));
+			}
+		}
+		
+		if (currentBusiness != null) {
+			result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
+			if(CollectionUtils.isNotEmpty(currentBusiness.getItems())) {
+				StringBuilder itemBuilder = new StringBuilder();
+				for(BillItem item: currentBusiness.getItems()) {
+					itemBuilder.append(item.getName()).append(",");
+					if(item.getChangeLog() != null) {
+						result = StringUtils.replace(result, "{fromDate}", CommonUtils.convertDate(item.getChangeLog().getFromDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
+						result = StringUtils.replace(result, "{toDate}", CommonUtils.convertDate(item.getChangeLog().getToDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
+					}
+				}
+				result = StringUtils.replace(result, "{itemName}", StringUtils.removeEnd(itemBuilder.toString(), ","));
+			} else {
+				result = StringUtils.replace(result, "{itemName}", "");
 			}
 		}
 		return result;
