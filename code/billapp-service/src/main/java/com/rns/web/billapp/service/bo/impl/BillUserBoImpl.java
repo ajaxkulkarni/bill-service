@@ -703,6 +703,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			Transaction tx = session.beginTransaction();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
 			BillDBInvoice dbInvoice = dao.getEntityByKey(BillDBInvoice.class, "id", invoice.getId(), false);
+			if(StringUtils.equals(INVOICE_STATUS_DELETED, dbInvoice.getStatus())) {
+				response.setResponse(ERROR_CODE_GENERIC, ERROR_INVOICE_NOT_FOUND);
+				return response;
+			}
 			if (dbInvoice != null && dbInvoice.getAmount() != null && dbInvoice.getMonth() != null && dbInvoice.getYear() != null) {
 				BillDBUser vendor = null;
 				BillUser customer = new BillUser();
