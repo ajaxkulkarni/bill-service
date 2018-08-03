@@ -13,5 +13,6 @@ public interface BillAdminBo {
 	InputStream getImage(BillItem item);
 	BillServiceResponse getAllparentItems(BillServiceRequest request);
 	BillServiceResponse uploadVendorData(BillServiceRequest request);
+	BillServiceResponse generateBills(BillServiceRequest request);
 	
 }

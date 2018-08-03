@@ -87,25 +87,6 @@ public class CommonUtils {
 		return false;
 	}
 
-	public static Date getFirstDate(Integer year, Integer month) {
-		if(year == null || month == null) {
-			return null;
-		}
-		Calendar cal = Calendar.getInstance();
-		cal.set(year, month, 1);
-		return cal.getTime();
-	}
-	
-	public static Date getLastDate(Integer year, Integer month) {
-		if(year == null || month == null) {
-			return null;
-		}
-		Calendar cal = Calendar.getInstance();
-		cal.set(Calendar.YEAR, year);
-		cal.set(Calendar.MONTH, month);
-		cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
-		return cal.getTime();
-	}
 
 	public static Integer getCalendarValue(Date date1, int value) {
 		if(date1 == null) {

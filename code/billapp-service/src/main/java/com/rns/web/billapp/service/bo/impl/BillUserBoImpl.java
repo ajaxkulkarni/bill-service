@@ -42,6 +42,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
@@ -468,17 +469,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			if(customerSubscription != null) {
 				nullAware.copyProperties(invoice, dbInvoice);
 				if(invoicePaid) {
+					//updateTransactionLog(session, dbInvoice);
 					sendEmails(invoice, dbInvoice, nullAware);
 				}
 				//Update payment URL
-				BillRuleEngine.calculatePayable(invoice);
-				LoggingUtil.logMessage("Updating payment URL - " + customerSubscription.getBusiness());
-				BillDBUser vendor = customerSubscription.getBusiness().getUser();
-				BillPaymentCredentials credentials = new BillPaymentCredentials();
-				BillDataConverter.setCredentials(vendor, credentials);
-				BillUser customer = new BillUser();
-				nullAware.copyProperties(customer, customerSubscription);
-				updatePaymentURL(invoice, dbInvoice, vendor, customer, credentials);
+				BillBusinessConverter.updatePaymentURL(invoice, dbInvoice, customerSubscription);
 			}
 			tx.commit();
 		} catch (Exception e) {
@@ -489,6 +484,14 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		}
 		return response;
 	}
+
+	private void updateTransactionLog(Session session, BillDBInvoice dbInvoice) {
+		BillDBTransactions transaction = BillBusinessConverter.getTransaction(dbInvoice);
+		if(transaction != null) {
+			session.persist(transaction);
+		}
+	}
+
 
 	public BillServiceResponse loadProfile(BillServiceRequest request) {
 		BillServiceResponse response = new BillServiceResponse();
@@ -719,7 +722,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillPaymentUtil.prepareHdfcRequest(invoice, customer);
 					//Only if InstaMojo payment request is not already generated
 					if(StringUtils.isBlank(invoice.getPaymentUrl())) {
-						updatePaymentURL(invoice, dbInvoice, vendor, customer, credentials);
+						BillBusinessConverter.updatePaymentURL(invoice, dbInvoice, vendor, customer, credentials);
 					}
 				} else {
 					invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + invoice.getId());
@@ -742,15 +745,6 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			CommonUtils.closeSession(session);
 		}
 		return response;
-	}
-
-	private void updatePaymentURL(BillInvoice invoice, BillDBInvoice dbInvoice, BillDBUser vendor, BillUser customer, BillPaymentCredentials credentials)
-			throws JsonParseException, JsonMappingException, IOException {
-		credentials = BillPaymentUtil.createPaymentRequest(customer, credentials, invoice, true);
-		invoice.setPaymentUrl(credentials.getLongUrl());
-		dbInvoice.setPaymentUrl(credentials.getLongUrl());
-		dbInvoice.setPaymentRequestId(credentials.getPaymentRequestId());
-		BillBusinessConverter.setPaymentCredentials(vendor, credentials);
 	}
 
 
@@ -806,6 +800,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			nullAwareBeanUtils.copyProperties(currentInvoice, invoice);
 			currentInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + URLEncoder.encode((currentInvoice.getStatus() + "/" + invoice.getSubscription().getBusiness().getName() + "/" + invoice.getAmount() + "/" + invoice.getPaymentId()), "UTF-8"));
 			response.setInvoice(currentInvoice);
+			
+			//updateTransactionLog(session, invoice);
 			sendEmails(currentInvoice, invoice, nullAwareBeanUtils);
 			
 			tx.commit();

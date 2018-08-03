@@ -1,15 +1,22 @@
 package com.rns.billapp.web.service;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.lang3.time.DateUtils;
+import javax.ws.rs.core.MultivaluedMap;
+
+import org.apache.log4j.Logger;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.hibernate.HibernateException;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
@@ -17,6 +24,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
+import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
 import com.rns.web.billapp.service.bo.domain.BillSector;
@@ -26,15 +34,28 @@ import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.bo.impl.BillAdminBoImpl;
 import com.rns.web.billapp.service.bo.impl.BillSchedulerBoImpl;
 import com.rns.web.billapp.service.bo.impl.BillUserBoImpl;
-import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
+import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
-import com.rns.web.billapp.service.domain.BillInvoice;
+import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
 import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.BillLogAppender;
+import com.rns.web.billapp.service.util.BillMailUtil;
 import com.rns.web.billapp.service.util.BillPaymentUtil;
+import com.rns.web.billapp.service.util.BillPropertyUtil;
 import com.rns.web.billapp.service.util.CommonUtils;
+import com.rns.web.billapp.service.util.LoggingUtil;
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
+import com.sun.jersey.api.client.filter.LoggingFilter;
+import com.sun.jersey.api.json.JSONConfiguration;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 
+//@Ignore
 public class BillTest {
 	
 	private BillUserBoImpl userbo;
@@ -301,17 +322,26 @@ public class BillTest {
 	}
 	
 	@Test
-	public void testLogQueries() {
-		List<Object[]> objects = new BillLogDAOImpl(userbo.getSessionFactory().openSession()).getParentItemQuantityLogs(CommonUtils.getDate(new Date()));
-		for(Object[] array: objects) {
-			System.out.println(array[0] + ":" + array[1] + ":" + array[2]);
-		}
-		System.out.println(objects);
+	public void testLogQueries() throws JsonGenerationException, JsonMappingException, IOException {
+		BillServiceRequest request = new BillServiceRequest();
+		BillUser user = new BillUser();
+		user.setId(1);
+		BillInvoice invoice = new BillInvoice();
+		invoice.setMonth(6);
+		request.setInvoice(invoice);
+		request.setUser(user);
+		System.out.println(new ObjectMapper().writeValueAsString(userbo.getCustomerActivity(request).getOrders()));
 	}
 	
 	@Test
-	public void testInvoiceRoutine() {
-		scheduler.calculateInvoices();
+	public void testInvoiceRoutine() throws ParseException {
+		for(int i = 3; i <= 31; i++) {
+			String day = "" + i;
+			if(i < 10) {
+				day = "0" + i;
+			}
+			scheduler.calculateInvoices(new SimpleDateFormat(BillConstants.DATE_FORMAT).parse("2018-07-" + day));
+		}
 	}
 	
 	@Test
@@ -338,8 +368,82 @@ public class BillTest {
 	public void testGetToken() {
 		BillServiceRequest request = new BillServiceRequest();
 		BillUser user = new BillUser();
-		user.setId(16);
+		user.setId(17);
 		request.setUser(user);
 		userbo.updatePaymentCredentials(request);
+	}
+	
+	@Test
+	public void testPickups() throws HibernateException, ParseException {
+		List<Object[]> list = new BillVendorDaoImpl(userbo.getSessionFactory().openSession()).getItemOrderSummary(new SimpleDateFormat("yyyy-MM-dd").parse("2018-05-24"), 2);
+		for(Object[] o: list) {
+			System.out.println(o[0] + ":" + o[1] + ":" + o[2]);
+		}
+	}
+	
+	@Test
+	public void testMail() {
+		BillMailUtil mailUtil = new BillMailUtil(BillConstants.MAIL_TYPE_REGISTRATION);
+		BillUser user = new BillUser();
+		user.setEmail("mcm.abhishek@gmail.com");
+		user.setName("Abhishek");
+		mailUtil.setUser(user);
+		mailUtil.sendMail();
+	}
+	
+	@Test
+	public void testUploadUsers() throws FileNotFoundException {
+		BillServiceRequest request = new BillServiceRequest();
+		BillBusiness business = new BillBusiness();
+		business.setId(2);
+		BillFile file = new BillFile();
+		file.setFileData(new FileInputStream("F:\\Resoneuronance\\BillDue\\Documents\\sample_excel.xlsx"));
+		request.setBusiness(business);
+		request.setFile(file);
+		System.out.println(adminBo.uploadVendorData(request).getResponse());
+	}
+	
+	@Test
+	public void customLogtest() {
+		Logger logger = Logger.getLogger(this.getClass());
+		logger.addAppender(new BillLogAppender());
+		logger.info("Something");
+	}
+	
+	@Test
+	public void testHdfc() {
+		BillInvoice invoice = new BillInvoice();
+		invoice.setAmount(new BigDecimal(1));
+		invoice.setId(1);
+		//BillPaymentUtil.prepareHdfcRequest(invoice);
+		ClientConfig config = new DefaultClientConfig();
+		config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
+		Client client = Client.create(config);
+		client.addFilter(new LoggingFilter(System.out));
+		
+		String url = BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_URL);
+		WebResource webResource = client.resource(url);
+
+		LoggingUtil.logMessage("Calling HDFC payment request URL ==>" + url);
+
+		MultivaluedMap<String, String> request = new MultivaluedMapImpl();
+		request.add("encRequest", invoice.getHdfcRequest());
+		request.add("access_code", invoice.getHdfcAccessCode());
+
+		ClientResponse response = webResource.post(ClientResponse.class, request);
+
+		System.out.println("HEADERS ==>" + response.getHeaders());
+		String entity = response.getEntity(String.class);
+		LoggingUtil.logMessage("Output from HDFC Payment request URL ...." + response.getStatus() + " RESP:" + entity + " \n");
+	}
+	
+	@Test
+	public void testGenerateBills() {
+		BillServiceRequest request = new BillServiceRequest();
+		BillInvoice invoice = new BillInvoice();
+		invoice.setMonth(7);
+		invoice.setYear(2018);
+		request.setInvoice(invoice);
+		adminBo.generateBills(request);
 	}
 }

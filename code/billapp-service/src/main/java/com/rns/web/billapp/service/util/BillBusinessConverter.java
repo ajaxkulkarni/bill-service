@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service.util;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 import java.util.HashSet;
@@ -8,6 +9,8 @@ import java.util.Set;
 import org.apache.commons.beanutils.BeanUtilsBean;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.hibernate.Session;
 
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
@@ -23,6 +26,8 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
+import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
@@ -142,5 +147,47 @@ public class BillBusinessConverter {
 			dbUser.setAccessToken(instaResponse.getAccess_token());
 		}
 	}
+
+	public static BillDBTransactions getTransaction(BillDBInvoice invoice) {
+		if(invoice == null || invoice.getId() == null) {
+			return null;
+		}
+		BillDBTransactions transactions = new BillDBTransactions();
+		transactions.setInvoice(invoice);
+		transactions.setAmount(invoice.getPaidAmount());
+		transactions.setCreatedDate(new Date());
+		transactions.setStatus(invoice.getStatus());
+		transactions.setMedium(invoice.getPaymentMedium());
+		transactions.setMode(invoice.getPaymentMode());
+		transactions.setReferenceNo(invoice.getPaymentRequestId());
+		transactions.setPaymentId(invoice.getPaymentId());
+		transactions.setSubscription(invoice.getSubscription());
+		if(invoice.getSubscription() != null) {
+			transactions.setBusiness(invoice.getSubscription().getBusiness());
+		}
+		return transactions;
+	}
+	
+	public static void updatePaymentURL(BillInvoice invoice, BillDBInvoice dbInvoice, BillDBSubscription customerSubscription)
+			throws IllegalAccessException, InvocationTargetException, JsonParseException, JsonMappingException, IOException {
+		BillRuleEngine.calculatePayable(invoice);
+		LoggingUtil.logMessage("Updating payment URL - " + customerSubscription.getBusiness());
+		BillDBUser vendor = customerSubscription.getBusiness().getUser();
+		BillPaymentCredentials credentials = new BillPaymentCredentials();
+		BillDataConverter.setCredentials(vendor, credentials);
+		BillUser customer = new BillUser();
+		new NullAwareBeanUtils().copyProperties(customer, customerSubscription);
+		updatePaymentURL(invoice, dbInvoice, vendor, customer, credentials);
+	}
+	
+	public static void updatePaymentURL(BillInvoice invoice, BillDBInvoice dbInvoice, BillDBUser vendor, BillUser customer, BillPaymentCredentials credentials)
+			throws JsonParseException, JsonMappingException, IOException {
+		credentials = BillPaymentUtil.createPaymentRequest(customer, credentials, invoice, true);
+		invoice.setPaymentUrl(credentials.getLongUrl());
+		dbInvoice.setPaymentUrl(credentials.getLongUrl());
+		dbInvoice.setPaymentRequestId(credentials.getPaymentRequestId());
+		BillBusinessConverter.setPaymentCredentials(vendor, credentials);
+	}
+
 
 }

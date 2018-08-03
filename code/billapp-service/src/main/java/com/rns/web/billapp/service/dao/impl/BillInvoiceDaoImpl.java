@@ -126,5 +126,21 @@ public class BillInvoiceDaoImpl {
 		query.setString("disabled", BillConstants.STATUS_DELETED);
 		return query.list();
 	}
+	
+	public List<Object[]> getCustomerOrderSummary(Date fromDate, Date toDate) {
+		Query query = session.createQuery("select sum(orders.amount),orders.subscription from BillDBOrders orders where orders.status!=:disabled AND (orders.orderDate>=:fromDate AND orders.orderDate<=:toDate) group by orders.subscription.id");
+		query.setDate("fromDate", fromDate);
+		query.setDate("toDate", toDate);
+		query.setString("disabled", BillConstants.STATUS_DELETED);
+		return query.list();
+	}
+	
+	public List<Object[]> getCustomerOrderItemSummary(Date fromDate, Date toDate) {
+		Query query = session.createQuery("select sum(orderItems.amount), sum(orderItems.quantity), orderItems, orderItems.order.subscription from BillDBOrderItems orderItems where orderItems.status!=:disabled AND orderItems.businessItem.status!=:disabled AND orderItems.subscribedItem.status!=:disabled AND (orderItems.order.orderDate>=:fromDate AND orderItems.order.orderDate<=:toDate)  group by orderItems.businessItem.id, orderItems.order.subscription.id");
+		query.setDate("fromDate", fromDate);
+		query.setDate("toDate", toDate);
+		query.setString("disabled", BillConstants.STATUS_DELETED);
+		return query.list();
+	}
 
 }
