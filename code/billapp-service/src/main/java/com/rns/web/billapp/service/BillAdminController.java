@@ -177,4 +177,12 @@ public class BillAdminController {
 		return response;
 	}
 	
+	@POST
+	@Path("/generateInvoices")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse generateInvoices(BillServiceRequest request) {
+		return adminBo.generateBills(request);
+	}
+	
 }
