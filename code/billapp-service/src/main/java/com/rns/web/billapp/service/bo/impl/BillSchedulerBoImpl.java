@@ -14,6 +14,7 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillSchedulerBo;
@@ -54,7 +55,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		this.executor = executor;
 	}
 	
-	
+	@Scheduled(cron = "0 14 1 * * *")
 	public void calculateInvoices() {
 		Session session = null;
 		Date date = new Date();

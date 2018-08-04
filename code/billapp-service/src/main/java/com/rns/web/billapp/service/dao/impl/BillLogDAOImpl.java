@@ -126,6 +126,8 @@ public class BillLogDAOImpl {
 		}
 		if(userLog.getSubscription() != null && userLog.getSubscription().getId() != null) {
 			criteria.add(Restrictions.eq("subscription.id", userLog.getSubscription().getId()));
+		} else {
+			criteria.add(Restrictions.isNull("subscription.id"));
 		}
 		List<BillDBUserLog> list = criteria.list();
 		return list;
