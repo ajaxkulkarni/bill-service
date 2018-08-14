@@ -25,19 +25,24 @@ public class BillRuleEngine {
 		//int noOrder = 0;	
 		for(BillUserLog log: logs) {
 			if(subscription.getBusinessItem() != null && subscription.getBusinessItem().getParent() != null && log.getParentItemId() == subscription.getBusinessItem().getParent().getId()) {
-				if(log.getQuantityChange() != null && BigDecimal.ZERO.equals(log.getQuantityChange())) {
-					return false;
-				}
-						
+				return isOrder(log);
 			} else if (subscription.getBusinessItem() != null && subscription.getBusinessItem().getId() == log.getBusinessItemId()) {
-				if(log.getQuantityChange() != null && BigDecimal.ZERO.equals(log.getQuantityChange())) {
-					return false;
-				}
+				return isOrder(log);
+			} else if (subscription.getSubscription() != null && log.getSubscriptionId() != null && log.getSubscriptionId().intValue() == subscription.getSubscription().getId().intValue()) {
+				return isOrder(log);
 			}
 		}
 		/*if(noOrder == currentSubscription.getItems().size()) {
 			return false;
 		}*/
+		return true;
+	}
+
+
+	private static boolean isOrder(BillUserLog log) {
+		if(log.getQuantityChange() != null && BigDecimal.ZERO.equals(log.getQuantityChange())) {
+			return false;
+		}
 		return true;
 	}
 	
