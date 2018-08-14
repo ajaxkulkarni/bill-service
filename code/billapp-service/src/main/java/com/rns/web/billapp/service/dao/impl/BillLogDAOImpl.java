@@ -1,21 +1,20 @@
 package com.rns.web.billapp.service.dao.impl;
 
+import java.util.Date;
 import java.util.List;
-
-import javax.persistence.criteria.Expression;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.criterion.Order;
-import org.hibernate.criterion.ProjectionList;
-import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.SimpleExpression;
 
+import com.rns.web.billapp.service.dao.domain.BillDBHoliday;
 import com.rns.web.billapp.service.dao.domain.BillDBUserLog;
 import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.CommonUtils;
 
 public class BillLogDAOImpl {
 
@@ -131,5 +130,20 @@ public class BillLogDAOImpl {
 		}
 		List<BillDBUserLog> list = criteria.list();
 		return list;
+	}
+	
+	public BillDBHoliday getHolidays(Integer month, Integer day, Date date) {
+		/*Criteria criteria = session.createCriteria(BillDBHoliday.class)
+				.add(Restrictions.or(Restrictions.and(Restrictions.eq("month", month), Restrictions.eq("day", day)), Restrictions.eq("date", date)));
+		List<BillDBHoliday> list = criteria.list();*/
+		Query query = session.createQuery("from BillDBHoliday where (month=:month AND day=:day) OR date=:date");
+		query.setInteger("month", month);
+		query.setInteger("day", day);
+		query.setString("date", CommonUtils.getDate(date));
+		List<BillDBHoliday> holidays = query.list();
+		if (CollectionUtils.isEmpty(holidays)) {
+			return null;
+		}
+		return holidays.get(0);
 	}
 }

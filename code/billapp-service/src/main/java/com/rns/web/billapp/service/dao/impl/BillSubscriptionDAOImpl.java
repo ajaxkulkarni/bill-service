@@ -85,7 +85,8 @@ public class BillSubscriptionDAOImpl {
 	public List<BillDBOrders> getOrders(Date fromDate, Date toDate, Integer subscriptionId) {
 		Criteria criteria = session.createCriteria(BillDBOrders.class)
 				.add(Restrictions.ge("orderDate", fromDate))
-				.add(Restrictions.le("orderDate", toDate));		
+				.add(Restrictions.le("orderDate", toDate))
+				.add(BillGenericDaoImpl.activeCriteria());
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		Criteria itemCriteria = criteria.setFetchMode("orderItems", FetchMode.JOIN);
 		Criteria businessItemCriteria = itemCriteria.setFetchMode("businessItem", FetchMode.JOIN);

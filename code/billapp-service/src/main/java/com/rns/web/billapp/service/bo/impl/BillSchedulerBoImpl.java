@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service.bo.impl;
 
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -18,7 +19,10 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillSchedulerBo;
+import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBHoliday;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
@@ -32,10 +36,14 @@ import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
 import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.BillDataConverter;
+import com.rns.web.billapp.service.util.BillMailUtil;
 import com.rns.web.billapp.service.util.BillRuleEngine;
+import com.rns.web.billapp.service.util.BillSMSUtil;
 import com.rns.web.billapp.service.util.BillUserLogUtil;
 import com.rns.web.billapp.service.util.CommonUtils;
 import com.rns.web.billapp.service.util.LoggingUtil;
+import com.rns.web.billapp.service.util.NullAwareBeanUtils;
 
 public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 	
@@ -93,7 +101,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		return response;
 	}
 	
-	private void calculateInvoice(Session session, Date date) {
+	private void calculateInvoice(Session session, Date date) throws IllegalAccessException, InvocationTargetException {
 		BillVendorDaoImpl vendorDaoImpl = new BillVendorDaoImpl(session);
 		LoggingUtil.logMessage("##### START OF INVOICE CALCULATION FOR - " + date + " ##########", LoggingUtil.schedulerLogger);
 		//Get all the ACTIVE subscriptions with items
@@ -103,13 +111,35 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		}
 		Calendar cal = Calendar.getInstance();
 		cal.setTime(date);
+		
+		Integer month = CommonUtils.getCalendarValue(date, Calendar.MONTH);
+		Integer year = CommonUtils.getCalendarValue(date, Calendar.YEAR);
+		
 		//TODO: Get holidays
+		BillDBHoliday holiday = new BillLogDAOImpl(session).getHolidays(month, cal.get(Calendar.DATE), date);
+		
+		if(holiday != null) {
+			LoggingUtil.logMessage("..... Found holiday for .." + holiday.getHolidayName() , LoggingUtil.schedulerLogger);
+			for(BillDBSubscription sub: subscriptions) {
+				if(StringUtils.equals(STATUS_DELETED, sub.getStatus())) {
+					continue;
+				}
+				BillUser user = new BillUser();
+				user.setCurrentBusiness(BillDataConverter.getBusiness(sub.getBusiness()));
+				NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+				nullAwareBeanUtils.copyProperties(user, sub);
+				user.setHoliday(holiday.getHolidayName());
+				BillSMSUtil.sendSMS(user, null, MAIL_TYPE_HOLIDAY);
+				executor.execute(new BillMailUtil(MAIL_TYPE_HOLIDAY, user));
+			}
+			return;
+		}
+		
 		List<BillUserLog> logs = getLogsForDate(session, date);
 		
 		List<BillDBOrders> orders = vendorDaoImpl.getOrders(date, null);
 		
-		Integer month = CommonUtils.getCalendarValue(date, Calendar.MONTH);
-		Integer year = CommonUtils.getCalendarValue(date, Calendar.YEAR);
+		
 		//List<BillDBInvoice> invoices = new BillInvoiceDaoImpl(session).getAllInvoicesForMonth(month, year);
 		
 		//LoggingUtil.logMessage("Deactivating existing orders for - " + date, LoggingUtil.schedulerLogger);

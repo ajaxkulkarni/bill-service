@@ -80,6 +80,7 @@
 				<value>com.rns.web.billapp.service.dao.domain.BillDBOrders</value>
 				<value>com.rns.web.billapp.service.dao.domain.BillDBOrderItems</value>
 				<value>com.rns.web.billapp.service.dao.domain.BillDBItemInvoice</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBHoliday</value>
 			</list>
 		</property>
 		<property name="hibernateProperties">

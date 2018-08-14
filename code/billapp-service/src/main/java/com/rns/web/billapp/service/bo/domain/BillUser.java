@@ -39,6 +39,7 @@ public class BillUser implements Serializable {
 	private String address;
 	private BigDecimal serviceCharge;
 	private BillInvoice currentInvoice;
+	private String holiday;
 	
 	public Integer getId() {
 		return id;
@@ -149,6 +150,12 @@ public class BillUser implements Serializable {
 	}
 	public void setCurrentInvoice(BillInvoice currentInvoice) {
 		this.currentInvoice = currentInvoice;
+	}
+	public String getHoliday() {
+		return holiday;
+	}
+	public void setHoliday(String holiday) {
+		this.holiday = holiday;
 	}
 	
 	/*@Override

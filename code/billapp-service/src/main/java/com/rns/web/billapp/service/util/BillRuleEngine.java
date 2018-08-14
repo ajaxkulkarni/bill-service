@@ -28,9 +28,9 @@ public class BillRuleEngine {
 				return isOrder(log);
 			} else if (subscription.getBusinessItem() != null && subscription.getBusinessItem().getId() == log.getBusinessItemId()) {
 				return isOrder(log);
-			} else if (subscription.getSubscription() != null && log.getSubscriptionId() != null && log.getSubscriptionId().intValue() == subscription.getSubscription().getId().intValue()) {
+			} /*else if (subscription.getSubscription() != null && log.getSubscriptionId() != null && log.getSubscriptionId().intValue() == subscription.getSubscription().getId().intValue()) {
 				return isOrder(log);
-			}
+			}*/
 		}
 		/*if(noOrder == currentSubscription.getItems().size()) {
 			return false;

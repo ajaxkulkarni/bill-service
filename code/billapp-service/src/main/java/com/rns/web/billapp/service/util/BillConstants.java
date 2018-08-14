@@ -64,6 +64,8 @@ public interface BillConstants {
 	String MAIL_TYPE_NEW_CUSTOMER = "CustomerAdded";
 	String MAIL_TYPE_PAUSE_CUSTOMER = "PauseDeliveryCustomer";
 	String MAIL_TYPE_PAUSE_BUSINESS = "PauseDeliveryBusiness";
+	String MAIL_TYPE_HOLIDAY = "PauseDeliveryHoliday";
+
 
 	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
 

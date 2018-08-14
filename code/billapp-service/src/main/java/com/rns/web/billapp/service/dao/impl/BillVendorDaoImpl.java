@@ -45,9 +45,10 @@ public class BillVendorDaoImpl {
 		if(businessId != null) {
 			businessCriteria = businessCriteria.add(Restrictions.eq("id", businessId));
 		}
-		
+		businessCriteria.createCriteria("sector", JoinType.LEFT_OUTER_JOIN);
 		Criteria subscriptionCriteria = criteria.createCriteria("subscriptions", JoinType.INNER_JOIN).add(BillGenericDaoImpl.activeCriteria());
 		Criteria businessItemCriteria = subscriptionCriteria.createCriteria("businessItem", JoinType.LEFT_OUTER_JOIN).add(BillGenericDaoImpl.activeCriteria());
+		
 		Criteria parentItemCriteria = businessItemCriteria.createCriteria("parent", JoinType.LEFT_OUTER_JOIN).add(BillGenericDaoImpl.activeCriteria());
 		/*criteria.setFetchMode("subscriptions", FetchMode.JOIN);
 		criteria.setFetchMode("subscriptions.businessItem", FetchMode.JOIN);

@@ -72,6 +72,7 @@ public class BillSMSUtil implements BillConstants {
 			put(MAIL_TYPE_APPROVAL, "Congratulations {name}! Your Pay Per Bill account has been verified and approved! You can start accepting payments once you complete your bank details on the app.");
 			put(MAIL_TYPE_NEW_CUSTOMER, "Hello {name}! {businessName} has added you as a customer to their Pay Per Bill account. You can start tracking and paying your {sector} bills online now. For more details - contact your vendor {vendorContact}");
 			put(MAIL_TYPE_PAUSE_CUSTOMER, "Hello {name}! {businessName} has paused the delivery for {itemName} from {fromDate} to {toDate}.");
+			put(MAIL_TYPE_HOLIDAY, "Hello {name}! Your order from {businessName} for {sector} will not be delivered today due to a public holiday - {holidayName}");
 		}
 	});
 	
