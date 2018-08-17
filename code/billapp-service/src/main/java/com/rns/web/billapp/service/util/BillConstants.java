@@ -32,7 +32,8 @@ public interface BillConstants {
 	String ERROR_USER_NOT_APPROVED = "Your profile is not approved by the Admin team yet. You'll get a confirmation soon as we do.";
 	String ERROR_INVOICE_NOT_FOUND = "Invalid invoice details!";
 	String ERROR_NO_CUSTOMER = "Customer profile not found!";
-
+	String ERROR_OLD_HOLIDAY_DELETION = "Cannot delete the old holidays!";
+	
 	String MSG_REGISTERED_SUCCESS = "Your profile has been registered successfully! Our team will review your profile and contact you further to approve it.";
 
 	double PAYMENT_CHARGE_PERCENT = 0.02;

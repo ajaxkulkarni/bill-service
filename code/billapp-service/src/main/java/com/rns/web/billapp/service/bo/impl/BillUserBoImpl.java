@@ -18,8 +18,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.map.JsonMappingException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -401,7 +399,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			} else if (StringUtils.equalsIgnoreCase(request.getRequestType(), "DELETE") && item.getChangeLog().getId() != null) { 
 				BillDBUserLog log = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserLog.class, ID_ATTR, item.getChangeLog().getId(), false);
 				if(log != null) {
-					session.delete(log);
+					if(log.getFromDate().getTime() <= new Date().getTime()) {
+						response.setResponse(ERROR_CODE_GENERIC, ERROR_OLD_HOLIDAY_DELETION);
+					} else {
+						session.delete(log);
+					}
 				}
 			} else {
 				response.setResponse(ERROR_CODE_FATAL, ERROR_INVALID_ITEM);
