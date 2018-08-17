@@ -398,6 +398,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			} else if (item.getParentItemId() != null) {
 				// Update change log
 				BillUserLogUtil.updateBillItemLog(item, session, dao, new BillDBItemSubscription());
+			} else if (StringUtils.equalsIgnoreCase(request.getRequestType(), "DELETE") && item.getChangeLog().getId() != null) { 
+				BillDBUserLog log = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserLog.class, ID_ATTR, item.getChangeLog().getId(), false);
+				if(log != null) {
+					session.delete(log);
+				}
 			} else {
 				response.setResponse(ERROR_CODE_FATAL, ERROR_INVALID_ITEM);
 			}

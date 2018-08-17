@@ -5,7 +5,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -19,7 +23,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillSchedulerBo;
-import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBHoliday;
@@ -31,7 +34,6 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
-import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
@@ -163,7 +165,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 				BillDBOrderItems item = findItem(currentOrder, itemSub);
 				BigDecimal previousQuantity = item.getQuantity();
 				BigDecimal previousAmount = item.getAmount();
-				
+				System.out.println("Item before = >" + item.getQuantity() + " .. " + item.getId());
 				//BillDBItemInvoice invoiceItem = findItem(invoice, itemSub);
 				item.setQuantity(itemSub.getQuantity());
 				if(itemSub.getQuantity() == null || itemSub.getQuantity().equals(BigDecimal.ZERO)) {
@@ -195,6 +197,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 				if(item.getId() == null) {
 					session.persist(item);
 				}
+				System.out.println("Item after = >" + item.getQuantity() + " .. " + item.getId());
 				/*if(invoiceItem.getId() == null) {
 					session.persist(invoiceItem);
 				}*/
@@ -204,10 +207,12 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 			} else {
 				currentOrder.setStatus(STATUS_ACTIVE);
 			}
+			//currentOrder.setOrderItems(orderItems);
 			currentOrder.setAmount(orderTotal);
+			//currentOrder.setOrderItems(orderItems);
 			if(currentOrder.getId() == null) {
 				session.persist(currentOrder);
-			}
+			} 
 			/*if(invoice.getId() == null) {
 				session.persist(invoice);
 			}*/
@@ -295,7 +300,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 			return item;
 		}
 		for(BillDBOrderItems orderItem: currentOrder.getOrderItems()) {
-			if(orderItem.getOrder() != null && orderItem.getOrder().getId() == currentOrder.getId()) {
+			if(orderItem.getOrder() != null && orderItem.getOrder().getId() == currentOrder.getId() && itemSub.getId() == orderItem.getSubscribedItem().getId()) {
 				return orderItem;
 			}
 		}
