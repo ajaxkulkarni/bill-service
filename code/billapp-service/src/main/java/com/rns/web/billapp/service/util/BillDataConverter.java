@@ -274,6 +274,20 @@ public class BillDataConverter implements BillConstants {
 		return item;
 	}
 	
+	public static BillItem getItem(BillDBItemBusiness itemBusiness) throws IllegalAccessException, InvocationTargetException {
+		if(itemBusiness == null) {
+			return null;
+		}
+		BillItem item = new BillItem();
+		NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+		if(itemBusiness.getParent() != null) {
+			nullAwareBeanUtils.copyProperties(item, itemBusiness.getParent());
+			item.setParentItemId(itemBusiness.getParent().getId());
+		}
+		nullAwareBeanUtils.copyProperties(item, itemBusiness);
+		return item;
+	}
+	
 	public static BillBusiness getBusiness(BillDBUserBusiness billDBUserBusiness) throws IllegalAccessException, InvocationTargetException {
 		BillBusiness business = new BillBusiness();
 		BillSector sector = new BillSector();

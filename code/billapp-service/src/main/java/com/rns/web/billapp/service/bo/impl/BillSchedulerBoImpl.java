@@ -391,7 +391,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 			logs.addAll(subscribedItemLogs);
 		}
 		List<BillUserLog> businessItemLogs = BillUserLogUtil.getUserLogs(new BillLogDAOImpl(session).getBusinessItemQuantityLogs(dateString));
-		if(CollectionUtils.isNotEmpty(parentItemLogs)) {
+		if(CollectionUtils.isNotEmpty(businessItemLogs)) {
 			logs.addAll(businessItemLogs);
 		}
 		return logs;

@@ -103,7 +103,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		props.put("mail.smtp.host", MAIL_HOST);
 		props.put("mail.smtp.port", MAIL_PORT);
 
-		LoggingUtil.logMessage("Mail credentials being used .." + MAIL_ID + " -- " + MAIL_PASSWORD);
+		LoggingUtil.logMessage("Mail credentials being used .." + MAIL_ID);
 		
 		Session session = Session.getInstance(props, new javax.mail.Authenticator() {
 			protected PasswordAuthentication getPasswordAuthentication() {
@@ -253,7 +253,9 @@ public class BillMailUtil implements BillConstants, Runnable {
 			if(CollectionUtils.isNotEmpty(currentBusiness.getItems())) {
 				StringBuilder itemBuilder = new StringBuilder();
 				for(BillItem item: currentBusiness.getItems()) {
-					itemBuilder.append(item.getName()).append(",");
+					if(StringUtils.isNotBlank(item.getName())) {
+						itemBuilder.append(item.getName()).append(",");
+					}
 					if(item.getChangeLog() != null) {
 						result = StringUtils.replace(result, "{fromDate}", CommonUtils.convertDate(item.getChangeLog().getFromDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
 						result = StringUtils.replace(result, "{toDate}", CommonUtils.convertDate(item.getChangeLog().getToDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
@@ -335,6 +337,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_APPROVAL, "profile_approved.html");
 			put(MAIL_TYPE_NEW_CUSTOMER, "customer_added.html");
 			put(MAIL_TYPE_PAUSE_CUSTOMER, "customer_pause_delivery.html");
+			put(MAIL_TYPE_PAUSE_BUSINESS, "business_pause_delivery.html");
 			put(MAIL_TYPE_HOLIDAY, "customer_holiday.html");
 		}
 	});
@@ -348,6 +351,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_APPROVAL, "Congratulations! Your account has been verified and approved!");
 			put(MAIL_TYPE_NEW_CUSTOMER, "{businessName} has added you as a customer to their Pay Per Bill account");
 			put(MAIL_TYPE_PAUSE_CUSTOMER, "{businessName} has paused your delivery");
+			put(MAIL_TYPE_PAUSE_BUSINESS, "{businessName} has paused the service");
 			put(MAIL_TYPE_HOLIDAY, "Public holiday alert");
 		}
 	});

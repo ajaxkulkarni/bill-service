@@ -3,6 +3,7 @@ package com.rns.billapp.web.service;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -12,11 +13,13 @@ import java.util.List;
 
 import javax.ws.rs.core.MultivaluedMap;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.log4j.Logger;
 import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.hibernate.HibernateException;
+import org.hibernate.Session;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -35,11 +38,16 @@ import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.bo.impl.BillAdminBoImpl;
 import com.rns.web.billapp.service.bo.impl.BillSchedulerBoImpl;
 import com.rns.web.billapp.service.bo.impl.BillUserBoImpl;
+import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
+import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
 import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillLogAppender;
 import com.rns.web.billapp.service.util.BillMailUtil;
 import com.rns.web.billapp.service.util.BillPropertyUtil;
@@ -54,7 +62,7 @@ import com.sun.jersey.api.client.filter.LoggingFilter;
 import com.sun.jersey.api.json.JSONConfiguration;
 import com.sun.jersey.core.util.MultivaluedMapImpl;
 
-@Ignore
+//@Ignore
 public class BillTest {
 	
 	private BillUserBoImpl userbo;
@@ -202,23 +210,71 @@ public class BillTest {
 	}
 	
 	@Test
-	public void testPauseDeliveryBusinessItem() {
+	public void testPauseDeliveryBusinessItem() throws InterruptedException {
 		BillServiceRequest request = new BillServiceRequest();
-		BillItem item = new BillItem();
-		item.setQuantity(new BigDecimal(0));
 		BillUserLog changeLog = new BillUserLog();
-		changeLog.setFromDate(CommonUtils.convertDate("2018-05-19"));
-		changeLog.setToDate(CommonUtils.convertDate("2018-05-23"));
+		changeLog.setFromDate(CommonUtils.convertDate("2018-08-19"));
+		changeLog.setToDate(CommonUtils.convertDate("2018-08-23"));
 		changeLog.setChangeType(BillConstants.LOG_CHANGE_TEMP);
-		item.setChangeLog(changeLog);
+		
+		BillItem item1 = new BillItem();
+		item1.setQuantity(new BigDecimal(0));
+		item1.setChangeLog(changeLog);
 		BillItem parentItem = new BillItem();
-		parentItem.setId(1);
-		item.setParentItem(parentItem);
-		request.setItem(item);
+		parentItem.setId(5);
+		item1.setParentItem(parentItem);
+		
+		BillItem item2 = new BillItem();
+		item2.setQuantity(new BigDecimal(0));
+		item2.setChangeLog(changeLog);
+		BillItem parentItem2 = new BillItem();
+		parentItem2.setId(6);
+		item2.setParentItem(parentItem2);
+		
+		
+		List<BillItem> items = new ArrayList<BillItem>();
+		items.add(item1);
+		items.add(item2);
+		request.setItems(items);
+		//request.setItem(item);
 		BillUser user = new BillUser();
 		request.setUser(user);
 		System.out.println(userbo.updateCustomerItemTemporary(request).getResponse());
+		
+		Thread.currentThread().wait();
 	}
+	
+	
+	@Test
+	public void testPauseDeliveryBusinessItemMultiple() throws IllegalAccessException, InvocationTargetException  {
+		BillServiceRequest request = new BillServiceRequest();
+		BillUserLog changeLog = new BillUserLog();
+		changeLog.setFromDate(CommonUtils.convertDate("2018-08-19"));
+		changeLog.setToDate(CommonUtils.convertDate("2018-08-19"));
+		changeLog.setChangeType(BillConstants.LOG_CHANGE_TEMP);
+		Session session = userbo.getSessionFactory().openSession();
+		List<BillDBItemBusiness> items = new BillGenericDaoImpl(session).getEntitiesByKey(BillDBItemBusiness.class, "business.id", 11, true);
+		if(CollectionUtils.isNotEmpty(items)) {
+			List<BillItem> requestItems = new ArrayList<BillItem>();
+			System.out.println("Found " + items.size());
+			for(BillDBItemBusiness itemBusiness: items) {
+				BillItem item = new BillItem();
+				item.setChangeLog(changeLog);
+				item.setQuantity(BigDecimal.ZERO);
+				item.setParentItem(BillDataConverter.getItem(itemBusiness));
+				requestItems.add(item);
+			}
+			request.setItems(requestItems);
+			BillUser user = new BillUser();
+			request.setUser(user);
+			System.out.println(userbo.updateCustomerItemTemporary(request).getResponse());
+		}
+				
+		CommonUtils.closeSession(session);
+		//request.setItem(item);
+		
+	}
+	
 	
 	@Test
 	public void testUpdateInvoice() {
@@ -334,13 +390,15 @@ public class BillTest {
 	
 	@Test
 	public void testInvoiceRoutine() throws ParseException {
-		for(int i = 3; i <= 31; i++) {
+		/*for(int i = 3; i <= 31; i++) {
 			String day = "" + i;
 			if(i < 10) {
 				day = "0" + i;
 			}
 			scheduler.calculateInvoices(new SimpleDateFormat(BillConstants.DATE_FORMAT).parse("2018-07-" + day));
-		}
+		}*/
+		
+		scheduler.calculateInvoices(new SimpleDateFormat(BillConstants.DATE_FORMAT).parse("2018-08-19"));
 	}
 	
 	@Test
@@ -384,7 +442,7 @@ public class BillTest {
 	public void testMail() {
 		BillMailUtil mailUtil = new BillMailUtil(BillConstants.MAIL_TYPE_REGISTRATION);
 		BillUser user = new BillUser();
-		user.setEmail("mcm.abhishek@gmail.com");
+		user.setEmail("ajinkyashiva@gmail.com");
 		user.setName("Abhishek");
 		mailUtil.setUser(user);
 		mailUtil.sendMail();
@@ -444,5 +502,10 @@ public class BillTest {
 		invoice.setYear(2018);
 		request.setInvoice(invoice);
 		adminBo.generateBills(request);
+	}
+	
+	@Test
+	public void testHoliday() {
+		new BillLogDAOImpl(adminBo.getSessionFactory().openSession()).getHolidays(9, 23, CommonUtils.convertDate("2018-09-23"));
 	}
 }

@@ -361,8 +361,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 	public BillServiceResponse updateCustomerItemTemporary(BillServiceRequest request) {
 		BillServiceResponse response = new BillServiceResponse();
 		BillItem item = request.getItem();
-		if (item == null || (item.getPrice() == null && item.getQuantity() == null) || item.getChangeLog() == null || item.getChangeLog().getFromDate() == null
-				|| item.getChangeLog().getToDate() == null) {
+		if (item == null && CollectionUtils.isEmpty(request.getItems())) {
 			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
 			return response;
 		}
@@ -371,7 +370,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			if (item.getId() != null) {
+			if (item != null && item.getId() != null) {
 				BillDBItemSubscription dbSubscribedItem = dao.getEntityByKey(BillDBItemSubscription.class, ID_ATTR, item.getId(), false);
 				if (dbSubscribedItem != null) {
 					// Update change log
@@ -383,17 +382,30 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillBusiness business = new BillBusiness();
 					business.setName(dbSubscribedItem.getSubscription().getBusiness().getName());
 					billUser.setCurrentBusiness(business);
-					sendLogUpdate(logItem, billUser);
+					sendLogUpdate(logItem, billUser, MAIL_TYPE_PAUSE_CUSTOMER);
 				}
-			} else if (item.getParentItem() != null && item.getParentItem().getId() != null) {
-				BillDBItemBusiness businessItem = dao.getEntityByKey(BillDBItemBusiness.class, ID_ATTR, item.getParentItem().getId(), false);
-				if (businessItem != null) {
-					BillDBItemSubscription subscribed = new BillDBItemSubscription();
-					subscribed.setBusinessItem(businessItem);
-					// Update change log
-					BillUserLogUtil.updateBillItemLog(item, session, dao, subscribed);
+			} else if (item != null && item.getParentItem() != null && item.getParentItem().getId() != null) {
+				pauseBusinessItem(item, session, dao);
+			} else if (CollectionUtils.isNotEmpty(request.getItems())) { 
+				//Pause multiple business items for pause business service
+				BillDBItemBusiness itemBusiness = null;
+				for(BillItem businessItem: request.getItems()) {
+					itemBusiness = pauseBusinessItem(businessItem, session, dao);
 				}
-			} else if (item.getParentItemId() != null) {
+				if(itemBusiness != null) {
+					//Send log update to customers
+					List<BillDBSubscription> subscriptions = new BillSubscriptionDAOImpl(session).getBusinessSubscriptions(itemBusiness.getBusiness().getId());
+					if(CollectionUtils.isNotEmpty(subscriptions)) {
+						for(BillDBSubscription subscription: subscriptions) {
+							BillUser billUser = new BillUser();
+							new NullAwareBeanUtils().copyProperties(billUser, subscription);
+							BillBusiness business = BillDataConverter.getBusiness(itemBusiness.getBusiness());
+							billUser.setCurrentBusiness(business);
+							sendLogUpdate(request.getItems().get(0), billUser, MAIL_TYPE_PAUSE_BUSINESS);
+						}
+					}
+				}
+			} else if (item != null && item.getParentItemId() != null) {
 				// Update change log
 				BillUserLogUtil.updateBillItemLog(item, session, dao, new BillDBItemSubscription());
 			} else if (StringUtils.equalsIgnoreCase(request.getRequestType(), "DELETE") && item.getChangeLog().getId() != null) { 
@@ -418,13 +430,24 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		return response;
 	}
 
-	private void sendLogUpdate(BillItem item, BillUser billUser) {
+	private BillDBItemBusiness pauseBusinessItem(BillItem item, Session session, BillGenericDaoImpl dao) {
+		BillDBItemBusiness businessItem = dao.getEntityByKey(BillDBItemBusiness.class, ID_ATTR, item.getParentItem().getId(), false);
+		if (businessItem != null) {
+			BillDBItemSubscription subscribed = new BillDBItemSubscription();
+			subscribed.setBusinessItem(businessItem);
+			// Update change log
+			BillUserLogUtil.updateBillItemLog(item, session, dao, subscribed);
+		}
+		return businessItem;
+	}
+
+	private void sendLogUpdate(BillItem item, BillUser billUser, String mailType) {
 		List<BillItem> items = new ArrayList<BillItem>();
 		items.add(item);
 		billUser.getCurrentBusiness().setItems(items);
-		BillMailUtil billMailUtil = new BillMailUtil(MAIL_TYPE_PAUSE_CUSTOMER, billUser);
+		BillMailUtil billMailUtil = new BillMailUtil(mailType, billUser);
 		executor.execute(billMailUtil);
-		BillSMSUtil.sendSMS(billUser, null, MAIL_TYPE_PAUSE_CUSTOMER);
+		BillSMSUtil.sendSMS(billUser, null, mailType);
 	}
 
 	public BillServiceResponse updateCustomerInvoice(BillServiceRequest request) {
