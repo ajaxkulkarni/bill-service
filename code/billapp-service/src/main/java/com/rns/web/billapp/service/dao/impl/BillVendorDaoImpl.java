@@ -35,7 +35,7 @@ public class BillVendorDaoImpl {
 	
 	public List<BillDBSubscription> getDeliveries(Integer businessId) {
 		Criteria criteria = session.createCriteria(BillDBSubscription.class)
-				 /*.add(Restrictions.eq("status", BillConstants.STATUS_ACTIVE))*/;
+				 .add(BillGenericDaoImpl.activeCriteria());
 				 //.add(Restrictions.eq("subscriptions.businessItem.status", BillConstants.STATUS_ACTIVE))
 				 //.add(Restrictions.eq("subscriptions.businessItem.parent.status", BillConstants.STATUS_ACTIVE));
 				
