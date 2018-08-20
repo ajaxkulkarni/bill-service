@@ -679,6 +679,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			BillSubscriptionDAOImpl dao = new BillSubscriptionDAOImpl(session);
 			BillDBSubscription customer = dao.getSubscriptionDetails(request.getUser().getId());
+			if(customer == null) {
+				response.setResponse(ERROR_CODE_GENERIC, ERROR_CUSTOMER_PROFILE_NOT_FOUND);
+				return response;
+			}
 			BillUser customerDetails = BillDataConverter.getCustomerDetails(new NullAwareBeanUtils(), customer);
 			//Additional info for profile
 			BillSubscription currentSubscription = customerDetails.getCurrentSubscription();

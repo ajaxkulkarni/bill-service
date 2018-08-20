@@ -33,6 +33,9 @@ public interface BillConstants {
 	String ERROR_INVOICE_NOT_FOUND = "Invalid invoice details!";
 	String ERROR_NO_CUSTOMER = "Customer profile not found!";
 	String ERROR_OLD_HOLIDAY_DELETION = "Cannot delete the old holidays!";
+	String ERROR_INVALID_CREDENTIALS = "Invalid credentials!";
+	String ERROR_CUSTOMER_PROFILE_NOT_FOUND = "Customer profile not found! Did you delete this customer?";
+	
 	
 	String MSG_REGISTERED_SUCCESS = "Your profile has been registered successfully! Our team will review your profile and contact you further to approve it.";
 
