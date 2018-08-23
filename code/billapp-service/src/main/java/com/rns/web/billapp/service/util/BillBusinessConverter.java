@@ -183,10 +183,12 @@ public class BillBusinessConverter {
 	public static void updatePaymentURL(BillInvoice invoice, BillDBInvoice dbInvoice, BillDBUser vendor, BillUser customer, BillPaymentCredentials credentials)
 			throws JsonParseException, JsonMappingException, IOException {
 		credentials = BillPaymentUtil.createPaymentRequest(customer, credentials, invoice, true);
-		invoice.setPaymentUrl(credentials.getLongUrl());
-		dbInvoice.setPaymentUrl(credentials.getLongUrl());
-		dbInvoice.setPaymentRequestId(credentials.getPaymentRequestId());
-		BillBusinessConverter.setPaymentCredentials(vendor, credentials);
+		if(credentials != null) {
+			invoice.setPaymentUrl(credentials.getLongUrl());
+			dbInvoice.setPaymentUrl(credentials.getLongUrl());
+			dbInvoice.setPaymentRequestId(credentials.getPaymentRequestId());
+			BillBusinessConverter.setPaymentCredentials(vendor, credentials);
+		}
 	}
 
 

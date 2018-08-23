@@ -11,6 +11,7 @@ public class BillPropertyUtil {
 	
 	public static final String PROPERTIES_PATH = "/home/service/properties/billapp.properties";
 	
+	//Insta
 	public static final String PAYMENT_URL = "payment.url";
 	public static final String PAYMENT_REFERRER =  "public.refferer";
 	public static final String PAYMENT_CLIENT_ID = "client.id";
@@ -21,11 +22,23 @@ public class BillPropertyUtil {
 	public static final String PAYMENT_WEBHOOK = "payment.webhook";
 	public static final String PAYMENT_RESULT = "payment.result";
 	public static final String PAYMENT_LINK = "payment.link";
+	//HDFC
 	public static final String HDFC_KEY = "hdfc.working.key";
 	public static final String HDFC_MERCHANT_ID = "hdfc.merchant.id";
 	public static final String HDFC_ACCESS_CODE = "hdfc.access.code";
 	public static final String HDFC_URL = "hdfc.url";
 	public static final String HDFC_PAYMENT_RESULT = "hdfc.payment.webhook";
+	//Atom
+	public static final String ATOM_LOGIN = "atom.login";
+	public static final String ATOM_PASSWORD = "atom.password";
+	public static final String ATOM_REQUEST_HASH = "atom.request.hash";
+	public static final String ATOM_RESPONSE_HASH = "atom.response.hash";
+	public static final String ATOM_PRODUCT_ID = "atom.product.id";
+	public static final String ATOM_CLIENT_CODE = "atom.client.code";
+	public static final String ATOM_PAYMENT_URL = "atom.payment.url";
+	public static final String ATOM_REDIRECT_URL = "atom.redirect.url";
+	
+	
 	
 	public static String getProperty(String name) {
 		try {

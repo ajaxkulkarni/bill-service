@@ -2,11 +2,9 @@ package com.rns.web.billapp.service;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
@@ -19,6 +17,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -35,6 +34,7 @@ import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
 import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.BillPaymentUtil;
 import com.rns.web.billapp.service.util.BillPropertyUtil;
 import com.rns.web.billapp.service.util.LoggingUtil;
 import com.sun.jersey.core.header.FormDataContentDisposition;
@@ -327,6 +327,45 @@ public class BillUserController {
 			invoice.setAmount(new BigDecimal(responseMap.get("amount")));
 			invoice.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_HDFC);
 			invoice.setPaymentMode(responseMap.get("payment_mode"));
+			BillServiceRequest request = new BillServiceRequest();
+			request.setInvoice(invoice);
+			BillServiceResponse response = userBo.completePayment(request);
+			LoggingUtil.logMessage("Redirect after payment to --" + response.getInvoice().getPaymentUrl());
+			url = new URI(response.getInvoice().getPaymentUrl());
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+
+		return Response.temporaryRedirect(url).build();
+	}
+	
+	//{date=[Thu Aug 23 02:05:39 IST 2018], surcharge=[0.00], CardNumber=[null], 
+	//prod=[Multi], clientcode=[170000117101490], mmp_txn=[100001662544], 
+	//signature=[e3d51f151f4d4cc926f16e123f6a8901ab3437c71edfc024bf681a02a19e788fc8e44c96fd06b0b693b876882e3c72d5ea95c12b78a22a5348e8fbd7c7bb7513],
+	//udf5=[null], amt=[210.00], udf6=[null], udf3=[null], merchant_id=[231], udf4=[null], udf1=[null], udf2=[null], 
+	//discriminator=[NB], mer_txn=[11], f_code=[Ok], bank_txn=[1000016625441], udf9=[null], bank_name=[Atom Bank]}
+	@POST
+	@Path("/atom/paymentResult")
+	// @Produces(MediaType.APPLICATION_JSON)
+	public Response atomPaymentResult(MultivaluedMap<String, String> formParams) {
+		URI url = null;
+		try {
+			
+			LoggingUtil.logMessage("ATOM Payment result -- " + formParams);
+			
+			BillInvoice invoice = new BillInvoice();
+			invoice.setId(new Integer(formParams.getFirst("mer_txn")));
+			invoice.setPaymentRequestId(formParams.getFirst("bank_txn"));
+			invoice.setPaymentId(formParams.getFirst("mmp_txn"));
+			invoice.setStatus(formParams.getFirst("f_code"));
+			invoice.setAmount(new BigDecimal(formParams.getFirst("amt")));
+			invoice.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_ATOM);
+			invoice.setPaymentMode(formParams.getFirst("discriminator"));
+			String signature = BillPaymentUtil.getResponseHash(invoice, formParams.getFirst("prod"));
+			if(!StringUtils.equals(signature, formParams.getFirst("signature"))) {
+				url = new URI(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + "Failed") ;
+				return Response.temporaryRedirect(url).build();
+			}
 			BillServiceRequest request = new BillServiceRequest();
 			request.setInvoice(invoice);
 			BillServiceResponse response = userBo.completePayment(request);

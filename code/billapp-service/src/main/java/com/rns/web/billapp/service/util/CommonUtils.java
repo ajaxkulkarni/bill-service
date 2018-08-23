@@ -6,8 +6,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -243,6 +245,11 @@ public class CommonUtils {
 		} catch (Exception e) {
 		}
 		return null;
+	}
+
+
+	public static String encode(String string) throws UnsupportedEncodingException {
+		return URLEncoder.encode(string, "UTF-8");
 	}
 	
 }

@@ -41,6 +41,7 @@ public class BillInvoice {
 	private String paymentMedium;
 	private String paymentMode;
 	private String paymentMessage;
+	private String atomPaymentUrl;
 	
 	public Integer getId() {
 		return id;
@@ -197,6 +198,12 @@ public class BillInvoice {
 	}
 	public void setPaymentMessage(String paymentMessage) {
 		this.paymentMessage = paymentMessage;
+	}
+	public String getAtomPaymentUrl() {
+		return atomPaymentUrl;
+	}
+	public void setAtomPaymentUrl(String atomPaymentUrl) {
+		this.atomPaymentUrl = atomPaymentUrl;
 	}
 	
 }

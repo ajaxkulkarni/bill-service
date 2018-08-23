@@ -758,6 +758,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				}
 				if(!StringUtils.equalsIgnoreCase(REQUEST_TYPE_EMAIL, request.getRequestType())) {
 					BillPaymentUtil.prepareHdfcRequest(invoice, customer);
+					BillPaymentUtil.prepareAtomRequest(invoice, vendor);
 					//Only if InstaMojo payment request is not already generated
 					if(StringUtils.isBlank(invoice.getPaymentUrl())) {
 						BillBusinessConverter.updatePaymentURL(invoice, dbInvoice, vendor, customer, credentials);
@@ -831,12 +832,12 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			invoice.setPaymentType(PAYMENT_ONLINE);
 			invoice.setPaymentMedium(currentInvoice.getPaymentMedium());
 			invoice.setPaymentMode(currentInvoice.getPaymentMode());
-			if(StringUtils.equalsIgnoreCase("Success", invoice.getStatus())) {
+			if(StringUtils.equalsIgnoreCase("Success", invoice.getStatus()) || StringUtils.equalsIgnoreCase("Ok", invoice.getStatus())) {
 				invoice.setStatus(BillConstants.INVOICE_STATUS_PAID);
 			}
 			NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
 			nullAwareBeanUtils.copyProperties(currentInvoice, invoice);
-			currentInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + URLEncoder.encode((currentInvoice.getStatus() + "/" + invoice.getSubscription().getBusiness().getName() + "/" + invoice.getAmount() + "/" + invoice.getPaymentId()), "UTF-8"));
+			currentInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + (currentInvoice.getStatus() + "/" + CommonUtils.encode(invoice.getSubscription().getBusiness().getName()) + "/" + invoice.getAmount() + "/" + invoice.getPaymentId()));
 			response.setInvoice(currentInvoice);
 			
 			//updateTransactionLog(session, invoice);

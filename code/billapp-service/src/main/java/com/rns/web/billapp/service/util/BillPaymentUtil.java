@@ -2,9 +2,7 @@ package com.rns.web.billapp.service.util;
 
 import java.io.IOException;
 import java.io.StringReader;
-import java.math.BigDecimal;
-import java.math.MathContext;
-import java.math.RoundingMode;
+import java.util.Date;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
@@ -21,6 +19,7 @@ import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -54,7 +53,8 @@ public class BillPaymentUtil {
 			request.add("phone", user.getPhone());
 			request.add("referrer", BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_REFERRER));
 			BillPaymentCredentials clientCredentials = getToken(null, null);
-			ClientResponse response = webResource.type(MediaType.APPLICATION_FORM_URLENCODED).header(AUTHORIZATION_HEADER, "Bearer " + clientCredentials.getAccess_token()).post(ClientResponse.class, request);
+			ClientResponse response = webResource.type(MediaType.APPLICATION_FORM_URLENCODED)
+					.header(AUTHORIZATION_HEADER, "Bearer " + clientCredentials.getAccess_token()).post(ClientResponse.class, request);
 
 			String entity = response.getEntity(String.class);
 			LoggingUtil.logMessage("Output from create insta user URL ...." + response.getStatus() + " RESP:" + entity + " \n");
@@ -94,7 +94,7 @@ public class BillPaymentUtil {
 		if (StringUtils.isNotBlank(token)) {
 			request.add("refresh_token", token);
 			request.add("grant_type", "refresh_token");
-		} else if(StringUtils.isNotBlank(name)) {
+		} else if (StringUtils.isNotBlank(name)) {
 			request.add("username", name);
 			request.add("password", COMMON_KEY);
 			request.add("grant_type", "password");
@@ -133,13 +133,13 @@ public class BillPaymentUtil {
 			request.add("account_number", details.getAccountNumber());
 			request.add("ifsc_code", details.getIfscCode());
 
-			ClientResponse response = webResource.type(MediaType.APPLICATION_FORM_URLENCODED).header(AUTHORIZATION_HEADER, "Bearer " + credentials.getAccess_token())
-					.put(ClientResponse.class, request);
+			ClientResponse response = webResource.type(MediaType.APPLICATION_FORM_URLENCODED)
+					.header(AUTHORIZATION_HEADER, "Bearer " + credentials.getAccess_token()).put(ClientResponse.class, request);
 
 			String entity = response.getEntity(String.class);
 			LoggingUtil.logMessage("Output from Bank details URL ...." + response.getStatus() + " RESP:" + entity + " \n");
-			
-			if(response.getStatus() == 401 && retry) {
+
+			if (response.getStatus() == 401 && retry) {
 				credentials = getToken(credentials.getRefresh_token(), null);
 				LoggingUtil.logMessage("Got new token --" + credentials.getAccess_token());
 				return updateBankDetails(details, credentials, false);
@@ -151,12 +151,13 @@ public class BillPaymentUtil {
 		return credentials;
 	}
 
-	public static BillPaymentCredentials createPaymentRequest(BillUser customer, BillPaymentCredentials credentials, BillInvoice invoice, boolean retry) throws JsonParseException, JsonMappingException, IOException {
+	public static BillPaymentCredentials createPaymentRequest(BillUser customer, BillPaymentCredentials credentials, BillInvoice invoice, boolean retry)
+			throws JsonParseException, JsonMappingException, IOException {
 		ClientConfig config = new DefaultClientConfig();
 		config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
 		Client client = Client.create(config);
 		client.addFilter(new LoggingFilter(System.out));
-		
+
 		String url = BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_URL) + "v2/payment_requests/";
 		WebResource webResource = client.resource(url);
 
@@ -169,27 +170,33 @@ public class BillPaymentUtil {
 		request.add("buyer_name", customer.getName());
 		request.add("email", customer.getEmail());
 		request.add("phone", customer.getPhone());
-		//request.add("redirect_url", customer.getName());
+		// request.add("redirect_url", customer.getName());
 		request.add("webhook", BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_WEBHOOK));
-		//BigDecimal internetHandlingFees = invoice.getPayable().multiply(new BigDecimal(BillConstants.PAYMENT_CHARGE_PERCENT), new MathContext(2, RoundingMode.HALF_UP));
-		//request.add("partner_fee_type", "fixed");
-		//request.add("partner_fee", "0"); //TODO change later
-		
-		//LoggingUtil.logMessage("Partner commission is ==>" + internetHandlingFees.negate().toString());
+		// BigDecimal internetHandlingFees = invoice.getPayable().multiply(new
+		// BigDecimal(BillConstants.PAYMENT_CHARGE_PERCENT), new MathContext(2,
+		// RoundingMode.HALF_UP));
+		// request.add("partner_fee_type", "fixed");
+		// request.add("partner_fee", "0"); //TODO change later
 
-		ClientResponse response = webResource.type(MediaType.APPLICATION_FORM_URLENCODED).header(AUTHORIZATION_HEADER, "Bearer " + credentials.getAccess_token())
-				.post(ClientResponse.class, request);
+		// LoggingUtil.logMessage("Partner commission is ==>" +
+		// internetHandlingFees.negate().toString());
+
+		ClientResponse response = webResource.type(MediaType.APPLICATION_FORM_URLENCODED)
+				.header(AUTHORIZATION_HEADER, "Bearer " + credentials.getAccess_token()).post(ClientResponse.class, request);
 
 		String entity = response.getEntity(String.class);
 		LoggingUtil.logMessage("Output from Payment request URL ...." + response.getStatus() + " RESP:" + entity + " \n");
-		
-		if(response.getStatus() == 401 && retry) {
+
+		if (response.getStatus() == 401 && retry) {
 			credentials = getToken(credentials.getRefresh_token(), null);
+			if(credentials == null) {
+				return null;
+			}
 			LoggingUtil.logMessage("Got new token --" + credentials.getAccess_token());
 			return createPaymentRequest(customer, credentials, invoice, false);
 		}
 		JsonNode node = new ObjectMapper().readTree(new StringReader(entity));
-		if(node != null && node.get("longurl") != null) {
+		if (node != null && node.get("longurl") != null) {
 			credentials.setLongUrl(node.get("longurl").getTextValue());
 			credentials.setPaymentRequestId(node.get("id").getTextValue());
 		}
@@ -202,55 +209,147 @@ public class BillPaymentUtil {
 
 	public static void prepareHdfcRequest(BillInvoice invoice, BillUser customer) {
 		AesCryptUtil crypt = new AesCryptUtil(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_KEY));
-		invoice.setHdfcRequest(crypt.encrypt("tid=" + invoice.getId() 
-				+ "&merchant_id=" + BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_MERCHANT_ID)
-				+ "&order_id=" + invoice.getId()
-				+ "&currency=INR"
-				+ "&amount=" + invoice.getAmount()
-				+ "&redirect_url=" + BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_PAYMENT_RESULT)
-				+ "&cancel_url=" + BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_PAYMENT_RESULT)
-				+ "&language=EN"
-				+ "&billing_name=" + customer.getName()
-				+ "&billing_address=" + customer.getAddress()
-				+ "&billing_city=Pune"
-				+ "&billing_state=Maharashtra"
-				/*+ "&billing_zip="*/
-				+ "&billing_country=India"
-				+ "&billing_tel=" + customer.getPhone()
-				+ "&billing_email=" + customer.getEmail()
-				+ "&delivery_name=" + customer.getName()
-				+ "&delivery_address=" + customer.getAddress()
-				+ "&delivery_city=Pune"
-				+ "&delivery_state=Maharashtra"
-				/*+ "&billing_zip="*/
-				+ "&delivery_country=India"
-				+ "&delivery_tel=" + customer.getPhone()
-				+ "&delivery_email=" + customer.getEmail()));
-	
+		invoice.setHdfcRequest(crypt.encrypt("tid=" + invoice.getId() + "&merchant_id=" + BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_MERCHANT_ID)
+				+ "&order_id=" + invoice.getId() + "&currency=INR" + "&amount=" + invoice.getPayable() + "&redirect_url="
+				+ BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_PAYMENT_RESULT) + "&cancel_url="
+				+ BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_PAYMENT_RESULT) + "&language=EN" + "&billing_name=" + customer.getName()
+				+ "&billing_address=" + customer.getAddress() + "&billing_city=Pune" + "&billing_state=Maharashtra"
+				/* + "&billing_zip=" */
+				+ "&billing_country=India" + "&billing_tel=" + customer.getPhone() + "&billing_email=" + customer.getEmail() + "&delivery_name="
+				+ customer.getName() + "&delivery_address=" + customer.getAddress() + "&delivery_city=Pune" + "&delivery_state=Maharashtra"
+				/* + "&billing_zip=" */
+				+ "&delivery_country=India" + "&delivery_tel=" + customer.getPhone() + "&delivery_email=" + customer.getEmail()));
+
 		invoice.setHdfcAccessCode(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_ACCESS_CODE));
 		invoice.setHdfcPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_URL));
-		
-		/*ClientConfig config = new DefaultClientConfig();
-		config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
-		Client client = Client.create(config);
-		client.setFollowRedirects(true);
-		client.addFilter(new LoggingFilter(System.out));
-		
-		String url = BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_URL);
-		WebResource webResource = client.resource(url);
-
-		LoggingUtil.logMessage("Calling HDFC payment request URL ==>" + url);
-
-		MultivaluedMap<String, String> request = new MultivaluedMapImpl();
-		request.add("encRequest", invoice.getHdfcRequest());
-		request.add("access_code", invoice.getHdfcAccessCode());
-
-		ClientResponse response = webResource.post(ClientResponse.class, request);
-		
-		String entity = response.getEntity(String.class);
-		LoggingUtil.logMessage("Output from HDFC Payment request URL ...." + response.getStatus() + " RESP:" + entity + " \n");*/
-		
-		
 	}
 	
+	//https://paynetzuat.atomtech.in/paynetz/epi/fts
+	//?login=231&pass=Test@123&ttype=NBFundTransfer&prodid=Multi&amt=1000.00
+	//&txncurr=INR&txnscamt=0&clientcode=MTcwMDAwMTE3MTAxNDkw&udf2=abc@gmail.com
+	//&udf5=231&txnid=1234&date=13/02/2018&custacc=1234567890
+	//&ru=https://paynetzuat.atomtech.in/paynetzclient/ResponseParam.jsp
+	//&signature=e7415bcbbccaa2f1ccd38736d0233876a459f1d489c2231e8cb1935e58990e6112c5e377f559b255526e0d9b5467788f5c4c2fa8cc308fc06e9f2ef5ff367376
+	//&mprod=<products><product><id>1</id><name>ONE</name><amount>250.00</amount></product><product><id>2</id><name>TWO</name><amount>250.00</amount></product><product><id>3</id><name>THREE</name><amount>500.00</amount></product></products>
+
+	public static void prepareAtomRequest(BillInvoice invoice, BillDBUser vendor) {
+		String login = BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_LOGIN);
+		String pass = BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PASSWORD);
+		;
+		String ttype = "NBFundTransfer";
+		//String prodid = BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID);
+		String prodid = "Multi";
+		
+		String txnid = invoice.getId().toString();
+		String amt = invoice.getPayable().toString();
+		String txncurr = "INR";
+		String reqHashKey = BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_REQUEST_HASH);
+		;
+		// login,pass,ttype,prodid,txnid,amt,txncurr
+		String signature_request = getEncodedValueWithSha2(reqHashKey, login, pass, ttype, prodid, txnid, amt, txncurr);
+		System.out.println("Request signature ::" + signature_request);
+		
+		StringBuilder builder = new StringBuilder();
+		builder.append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PAYMENT_URL)).append("?")
+			.append("login=").append(login)
+			.append("&").append("pass=").append(pass)
+			.append("&").append("ttype=").append(ttype)
+			.append("&").append("prodid=").append(prodid)
+			.append("&").append("amt=").append(amt)
+			.append("&").append("txncurr=").append(txncurr)
+			.append("&").append("txnscamt=").append("0")
+			.append("&").append("custacc=").append("1234567890")
+			.append("&").append("clientcode=").append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_CLIENT_CODE))
+			.append("&").append("txnid=").append(txnid)
+			.append("&").append("date=").append(CommonUtils.convertDate(new Date(), "dd/MM/yyyy"))
+			.append("&").append("ru=").append(/*"https://paynetzuat.atomtech.in/paynetzclient/ResponseParam.jsp"*/BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_REDIRECT_URL))
+			.append("&").append("signature=").append(signature_request)
+			.append("&").append("mprod=").append(getProducts(vendor.getEmail(), amt));
+		
+		invoice.setAtomPaymentUrl(builder.toString());
+	}
+
+	private static String getProducts(String vendorEmail, String amount) {
+		StringBuilder builder = new StringBuilder();
+		builder.append("<products>");
+		builder.append(getProduct("ONE", "0", "1"));
+		builder.append(getProduct("TWO", amount, "2"));
+		builder.append("</products>");
+		return builder.toString();
+	}
+
+	private static String getProduct(String vendorEmail, String amount, String productId) {
+		return "<product><id>" + productId + "</id><name>" + vendorEmail + "</name><amount>" + amount + "</amount></product>";
+	}
+
+	public static String getResponseHash(BillInvoice invoice, String prodId) {
+		// Response signature based on parameters
+
+		String mmp_txn = invoice.getPaymentId();
+		String mer_txn = invoice.getId().toString();
+		String f_code = invoice.getStatus();
+		String prod = prodId;
+		String discriminator = invoice.getPaymentMode();
+		String amt = invoice.getAmount().toString();
+		String bank_txn = invoice.getPaymentRequestId();
+		String respHashKey = BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_RESPONSE_HASH);
+		// mmp_txn,mer_txn, f_code, prod, discriminator, amt, bank_txn
+		String signature_response = getEncodedValueWithSha2(respHashKey, mmp_txn, mer_txn, f_code, prod, discriminator, amt, bank_txn);
+		System.out.println("Response signature ::" + signature_response);
+		return signature_response;
+	}
+
+	public static byte[] encodeWithHMACSHA2(String text, String keyString)
+			throws java.security.NoSuchAlgorithmException, java.security.InvalidKeyException, java.io.UnsupportedEncodingException {
+
+		java.security.Key sk = new javax.crypto.spec.SecretKeySpec(keyString.getBytes("UTF-8"), "HMACSHA512");
+		javax.crypto.Mac mac = javax.crypto.Mac.getInstance(sk.getAlgorithm());
+		mac.init(sk);
+
+		byte[] hmac = mac.doFinal(text.getBytes("UTF-8"));
+
+		return hmac;
+	}
+
+	/*
+	 * Convert from byte array to HexString
+	 */
+	public static String byteToHexString(byte byData[]) {
+		StringBuilder sb = new StringBuilder(byData.length * 2);
+
+		for (int i = 0; i < byData.length; i++) {
+			int v = byData[i] & 0xff;
+			if (v < 16)
+				sb.append('0');
+			sb.append(Integer.toHexString(v));
+		}
+
+		return sb.toString();
+	}
+
+	/*
+	 * Encoded with HMACSHA512 and encoded with utf-8 using url encoder for
+	 * given list of parameter values appended with the key
+	 */
+	public static String getEncodedValueWithSha2(String hashKey, String... param) {
+		String resp = null;
+
+		StringBuilder sb = new StringBuilder();
+		for (String s : param) {
+			sb.append(s);
+		}
+
+		try {
+			System.out.println("[getEncodedValueWithSha2]String to Encode =" + sb.toString());
+			resp = byteToHexString(encodeWithHMACSHA2(sb.toString(), hashKey));
+			// resp = URLEncoder.encode(resp,"UTF-8");
+
+		} catch (Exception e) {
+			System.out.println("[getEncodedValueWithSha2]Unable to encocd value with key :" + hashKey + " and input :" + sb.toString());
+			e.printStackTrace();
+		}
+
+		return resp;
+	}
+
 }
