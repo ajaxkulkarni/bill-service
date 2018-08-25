@@ -1,6 +1,5 @@
 package com.rns.web.billapp.service.util;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.HashMap;
@@ -21,7 +20,8 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 
 public class BillSMSUtil implements BillConstants {
 	
-	private static final String SMS_URL = "http://api.msg91.com/api/sendhttp.php?sender=PAYBIL&route=4&mobiles={mobiles}&authkey=193344AsiDSe0j5a5db681&country=0&message={message}"; 
+	private static final String SMS_URL = "http://api.msg91.com/api/sendhttp.php?sender=PAYBIL&route=4&mobiles={mobiles}&authkey=193344AsiDSe0j5a5db681&country=0&message={message}";
+	private static final String ADMIN_PHONES = "9923283604,9623736773"; 
 	
 	public static String sendSMS(BillUser user, BillInvoice invoice, String type) {
 		String result = "";
@@ -33,7 +33,13 @@ public class BillSMSUtil implements BillConstants {
 			Client client = Client.create(config);
 			String smsUrl = SMS_URL;
 			smsUrl = StringUtils.replace(smsUrl, "{message}", URLEncoder.encode(result, "UTF-8"));
-			smsUrl = StringUtils.replace(smsUrl, "{mobiles}", user.getPhone());
+			
+			if (StringUtils.contains(type, "Admin")) {
+				smsUrl = StringUtils.replace(smsUrl, "{mobiles}", ADMIN_PHONES);
+			} else {
+				smsUrl = StringUtils.replace(smsUrl, "{mobiles}", user.getPhone());
+			}
+			
 			WebResource webResource;
 			webResource = client.resource(smsUrl);
 			ClientResponse response = webResource.get(ClientResponse.class);
@@ -95,6 +101,7 @@ public class BillSMSUtil implements BillConstants {
 			put(MAIL_TYPE_PAUSE_CUSTOMER, "Hello {name}! {businessName} has paused the delivery for {itemName} from {fromDate} to {toDate}.");
 			put(MAIL_TYPE_PAUSE_BUSINESS, "Hello {name}! {businessName} has paused the delivery for {sector} from {fromDate} to {toDate}.");
 			put(MAIL_TYPE_HOLIDAY, "Hello {name}! Your order from {businessName} for {sector} will not be delivered today due to a public holiday - {holidayName}");
+			put(MAIL_TYPE_REGISTRATION_ADMIN, "We have a new registration - \n Name - {name} \n Email {email} \n Phone - {phone}");
 		}
 	});
 	

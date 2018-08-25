@@ -64,6 +64,7 @@ public interface BillConstants {
 	String MAIL_TYPE_PAYMENT_RESULT = "PaymentMail";
 	String MAIL_TYPE_PAYMENT_RESULT_VENDOR = "PaymentMailVendor";
 	String MAIL_TYPE_REGISTRATION = "RegistrationSuccess";
+	String MAIL_TYPE_REGISTRATION_ADMIN = "RegistrationSuccessAdmin";
 	String MAIL_TYPE_APPROVAL = "ProfileApproved";
 	String MAIL_TYPE_NEW_CUSTOMER = "CustomerAdded";
 	String MAIL_TYPE_PAUSE_CUSTOMER = "PauseDeliveryCustomer";

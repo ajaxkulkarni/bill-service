@@ -2,6 +2,7 @@ package com.rns.web.billapp.service.util;
 
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -36,12 +37,14 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	private static final String READ_RECEIPT_MAIL = "talnoterns@gmail.com";
 
-	private static final String MAIL_HOST = "smtpout.asia.secureserver.net" ;//"smtp.gmail.com";
+	private static final String MAIL_HOST = "smtpout.asia.secureserver.net";// "smtp.gmail.com";
 	private static final String MAIL_ID = "help@payperbill.in";// "visionlaturpattern@gmail.com";
-	private static final String MAIL_PASSWORD = "WickedSmile2@"; //"Vision2018!";
-	
+	private static final String MAIL_PASSWORD = "WickedSmile2@"; // "Vision2018!";
+
 	private static final String MAIL_AUTH = "true";
-	private static final String MAIL_PORT = "25";//"587";
+	private static final String MAIL_PORT = "25";// "587";
+
+	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, help@payperbill.in" };
 
 	private String type;
 	private BillUser user;
@@ -72,8 +75,8 @@ public class BillMailUtil implements BillConstants, Runnable {
 	}
 
 	public void sendMail() {
-		
-		if(user == null || StringUtils.isBlank(user.getEmail())) {
+
+		if (user == null || (!isAdminMail() && StringUtils.isBlank(user.getEmail()))) {
 			return;
 		}
 
@@ -97,14 +100,14 @@ public class BillMailUtil implements BillConstants, Runnable {
 		Properties props = new Properties();
 
 		props.put("mail.smtp.auth", MAIL_AUTH);
-		props.put("mail.smtp.socketFactory.port", "465"); //PROD
-		props.put("mail.smtp.socketFactory.class","javax.net.ssl.SSLSocketFactory"); //PROD
-		//props.put("mail.smtp.starttls.enable", "true");
+		props.put("mail.smtp.socketFactory.port", "465"); // PROD
+		props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory"); // PROD
+		// props.put("mail.smtp.starttls.enable", "true");
 		props.put("mail.smtp.host", MAIL_HOST);
 		props.put("mail.smtp.port", MAIL_PORT);
 
 		LoggingUtil.logMessage("Mail credentials being used .." + MAIL_ID);
-		
+
 		Session session = Session.getInstance(props, new javax.mail.Authenticator() {
 			protected PasswordAuthentication getPasswordAuthentication() {
 				return new PasswordAuthentication(MAIL_ID, MAIL_PASSWORD);
@@ -122,7 +125,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			BillBusiness currentBusiness = user.getCurrentBusiness();
 			if (user != null) {
 				result = prepareUserInfo(result, user);
-				if(currentBusiness != null) {
+				if (currentBusiness != null) {
 					subject = StringUtils.replace(subject, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
 				}
 				subject = StringUtils.replace(subject, "{name}", CommonUtils.getStringValue(user.getName()));
@@ -134,14 +137,14 @@ public class BillMailUtil implements BillConstants, Runnable {
 				subject = StringUtils.replace(subject, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
 				subject = StringUtils.replace(subject, "{year}", CommonUtils.getStringValue(invoice.getYear()));
 				subject = StringUtils.replace(subject, "{amount}", CommonUtils.getStringValue(invoice.getPayable()));
-				
-				if(CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
+
+				if (CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
 					String invoiceItemsTemplate = CommonUtils.readFile("email/invoice_items.html");
 					StringBuilder builder = new StringBuilder();
-					for(BillItem invoiceItem: invoice.getInvoiceItems()) {
+					for (BillItem invoiceItem : invoice.getInvoiceItems()) {
 						String invoiceItemRow = StringUtils.replace(invoiceItemsTemplate, "{amount}", CommonUtils.getStringValue(invoiceItem.getPrice()));
 						invoiceItemRow = StringUtils.replace(invoiceItemRow, "{quantity}", CommonUtils.getStringValue(invoiceItem.getQuantity()));
-						if(invoiceItem.getParentItem() != null) {
+						if (invoiceItem.getParentItem() != null) {
 							invoiceItemRow = StringUtils.replace(invoiceItemRow, "{name}", CommonUtils.getStringValue(invoiceItem.getParentItem().getName()));
 						} else {
 							invoiceItemRow = StringUtils.replace(invoiceItemRow, "{name}", CommonUtils.getStringValue(invoiceItem.getName()));
@@ -152,30 +155,30 @@ public class BillMailUtil implements BillConstants, Runnable {
 				} else {
 					result = StringUtils.replace(result, "{invoiceItems}", "");
 				}
-				
+
 				String businessName = "";
 				if (currentBusiness != null) {
-					 businessName = CommonUtils.getStringValue(currentBusiness.getName());
+					businessName = CommonUtils.getStringValue(currentBusiness.getName());
 				}
-				
-				if(StringUtils.equals(BillConstants.INVOICE_STATUS_PAID, invoice.getStatus())) {
-					result = StringUtils.replace(result, "{status}", "Successful");	
-					result = StringUtils.replace(result, "{message}", "This bill payment for " + BillPaymentUtil.invoicePurpose(invoice) + " to vendor " + businessName + " is successful.");
+
+				if (StringUtils.equals(BillConstants.INVOICE_STATUS_PAID, invoice.getStatus())) {
+					result = StringUtils.replace(result, "{status}", "Successful");
+					result = StringUtils.replace(result, "{message}",
+							"This bill payment for " + BillPaymentUtil.invoicePurpose(invoice) + " to vendor " + businessName + " is successful.");
 					subject = StringUtils.replace(subject, "{status}", "successful");
 				} else {
-					result = StringUtils.replace(result, "{status}", "Failed");	
-					result = StringUtils.replace(result, "{message}", "This bill payment for " + BillPaymentUtil.invoicePurpose(invoice) + " to vendor " + businessName + " is failed. "
-							+ "Please contact our customer support with given reference Payment ID for more info.");
+					result = StringUtils.replace(result, "{status}", "Failed");
+					result = StringUtils.replace(result, "{message}", "This bill payment for " + BillPaymentUtil.invoicePurpose(invoice) + " to vendor "
+							+ businessName + " is failed. " + "Please contact our customer support with given reference Payment ID for more info.");
 					subject = StringUtils.replace(subject, "{status}", "failed");
 				}
 
 			}
 
-
 			if (StringUtils.isNotBlank(messageText)) {
 				result = StringUtils.replace(result, "{message}", messageText);
 			}
-			
+
 			Multipart multipart = new MimeMultipart();
 			BodyPart messageBodyPart = new MimeBodyPart();
 			messageBodyPart.setContent(result, "text/html; charset=utf-8");
@@ -185,21 +188,18 @@ public class BillMailUtil implements BillConstants, Runnable {
 			image.setDataHandler(new DataHandler(fds));
 			image.setHeader("Content-ID", "<image>");
 			multipart.addBodyPart(image);
-			
+
 			message.setContent(multipart);
-			//message.setContent(result, "text/html; charset=utf-8");
-			/*
-			 * if(StringUtils.contains(type, "Admin")) {
-			 * message.setRecipients(Message.RecipientType.TO,
-			 * InternetAddress.parse(getEmails(Arrays.asList(ADMIN_MAILS)))); }
-			 * else if(CollectionUtils.isNotEmpty(users)) {
-			 * message.setRecipients(Message.RecipientType.TO,
-			 * InternetAddress.parse("talnoterns@gmail.com"));
-			 * message.setRecipients(Message.RecipientType.BCC,
-			 * InternetAddress.parse(getEmails(users))); } else {
-			 */
-			message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(user.getEmail()));
-			// }
+			// message.setContent(result, "text/html; charset=utf-8");
+
+			if (isAdminMail()) {
+				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(getEmails(Arrays.asList(ADMIN_MAILS))));
+			} /*else if (CollectionUtils.isNotEmpty(users)) {
+				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse("talnoterns@gmail.com"));
+				message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(getEmails(users)));
+			}*/ else {
+				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(user.getEmail()));
+			}
 
 			message.setSubject(subject);
 			return result;
@@ -213,6 +213,10 @@ public class BillMailUtil implements BillConstants, Runnable {
 		}
 
 		return "";
+	}
+
+	private boolean isAdminMail() {
+		return StringUtils.contains(type, "Admin");
 	}
 
 	public static String prepareInvoiceInfo(String result, BillInvoice invoice) {
@@ -240,24 +244,26 @@ public class BillMailUtil implements BillConstants, Runnable {
 		BillBusiness currentBusiness = user.getCurrentBusiness();
 		if (currentBusiness != null) {
 			result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
-			if(currentBusiness.getBusinessSector() != null) {
+			if (currentBusiness.getBusinessSector() != null) {
 				result = StringUtils.replace(result, "{sector}", CommonUtils.getStringValue(currentBusiness.getBusinessSector().getName()));
 			}
-			if(currentBusiness.getOwner() != null) {
-				result = StringUtils.replace(result, "{vendorContact}", StringUtils.substringAfter(CommonUtils.getStringValue(currentBusiness.getOwner().getPhone()), "+91"));
+			if (currentBusiness.getOwner() != null) {
+				result = StringUtils.replace(result, "{vendorContact}",
+						StringUtils.substringAfter(CommonUtils.getStringValue(currentBusiness.getOwner().getPhone()), "+91"));
 			}
 		}
-		
+
 		if (currentBusiness != null) {
 			result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
-			if(CollectionUtils.isNotEmpty(currentBusiness.getItems())) {
+			if (CollectionUtils.isNotEmpty(currentBusiness.getItems())) {
 				StringBuilder itemBuilder = new StringBuilder();
-				for(BillItem item: currentBusiness.getItems()) {
-					if(StringUtils.isNotBlank(item.getName())) {
+				for (BillItem item : currentBusiness.getItems()) {
+					if (StringUtils.isNotBlank(item.getName())) {
 						itemBuilder.append(item.getName()).append(",");
 					}
-					if(item.getChangeLog() != null) {
-						result = StringUtils.replace(result, "{fromDate}", CommonUtils.convertDate(item.getChangeLog().getFromDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
+					if (item.getChangeLog() != null) {
+						result = StringUtils.replace(result, "{fromDate}",
+								CommonUtils.convertDate(item.getChangeLog().getFromDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
 						result = StringUtils.replace(result, "{toDate}", CommonUtils.convertDate(item.getChangeLog().getToDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
 					}
 				}
@@ -339,6 +345,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_PAUSE_CUSTOMER, "customer_pause_delivery.html");
 			put(MAIL_TYPE_PAUSE_BUSINESS, "business_pause_delivery.html");
 			put(MAIL_TYPE_HOLIDAY, "customer_holiday.html");
+			put(MAIL_TYPE_REGISTRATION_ADMIN, "registration_admin.html");
 		}
 	});
 
@@ -353,6 +360,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_PAUSE_CUSTOMER, "{businessName} has paused your delivery");
 			put(MAIL_TYPE_PAUSE_BUSINESS, "{businessName} has paused the service");
 			put(MAIL_TYPE_HOLIDAY, "Public holiday alert");
+			put(MAIL_TYPE_REGISTRATION_ADMIN, "Alert: New vendor registration!");
 		}
 	});
 

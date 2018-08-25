@@ -237,8 +237,8 @@ public class BillPaymentUtil {
 		String pass = BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PASSWORD);
 		;
 		String ttype = "NBFundTransfer";
-		//String prodid = BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID);
-		String prodid = "Multi";
+		String prodid = BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID);
+		//String prodid = "Multi";
 		
 		String txnid = invoice.getId().toString();
 		String amt = invoice.getPayable().toString();
@@ -254,7 +254,7 @@ public class BillPaymentUtil {
 			.append("login=").append(login)
 			.append("&").append("pass=").append(pass)
 			.append("&").append("ttype=").append(ttype)
-			.append("&").append("prodid=").append(prodid)
+			.append("&").append("prodid=").append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID))
 			.append("&").append("amt=").append(amt)
 			.append("&").append("txncurr=").append(txncurr)
 			.append("&").append("txnscamt=").append("0")
@@ -263,8 +263,8 @@ public class BillPaymentUtil {
 			.append("&").append("txnid=").append(txnid)
 			.append("&").append("date=").append(CommonUtils.convertDate(new Date(), "dd/MM/yyyy"))
 			.append("&").append("ru=").append(/*"https://paynetzuat.atomtech.in/paynetzclient/ResponseParam.jsp"*/BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_REDIRECT_URL))
-			.append("&").append("signature=").append(signature_request)
-			.append("&").append("mprod=").append(getProducts(vendor.getEmail(), amt));
+			.append("&").append("signature=").append(signature_request);
+			//.append("&").append("mprod=").append(getProducts(vendor.getEmail(), amt));
 		
 		invoice.setAtomPaymentUrl(builder.toString());
 	}

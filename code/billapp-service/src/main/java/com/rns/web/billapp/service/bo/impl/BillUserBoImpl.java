@@ -113,6 +113,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					//New user ; send email and SMS
 					BillSMSUtil.sendSMS(user, null, MAIL_TYPE_REGISTRATION);
 					executor.execute(new BillMailUtil(MAIL_TYPE_REGISTRATION , user));
+					BillSMSUtil.sendSMS(user, null, MAIL_TYPE_REGISTRATION_ADMIN);
+					executor.execute(new BillMailUtil(MAIL_TYPE_REGISTRATION_ADMIN , user));
+					
 				} else {
 					response.setResponse(ERROR_CODE_GENERIC, ERROR_MOBILE_PRESENT);
 				}
