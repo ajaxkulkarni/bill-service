@@ -5,8 +5,11 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -18,8 +21,8 @@ import org.hibernate.Transaction;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillAdminBo;
+import com.rns.web.billapp.service.bo.domain.BillAdminDashboard;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
-import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
@@ -32,16 +35,15 @@ import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
-import com.rns.web.billapp.service.util.BillBusinessConverter;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillExcelUtil;
 import com.rns.web.billapp.service.util.BillMailUtil;
 import com.rns.web.billapp.service.util.BillPropertyUtil;
-import com.rns.web.billapp.service.util.BillRuleEngine;
 import com.rns.web.billapp.service.util.BillSMSUtil;
 import com.rns.web.billapp.service.util.BillUserLogUtil;
 import com.rns.web.billapp.service.util.CommonUtils;
@@ -315,6 +317,86 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			}
 
 			tx.commit();
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse login(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if(request == null || request.getUser() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		try {
+			String username = BillPropertyUtil.getProperty(BillPropertyUtil.ADMIN_USERNAME);
+			String password = BillPropertyUtil.getProperty(BillPropertyUtil.ADMIN_PASSWORD);
+			if(!StringUtils.equalsIgnoreCase(request.getUser().getEmail(), username) || !StringUtils.equals(request.getUser().getPassword(), password)) {
+				response.setResponse(ERROR_CODE_GENERIC, ERROR_INVALID_CREDENTIALS);
+			} else {
+				response.setResponse(BillPropertyUtil.getProperty(BillPropertyUtil.ADMIN_TOKEN));
+			}
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_IN_PROCESSING);
+		} finally {
+			//CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getSummary(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Date startDate = null, endDate = null;
+			if (request.getInvoice() != null && request.getInvoice().getMonth() != null && request.getInvoice().getYear() != null) {
+				startDate = CommonUtils.getMonthFirstDate(request.getInvoice().getMonth(), request.getInvoice().getYear());
+				endDate = CommonUtils.getMonthLastDate(request.getInvoice().getMonth(), request.getInvoice().getYear());
+			}
+			BillAdminDashboard dashboard = new BillAdminDashboard();
+			Map<String, Object> restrictions = new HashMap<String, Object>();
+			restrictions.put("status", BillConstants.INVOICE_STATUS_PAID);
+			BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
+			dashboard.setPaidInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count"));
+			dashboard.setTotalPaid((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, startDate, endDate, "sum"));
+			dashboard.setTotalGenerated((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", null, startDate, endDate, "sum"));
+			dashboard.setTotalInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", null, startDate, endDate, "count"));
+			dashboard.setTotalCustomers((Long) billGenericDaoImpl.getSum(BillDBSubscription.class, "id", null, startDate, endDate, "count"));
+			dashboard.setTotalBusinesses((Long) billGenericDaoImpl.getSum(BillDBUserBusiness.class, "id", null, startDate, endDate, "count"));
+			restrictions.put("status", BillConstants.STATUS_PENDING);
+			dashboard.setPendingApprovals((Long) billGenericDaoImpl.getSum(BillDBUser.class, "id", restrictions, startDate, endDate, "count"));
+			response.setDashboard(dashboard);
+			
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getAllVendors(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			List<BillDBUserBusiness> businesses = new BillVendorDaoImpl(session).getAllBusinesses();
+			if(CollectionUtils.isEmpty(businesses)) {
+				return response;
+			}
+			List<BillBusiness> businessList = new ArrayList<BillBusiness>();
+			for(BillDBUserBusiness business: businesses) {
+				BillBusiness userBusiness = BillDataConverter.getBusiness(business);
+				businessList.add(userBusiness);
+			}
+			response.setBusinesses(businessList);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);

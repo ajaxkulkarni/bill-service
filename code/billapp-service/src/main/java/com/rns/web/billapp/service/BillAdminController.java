@@ -185,4 +185,28 @@ public class BillAdminController {
 		return adminBo.generateBills(request);
 	}
 	
+	@POST
+	@Path("/login")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse login(BillServiceRequest request) {
+		return adminBo.login(request);
+	}
+	
+	@POST
+	@Path("/dashboardSummary")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse dashboardSummary(BillServiceRequest request) {
+		return adminBo.getSummary(request);
+	}
+	
+	@POST
+	@Path("/getAllVendors")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getAllVendors(BillServiceRequest request) {
+		return adminBo.getAllVendors(request);
+	}
+	
 }

@@ -37,6 +37,10 @@ public class BillPropertyUtil {
 	public static final String ATOM_CLIENT_CODE = "atom.client.code";
 	public static final String ATOM_PAYMENT_URL = "atom.payment.url";
 	public static final String ATOM_REDIRECT_URL = "atom.redirect.url";
+
+	public static final String ADMIN_USERNAME = "admin.username";
+	public static final String ADMIN_PASSWORD = "admin.password";
+	public static final String ADMIN_TOKEN = "admin.token";
 	
 	
 	

@@ -40,6 +40,7 @@ public class BillUser implements Serializable {
 	private BigDecimal serviceCharge;
 	private BillInvoice currentInvoice;
 	private String holiday;
+	private String password;
 	
 	public Integer getId() {
 		return id;
@@ -156,6 +157,12 @@ public class BillUser implements Serializable {
 	}
 	public void setHoliday(String holiday) {
 		this.holiday = holiday;
+	}
+	public String getPassword() {
+		return password;
+	}
+	public void setPassword(String password) {
+		this.password = password;
 	}
 	
 	/*@Override

@@ -290,13 +290,20 @@ public class BillDataConverter implements BillConstants {
 	
 	public static BillBusiness getBusiness(BillDBUserBusiness billDBUserBusiness) throws IllegalAccessException, InvocationTargetException {
 		BillBusiness business = new BillBusiness();
-		BillSector sector = new BillSector();
 		NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
-		nullAwareBeanUtils.copyProperties(sector, billDBUserBusiness.getSector());
-		BillUser owner = new BillUser();
-		nullAwareBeanUtils.copyProperties(owner, billDBUserBusiness.getUser());
-		business.setOwner(owner);
-		business.setBusinessSector(sector);
+		if(billDBUserBusiness.getSector() != null) {
+			BillSector sector = new BillSector();
+			nullAwareBeanUtils.copyProperties(sector, billDBUserBusiness.getSector());
+			business.setBusinessSector(sector);	
+		}
+		if(billDBUserBusiness.getUser() != null) {
+			BillUser owner = new BillUser();
+			nullAwareBeanUtils.copyProperties(owner, billDBUserBusiness.getUser());
+			business.setOwner(owner);
+		}
+		if(CollectionUtils.isNotEmpty(billDBUserBusiness.getLocations())) {
+			business.setBusinessLocations(getLocations(new ArrayList<BillDBLocation>(billDBUserBusiness.getLocations())));
+		}
 		nullAwareBeanUtils.copyProperties(business, billDBUserBusiness);
 		return business;
 	}

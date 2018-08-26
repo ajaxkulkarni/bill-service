@@ -7,6 +7,8 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.rns.web.billapp.service.bo.domain.BillAdminDashboard;
+import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
@@ -32,6 +34,8 @@ public class BillServiceResponse {
 	private BillInvoice invoice;
 	private List<BillUserLog> logs;
 	private List<BillOrder> orders; 
+	private BillAdminDashboard dashboard;
+	private List<BillBusiness> businesses;
 	
 	public BillServiceResponse() {
 		setStatus(BillConstants.STATUS_OK);
@@ -134,6 +138,22 @@ public class BillServiceResponse {
 
 	public void setOrders(List<BillOrder> orders) {
 		this.orders = orders;
+	}
+
+	public BillAdminDashboard getDashboard() {
+		return dashboard;
+	}
+
+	public void setDashboard(BillAdminDashboard dashboard) {
+		this.dashboard = dashboard;
+	}
+
+	public List<BillBusiness> getBusinesses() {
+		return businesses;
+	}
+
+	public void setBusinesses(List<BillBusiness> businesses) {
+		this.businesses = businesses;
 	}
 	
 }

@@ -3,6 +3,8 @@ package com.rns.web.billapp.service.dao.impl;
 import java.util.Date;
 import java.util.List;
 
+import javax.persistence.FetchType;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Criteria;
@@ -16,6 +18,7 @@ import org.hibernate.sql.JoinType;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.util.CommonUtils;
 
@@ -91,6 +94,15 @@ public class BillVendorDaoImpl {
 			 return null;
 		 }
 		 return list.get(0);
+	}
+	
+	public List<BillDBUserBusiness> getAllBusinesses() {
+		Criteria criteria = session.createCriteria(BillDBUserBusiness.class);
+		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		Criteria locationCriteria = criteria.setFetchMode("locations", FetchMode.JOIN);
+		Criteria sectorCritaria = criteria.setFetchMode("sector", FetchMode.JOIN);
+		Criteria userCriteria = criteria.setFetchMode("user", FetchMode.JOIN);
+		return criteria.list();
 	}
 	
 }
