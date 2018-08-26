@@ -11,6 +11,7 @@ import org.hibernate.Criteria;
 import org.hibernate.FetchMode;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.SQLCriterion;
 import org.hibernate.sql.JoinType;
@@ -97,7 +98,7 @@ public class BillVendorDaoImpl {
 	}
 	
 	public List<BillDBUserBusiness> getAllBusinesses() {
-		Criteria criteria = session.createCriteria(BillDBUserBusiness.class);
+		Criteria criteria = session.createCriteria(BillDBUserBusiness.class).addOrder(Order.desc("createdDate"));
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		Criteria locationCriteria = criteria.setFetchMode("locations", FetchMode.JOIN);
 		Criteria sectorCritaria = criteria.setFetchMode("sector", FetchMode.JOIN);
