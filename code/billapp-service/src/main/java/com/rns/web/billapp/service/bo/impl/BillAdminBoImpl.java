@@ -23,6 +23,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import com.rns.web.billapp.service.bo.api.BillAdminBo;
 import com.rns.web.billapp.service.bo.domain.BillAdminDashboard;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
@@ -242,7 +243,9 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			Date toDate = CommonUtils.getMonthLastDate(month, year);
 			List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerOrderSummary(fromDate, toDate);
 			List<Object[]> orderItemsResult = new BillInvoiceDaoImpl(session).getCustomerOrderItemSummary(fromDate, toDate);
-
+			
+			Map<Integer, BillUser> vendors = new HashMap<Integer, BillUser>();
+			
 			if (CollectionUtils.isNotEmpty(result)) {
 				for (Object[] row : result) {
 					if (ArrayUtils.isEmpty(row)) {
@@ -271,13 +274,6 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 
 					dbInvoice.setAmount(total);
 					dbInvoice.setServiceCharge(subscription.getServiceCharge());
-
-					/*
-					 * BillInvoice invoice = new BillInvoice(); new
-					 * NullAwareBeanUtils().copyProperties(invoice, dbInvoice);
-					 * BillBusinessConverter.updatePaymentURL(invoice,
-					 * dbInvoice, subscription);
-					 */
 
 					if (CollectionUtils.isNotEmpty(orderItemsResult)) {
 						for (Object[] subRow : orderItemsResult) {
@@ -313,10 +309,40 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					if (dbInvoice.getId() == null) {
 						session.persist(dbInvoice);
 					}
+					//User map for sending mails later
+					if(dbInvoice.getSubscription() != null && dbInvoice.getSubscription().getBusiness() != null && dbInvoice.getSubscription().getBusiness().getUser() != null) {
+						BillUser user = vendors.get(dbInvoice.getSubscription().getBusiness().getUser().getId());
+						if(user == null) {
+							user = new BillUser();
+							NullAwareBeanUtils nullBeans = new NullAwareBeanUtils();
+							nullBeans.copyProperties(user, dbInvoice.getSubscription().getBusiness().getUser());
+							user.setCurrentBusiness(BillDataConverter.getBusiness(dbInvoice.getSubscription().getBusiness()));
+							BillInvoice currentInvoice = new BillInvoice();
+							currentInvoice.setPayable(dbInvoice.getAmount());
+							currentInvoice.setAmount(BigDecimal.ONE);
+							currentInvoice.setYear(request.getInvoice().getYear());
+							currentInvoice.setMonth(request.getInvoice().getMonth());
+							user.setCurrentInvoice(currentInvoice);
+							vendors.put(dbInvoice.getSubscription().getBusiness().getUser().getId(), user);
+						} else {
+							user.getCurrentInvoice().setAmount(user.getCurrentInvoice().getPayable().add(dbInvoice.getAmount()));
+							user.getCurrentInvoice().setPayable(user.getCurrentInvoice().getAmount().add(BigDecimal.ONE));
+						}
+					}
 				}
 			}
 
 			tx.commit();
+			//Notify vendors for invoices generated
+			if(CollectionUtils.isNotEmpty(vendors.entrySet())) {
+				for(BillUser key: vendors.values()) {
+					BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE_GENERATION, key);
+					mailUtil.setInvoice(key.getCurrentInvoice());
+					executor.execute(mailUtil);
+					BillSMSUtil.sendSMS(key, key.getCurrentInvoice(), MAIL_TYPE_INVOICE_GENERATION);
+				}
+			}
+			
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);

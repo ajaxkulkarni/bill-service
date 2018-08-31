@@ -346,6 +346,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_PAUSE_BUSINESS, "business_pause_delivery.html");
 			put(MAIL_TYPE_HOLIDAY, "customer_holiday.html");
 			put(MAIL_TYPE_REGISTRATION_ADMIN, "registration_admin.html");
+			put(MAIL_TYPE_INVOICE_GENERATION, "invoice_generation.html");
 		}
 	});
 
@@ -361,6 +362,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_PAUSE_BUSINESS, "{businessName} has paused the service");
 			put(MAIL_TYPE_HOLIDAY, "Public holiday alert");
 			put(MAIL_TYPE_REGISTRATION_ADMIN, "Alert: New vendor registration!");
+			put(MAIL_TYPE_INVOICE_GENERATION, "Invoices generated for {month} {year}");
 		}
 	});
 

@@ -9,10 +9,12 @@ public interface BillConstants {
 	Integer STATUS_OK = 200;
 	String RESPONSE_OK = "OK";
 	String REQUEST_TYPE_EMAIL = "EMAIL";
+	String ACCESS_ADMIN = "Admin";
 	
 	Integer ERROR_CODE_FATAL = -999;
 	Integer ERROR_CODE_GENERIC = -111;
 	Integer ERROR_NOT_APPROVED = -222;
+	
 	int WARNING_CODE_1 = 101;
 	int WARNING_CODE_2 = 102;
 	int WARNING_CODE_3 = 103;
@@ -20,6 +22,7 @@ public interface BillConstants {
 	String PAYMENT_MEDIUM_HDFC = "HDFC";
 	String PAYMENT_MEDIUM_INSTA = "INSTA";
 	String PAYMENT_MEDIUM_ATOM = "ATOM";
+	String PAYMENT_MEDIUM_CASHFREE = "CASHFREE";
 
 	String WARNING_NO_BUSINESS = "No business information found. Please complete your business details.";
 	String WARNING_NO_FINANCIALS = "No financial/ bank information found. Please complete your bank details to enable payment.";
@@ -35,7 +38,13 @@ public interface BillConstants {
 	String ERROR_OLD_HOLIDAY_DELETION = "Cannot delete the old holidays!";
 	String ERROR_INVALID_CREDENTIALS = "Invalid credentials!";
 	String ERROR_CUSTOMER_PROFILE_NOT_FOUND = "Customer profile not found! Did you delete this customer?";
-	
+	String ERROR_ACCESS_DENIED = "Access denied!";
+	String ERROR_SCHEME_NOT_FOUND = "This scheme/offer does not exist!";
+	String ERROR_INCOMPLETE_SCHEME = "You have already accepted this scheme. Please complete the payment to proceed.";
+	String ERROR_ACCEPTED_SCHEME = "You have already accepted this scheme.";
+	String ERROR_UNPAID_INVOICE = "Invoice is not paid. Please pay the invoice first to get coupons.";
+	String ERROR_SCHEME_EXPIRED = "Scheme/Offer is now expired";
+	String ERROR_SCHEME_NOT_STARTED = "Scheme/Offer has not started yet";
 	
 	String MSG_REGISTERED_SUCCESS = "Your profile has been registered successfully! Our team will review your profile and contact you further to approve it.";
 
@@ -45,12 +54,18 @@ public interface BillConstants {
 	String PAYMENT_OFFLINE = "Offline";
 	String PAYMENT_STATUS_CREDIT = "Credit";
 	
+	String SCHEME_TYPE_LINK = "LINK"; //Only shared via link by vendors
+	String SCHEME_TYPE_INVOICE = "INVOICE"; //Only after invoice is paid
+	String SCHEME_TYPE_GENERAL = "GENERAL";
+	int NS_SCHEME_DAYS_LIMIT = 5;
+	
 	String STATUS_DELETED = "D";
 	String STATUS_ACTIVE = "A";
 	String STATUS_PENDING = "P";
 	String INVOICE_STATUS_PENDING = "Pending";
 	String INVOICE_STATUS_PAID = "Credit";
 	String INVOICE_STATUS_DELETED = "Deleted";
+	String INVOICE_STATUS_FAILED = "Failed";
 	
 	String USER_DB_ATTR_PHONE = "phone";
 	String ID_ATTR = "id";
@@ -70,7 +85,7 @@ public interface BillConstants {
 	String MAIL_TYPE_PAUSE_CUSTOMER = "PauseDeliveryCustomer";
 	String MAIL_TYPE_PAUSE_BUSINESS = "PauseDeliveryBusiness";
 	String MAIL_TYPE_HOLIDAY = "PauseDeliveryHoliday";
-
+	String MAIL_TYPE_INVOICE_GENERATION = "InvoicesGenerated";
 
 	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
 
