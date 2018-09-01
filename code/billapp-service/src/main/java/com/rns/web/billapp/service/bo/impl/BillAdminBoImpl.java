@@ -259,6 +259,9 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					if (request.getBusiness() != null && request.getBusiness().getId() != subscription.getBusiness().getId()) {
 						continue;
 					}
+					if(request.getUser() != null && request.getUser().getId() != null && request.getUser().getId() != subscription.getId()) {
+						continue;
+					}
 					BillDBInvoice dbInvoice = new BillInvoiceDaoImpl(session).getInvoiceForMonth(subscription.getId(), month, year);
 					if (dbInvoice == null) {
 						dbInvoice = new BillDBInvoice();
@@ -268,7 +271,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						dbInvoice.setYear(year);
 						dbInvoice.setCreatedDate(new Date());
 						dbInvoice.setSubscription(subscription);
-					} else if (!StringUtils.equalsIgnoreCase("Overwrite", request.getRequestType())) {
+					} else if (!StringUtils.equalsIgnoreCase(REQUEST_TYPE_OVERWRITE, request.getRequestType())) {
 						continue;
 					}
 
@@ -334,7 +337,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 
 			tx.commit();
 			//Notify vendors for invoices generated
-			if(CollectionUtils.isNotEmpty(vendors.entrySet())) {
+			if(CollectionUtils.isNotEmpty(vendors.entrySet()) && !StringUtils.equals(request.getRequestType(), REQUEST_TYPE_OVERWRITE)) {
 				for(BillUser key: vendors.values()) {
 					BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE_GENERATION, key);
 					mailUtil.setInvoice(key.getCurrentInvoice());

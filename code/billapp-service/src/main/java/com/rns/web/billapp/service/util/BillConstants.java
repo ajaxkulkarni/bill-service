@@ -9,6 +9,7 @@ public interface BillConstants {
 	Integer STATUS_OK = 200;
 	String RESPONSE_OK = "OK";
 	String REQUEST_TYPE_EMAIL = "EMAIL";
+	String REQUEST_TYPE_OVERWRITE = "Overwrite";
 	String ACCESS_ADMIN = "Admin";
 	
 	Integer ERROR_CODE_FATAL = -999;

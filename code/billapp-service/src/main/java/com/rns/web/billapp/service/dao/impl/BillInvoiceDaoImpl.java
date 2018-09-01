@@ -127,6 +127,18 @@ public class BillInvoiceDaoImpl {
 		return query.list();
 	}
 	
+	public List<Object[]> getCustomerOutstanding(Date date, Integer businessId, Integer currentMonth, Integer currentYear, Integer subscriptionId) {
+		Query query = session.createQuery("select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance) from BillDBInvoice invoice where invoice.status!=:paid AND invoice.status!=:deleted AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) AND invoice.subscription.id=:customer");
+		query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
+		query.setInteger("businessId", businessId);
+		query.setInteger("currentMonth", currentMonth);
+		query.setInteger("currentYear", currentYear);
+		query.setString("deleted", BillConstants.INVOICE_STATUS_DELETED);
+		query.setString("disabled", BillConstants.STATUS_DELETED);
+		query.setInteger("customer", subscriptionId);
+		return query.list();
+	}
+	
 	public List<Object[]> getCustomerOrderSummary(Date fromDate, Date toDate) {
 		Query query = session.createQuery("select sum(orders.amount),orders.subscription from BillDBOrders orders where orders.status!=:disabled AND (orders.orderDate>=:fromDate AND orders.orderDate<=:toDate) group by orders.subscription.id");
 		query.setDate("fromDate", fromDate);
@@ -136,7 +148,7 @@ public class BillInvoiceDaoImpl {
 	}
 	
 	public List<Object[]> getCustomerOrderItemSummary(Date fromDate, Date toDate) {
-		Query query = session.createQuery("select sum(orderItems.amount), sum(orderItems.quantity), orderItems, orderItems.order.subscription from BillDBOrderItems orderItems where orderItems.status!=:disabled AND orderItems.businessItem.status!=:disabled AND orderItems.subscribedItem.status!=:disabled AND (orderItems.order.orderDate>=:fromDate AND orderItems.order.orderDate<=:toDate)  group by orderItems.businessItem.id, orderItems.order.subscription.id");
+		Query query = session.createQuery("select sum(orderItems.amount), sum(orderItems.quantity), orderItems, orderItems.order.subscription from BillDBOrderItems orderItems where orderItems.status!=:disabled AND orderItems.order.status!=:disabled AND orderItems.businessItem.status!=:disabled AND orderItems.subscribedItem.status!=:disabled AND (orderItems.order.orderDate>=:fromDate AND orderItems.order.orderDate<=:toDate)  group by orderItems.businessItem.id, orderItems.order.subscription.id");
 		query.setDate("fromDate", fromDate);
 		query.setDate("toDate", toDate);
 		query.setString("disabled", BillConstants.STATUS_DELETED);
