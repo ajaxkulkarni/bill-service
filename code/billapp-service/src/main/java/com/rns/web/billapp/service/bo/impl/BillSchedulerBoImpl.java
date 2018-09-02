@@ -5,11 +5,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -19,8 +15,11 @@ import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.scheduling.Trigger;
+import org.springframework.scheduling.TriggerContext;
+import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 
 import com.rns.web.billapp.service.bo.api.BillSchedulerBo;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -47,7 +46,7 @@ import com.rns.web.billapp.service.util.CommonUtils;
 import com.rns.web.billapp.service.util.LoggingUtil;
 import com.rns.web.billapp.service.util.NullAwareBeanUtils;
 
-public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
+public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, SchedulingConfigurer {
 	
 	private SessionFactory sessionFactory;
 	private ThreadPoolTaskExecutor executor;
@@ -65,8 +64,8 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 		this.executor = executor;
 	}
 	
-	@Scheduled(cron = "0 14 1 * * *")
-	public void calculateInvoices() {
+	//@Scheduled(cron = "0 14 1 * * *")
+	public void calculateOrders() {
 		Session session = null;
 		Date date = new Date();
 		try {
@@ -395,6 +394,32 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants {
 			logs.addAll(businessItemLogs);
 		}
 		return logs;
+	}
+	
+	public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+		taskRegistrar.addTriggerTask(new Runnable() {
+			public void run() {
+				calculateOrders();
+			}
+		}, new Trigger() {
+			public Date nextExecutionTime(TriggerContext arg0) {
+				return nextOrdersExecution();
+			}
+
+			
+		});
+
+	}
+	
+	private Date nextOrdersExecution() {
+		Calendar cal = Calendar.getInstance();
+		//if(cal.get(Calendar.HOUR_OF_DAY) > 1 && cal.get(Calendar.MINUTE) > 14) {
+		cal.add(Calendar.DATE, 1);
+		//}
+		cal.set(Calendar.HOUR_OF_DAY, 0);
+		cal.set(Calendar.MINUTE, 15);
+		LoggingUtil.logMessage("The next order generation routine is at .. " + cal.getTime(), LoggingUtil.schedulerLogger);
+		return cal.getTime();
 	}
 	
 	

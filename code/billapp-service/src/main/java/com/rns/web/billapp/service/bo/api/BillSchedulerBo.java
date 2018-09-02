@@ -6,7 +6,7 @@ import com.rns.web.billapp.service.domain.BillServiceResponse;
 
 public interface BillSchedulerBo {
 	
-	void calculateInvoices();
+	void calculateOrders();
 	BillServiceResponse calculateInvoices(Date date);
 
 }
