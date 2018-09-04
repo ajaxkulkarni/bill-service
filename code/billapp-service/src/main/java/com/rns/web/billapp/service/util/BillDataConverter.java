@@ -182,7 +182,7 @@ public class BillDataConverter implements BillConstants {
 		return subsribedItems;
 	}
 	
-	public static List<BillInvoice> getInvoices(List<BillDBInvoice> invoices) throws IllegalAccessException, InvocationTargetException {
+	public static List<BillInvoice> getInvoices(List<BillDBInvoice> invoices, Session session) throws IllegalAccessException, InvocationTargetException {
 		List<BillInvoice> userInvoices = new ArrayList<BillInvoice>();
 		if(CollectionUtils.isNotEmpty(invoices)) {
 			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
@@ -194,7 +194,11 @@ public class BillDataConverter implements BillConstants {
 					BillUser customer = new BillUser();
 					customer.setCurrentBusiness(getBusiness(dbInvoice.getSubscription().getBusiness()));
 					beanUtils.copyProperties(customer, dbInvoice.getSubscription());
-					invoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customer, invoice, BillConstants.MAIL_TYPE_INVOICE));
+					//This is done so that result message will get to see the total amount with outstanding balance
+					BillInvoice tempInvoice = new BillInvoice();
+					new NullAwareBeanUtils().copyProperties(tempInvoice, invoice);
+					BillRuleEngine.calculatePayable(tempInvoice, dbInvoice, session);
+					invoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customer, tempInvoice, BillConstants.MAIL_TYPE_INVOICE));
 				}
 				userInvoices.add(invoice);
 			}

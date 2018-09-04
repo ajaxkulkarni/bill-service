@@ -717,7 +717,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			BillInvoiceDaoImpl dao = new BillInvoiceDaoImpl(session);
 			List<BillDBInvoice> invoices = dao.getAllInvoices(request.getUser().getId(), null);
-			List<BillInvoice> userInvoices = BillDataConverter.getInvoices(invoices);
+			List<BillInvoice> userInvoices = BillDataConverter.getInvoices(invoices, session);
 			response.setInvoices(userInvoices);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
