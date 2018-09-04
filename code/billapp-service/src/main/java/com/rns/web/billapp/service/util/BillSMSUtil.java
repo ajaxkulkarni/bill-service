@@ -20,6 +20,7 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 
 public class BillSMSUtil implements BillConstants {
 	
+	private static final String SMS_COSMETIC_SEPARATOR = " ---------------- ";
 	private static final String SMS_URL = "http://api.msg91.com/api/sendhttp.php?sender=PAYBIL&route=4&mobiles={mobiles}&authkey=193344AsiDSe0j5a5db681&country=0&message={message}";
 	private static final String ADMIN_PHONES = "9923283604,9623736773"; 
 	
@@ -69,7 +70,7 @@ public class BillSMSUtil implements BillConstants {
 			
 			if(CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
 				StringBuilder builder = new StringBuilder();
-				builder.append(" ---------------- ").append("\n");
+				builder.append(SMS_COSMETIC_SEPARATOR).append("\n");
 				for(BillItem invoiceItem: invoice.getInvoiceItems()) {
 					builder.append(CommonUtils.getStringValue(invoiceItem.getQuantity(), true)).append("  ");
 					if(invoiceItem.getParentItem() != null) {
@@ -80,7 +81,20 @@ public class BillSMSUtil implements BillConstants {
 					builder.append(" = ").append(CommonUtils.getStringValue(invoiceItem.getPrice(), false));
 					builder.append("\n");
 				}
-				builder.append(" ---------------- ").append("\n");
+				builder.append(SMS_COSMETIC_SEPARATOR).append("\n");
+				if(invoice.getPendingBalance() != null) {
+					builder.append("Pending = ").append(CommonUtils.getStringValue(invoice.getPendingBalance(), false));
+				}
+				if(invoice.getServiceCharge() != null) {
+					builder.append("Service charge = ").append(CommonUtils.getStringValue(invoice.getServiceCharge(), false));
+				}
+				if(invoice.getCreditBalance() != null) {
+					builder.append("Credit = ").append(CommonUtils.getStringValue(invoice.getCreditBalance(), false));
+				}
+				if(invoice.getOutstandingBalance() != null) {
+					builder.append("Outstanding = ").append(CommonUtils.getStringValue(invoice.getOutstandingBalance(), false));
+				}
+				builder.append(SMS_COSMETIC_SEPARATOR).append("\n");
 				result = StringUtils.replace(result, "{smsInvoiceItems}", builder.toString());
 			} else {
 				result = StringUtils.replace(result, "{smsInvoiceItems}", "");

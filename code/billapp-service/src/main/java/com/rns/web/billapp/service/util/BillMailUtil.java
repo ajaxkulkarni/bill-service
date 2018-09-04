@@ -229,6 +229,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{credit}", CommonUtils.getStringValue(invoice.getCreditBalance(), false));
 		result = StringUtils.replace(result, "{internetFees}", CommonUtils.getStringValue(invoice.getInternetFees(), false));
 		result = StringUtils.replace(result, "{payable}", CommonUtils.getStringValue(invoice.getPayable(), false));
+		result = StringUtils.replace(result, "{outstanding}", CommonUtils.getStringValue(invoice.getOutstandingBalance(), false));
 		result = StringUtils.replace(result, "{createdDate}", CommonUtils.convertDate(invoice.getCreatedDate()));
 		result = StringUtils.replace(result, "{paymentUrl}", CommonUtils.getStringValue(invoice.getPaymentUrl()));
 		result = StringUtils.replace(result, "{paidAmount}", CommonUtils.getStringValue(invoice.getPaidAmount(), false));
