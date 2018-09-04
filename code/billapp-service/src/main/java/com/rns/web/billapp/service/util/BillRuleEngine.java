@@ -6,11 +6,14 @@ import java.math.RoundingMode;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.hibernate.Session;
 
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
+import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 
 public class BillRuleEngine {
 
@@ -62,7 +65,7 @@ public class BillRuleEngine {
 	}
 
 
-	public static void calculatePayable(BillInvoice invoice) {
+	public static void calculatePayable(BillInvoice invoice, BillDBInvoice dbInvoice, Session session) {
 		MathContext mc = new MathContext(2, RoundingMode.HALF_UP);
 		invoice.setPayable(invoice.getAmount());
 		if(invoice.getPendingBalance() != null) {
@@ -80,6 +83,24 @@ public class BillRuleEngine {
 		internetHandlingFees = BigDecimal.ZERO; //TODO: Change later
 		invoice.setInternetFees(internetHandlingFees);
 		invoice.setPayable(invoice.getPayable().add(invoice.getInternetFees()));
+		
+		//TODO Later
+		if(dbInvoice != null && dbInvoice.getSubscription() != null) {
+			BigDecimal outstanding = BigDecimal.ZERO;
+			//Outstanding amount is the total amount of the bills excluding this bill month / year
+			List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerOutstanding(dbInvoice.getMonth(), dbInvoice.getYear(), dbInvoice.getSubscription().getId());
+			if(CollectionUtils.isNotEmpty(result)) {
+				for(Object[] row: result) {
+					outstanding = outstanding.add(CommonUtils.getAmount(row[0]));
+					outstanding = outstanding.add(CommonUtils.getAmount(row[1]));
+					outstanding = outstanding.add(CommonUtils.getAmount(row[2]));
+				 	outstanding = outstanding.subtract(CommonUtils.getAmount(row[3]));
+				}
+				invoice.setOutstandingBalance(outstanding);
+				invoice.setPayable(invoice.getPayable().add(outstanding));
+			}
+		}
 	}
+
 	
 }

@@ -2,8 +2,19 @@ package com.rns.web.billapp.service.util;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
@@ -31,9 +42,10 @@ import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class BillPaymentUtil {
 
+	public static final String TXID_SEPARATOR = ".";
 	private static final String COMMON_KEY = "bill_vendor";
 	private static final String AUTHORIZATION_HEADER = "Authorization";
-
+	
 	public static BillPaymentCredentials createNewUser(BillUser user, String token) {
 
 		try {
@@ -189,7 +201,7 @@ public class BillPaymentUtil {
 
 		if (response.getStatus() == 401 && retry) {
 			credentials = getToken(credentials.getRefresh_token(), null);
-			if(credentials == null) {
+			if (credentials == null) {
 				return null;
 			}
 			LoggingUtil.logMessage("Got new token --" + credentials.getAccess_token());
@@ -223,14 +235,14 @@ public class BillPaymentUtil {
 		invoice.setHdfcAccessCode(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_ACCESS_CODE));
 		invoice.setHdfcPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.HDFC_URL));
 	}
-	
-	//https://paynetzuat.atomtech.in/paynetz/epi/fts
-	//?login=231&pass=Test@123&ttype=NBFundTransfer&prodid=Multi&amt=1000.00
-	//&txncurr=INR&txnscamt=0&clientcode=MTcwMDAwMTE3MTAxNDkw&udf2=abc@gmail.com
-	//&udf5=231&txnid=1234&date=13/02/2018&custacc=1234567890
-	//&ru=https://paynetzuat.atomtech.in/paynetzclient/ResponseParam.jsp
-	//&signature=e7415bcbbccaa2f1ccd38736d0233876a459f1d489c2231e8cb1935e58990e6112c5e377f559b255526e0d9b5467788f5c4c2fa8cc308fc06e9f2ef5ff367376
-	//&mprod=<products><product><id>1</id><name>ONE</name><amount>250.00</amount></product><product><id>2</id><name>TWO</name><amount>250.00</amount></product><product><id>3</id><name>THREE</name><amount>500.00</amount></product></products>
+
+	// https://paynetzuat.atomtech.in/paynetz/epi/fts
+	// ?login=231&pass=Test@123&ttype=NBFundTransfer&prodid=Multi&amt=1000.00
+	// &txncurr=INR&txnscamt=0&clientcode=MTcwMDAwMTE3MTAxNDkw&udf2=abc@gmail.com
+	// &udf5=231&txnid=1234&date=13/02/2018&custacc=1234567890
+	// &ru=https://paynetzuat.atomtech.in/paynetzclient/ResponseParam.jsp
+	// &signature=e7415bcbbccaa2f1ccd38736d0233876a459f1d489c2231e8cb1935e58990e6112c5e377f559b255526e0d9b5467788f5c4c2fa8cc308fc06e9f2ef5ff367376
+	// &mprod=<products><product><id>1</id><name>ONE</name><amount>250.00</amount></product><product><id>2</id><name>TWO</name><amount>250.00</amount></product><product><id>3</id><name>THREE</name><amount>500.00</amount></product></products>
 
 	public static void prepareAtomRequest(BillInvoice invoice, BillDBUser vendor) {
 		String login = BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_LOGIN);
@@ -238,8 +250,8 @@ public class BillPaymentUtil {
 		;
 		String ttype = "NBFundTransfer";
 		String prodid = BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID);
-		//String prodid = "Multi";
-		
+		// String prodid = "Multi";
+
 		String txnid = invoice.getId().toString();
 		String amt = invoice.getPayable().toString();
 		String txncurr = "INR";
@@ -248,24 +260,19 @@ public class BillPaymentUtil {
 		// login,pass,ttype,prodid,txnid,amt,txncurr
 		String signature_request = getEncodedValueWithSha2(reqHashKey, login, pass, ttype, prodid, txnid, amt, txncurr);
 		System.out.println("Request signature ::" + signature_request);
-		
+
 		StringBuilder builder = new StringBuilder();
-		builder.append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PAYMENT_URL)).append("?")
-			.append("login=").append(login)
-			.append("&").append("pass=").append(pass)
-			.append("&").append("ttype=").append(ttype)
-			.append("&").append("prodid=").append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID))
-			.append("&").append("amt=").append(amt)
-			.append("&").append("txncurr=").append(txncurr)
-			.append("&").append("txnscamt=").append("0")
-			.append("&").append("custacc=").append("1234567890")
-			.append("&").append("clientcode=").append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_CLIENT_CODE))
-			.append("&").append("txnid=").append(txnid)
-			.append("&").append("date=").append(CommonUtils.convertDate(new Date(), "dd/MM/yyyy"))
-			.append("&").append("ru=").append(/*"https://paynetzuat.atomtech.in/paynetzclient/ResponseParam.jsp"*/BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_REDIRECT_URL))
-			.append("&").append("signature=").append(signature_request);
-			//.append("&").append("mprod=").append(getProducts(vendor.getEmail(), amt));
-		
+		builder.append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PAYMENT_URL)).append("?").append("login=").append(login).append("&").append("pass=")
+				.append(pass).append("&").append("ttype=").append(ttype).append("&").append("prodid=")
+				.append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID)).append("&").append("amt=").append(amt).append("&").append("txncurr=")
+				.append(txncurr).append("&").append("txnscamt=").append("0").append("&").append("custacc=").append("1234567890").append("&")
+				.append("clientcode=").append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_CLIENT_CODE)).append("&").append("txnid=").append(txnid)
+				.append("&").append("date=").append(CommonUtils.convertDate(new Date(), "dd/MM/yyyy")).append("&").append("ru=")
+				.append(/* "https://paynetzuat.atomtech.in/paynetzclient/ResponseParam.jsp" */BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_REDIRECT_URL))
+				.append("&").append("signature=").append(signature_request);
+		// .append("&").append("mprod=").append(getProducts(vendor.getEmail(),
+		// amt));
+
 		invoice.setAtomPaymentUrl(builder.toString());
 	}
 
@@ -350,6 +357,73 @@ public class BillPaymentUtil {
 		}
 
 		return resp;
+	}
+
+	public static void prepareCashFreeSignature(BillInvoice invoice, BillUser customer, Integer paymentAttempt) throws NoSuchAlgorithmException, InvalidKeyException {
+		Map<String, String> postData = new HashMap<String, String>();
+		String appId = BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_APP_ID);
+		postData.put("appId", appId);
+		String orderId = CommonUtils.getStringValue(invoice.getId()) + TXID_SEPARATOR + CommonUtils.getStringValue(paymentAttempt);
+		postData.put("orderId", orderId);
+		postData.put("orderAmount", CommonUtils.getStringValue(invoice.getPayable(), true));
+		postData.put("orderCurrency", "INR");
+		String invoicePurpose = invoicePurpose(invoice);
+		postData.put("orderNote", invoicePurpose);
+		postData.put("customerName", customer.getName());
+		postData.put("customerEmail", customer.getEmail());
+		postData.put("customerPhone", customer.getPhone());
+		String returnUrl = BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_RETURN_URL);
+		postData.put("returnUrl", returnUrl);
+		//postData.put("notifyUrl", "");
+		System.out.println("== DATA == " + postData);
+		String data = "";
+		SortedSet<String> keys = new TreeSet<String>(postData.keySet());
+		for (String key : keys) {
+			data = data + key + postData.get(key);
+		}
+		Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+		SecretKeySpec secret_key_spec = new SecretKeySpec(BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_APP_SECRET).getBytes(), "HmacSHA256");
+		sha256_HMAC.init(secret_key_spec);
+		invoice.setCashfreeSignature(Base64.getEncoder().encodeToString(sha256_HMAC.doFinal(data.getBytes())));
+		invoice.setCashFreeRedirectUrl(returnUrl);
+		invoice.setCashFreeAppId(appId);
+		invoice.setCashFreePaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_PAYMENT_URL));
+		invoice.setComments(invoicePurpose);
+		invoice.setCashFreeTxId(orderId);
+	}
+
+	public static boolean verifyCashfreeSignature(BillInvoice invoice, String orderId) {
+		try {
+			LinkedHashMap<String, String> postData = new LinkedHashMap<String, String>();
+			postData.put("orderId", orderId);
+			postData.put("orderAmount", CommonUtils.getStringValue(invoice.getAmount(), false));
+			postData.put("referenceId", invoice.getPaymentId());
+			postData.put("txStatus", invoice.getStatus());
+			postData.put("paymentMode", invoice.getPaymentMode());
+			postData.put("txMsg", invoice.getComments());
+			postData.put("txTime", invoice.getPaymentRequestId());
+
+			String data = "";
+			Set<String> keys = postData.keySet();
+
+			for (String key : keys) {
+				data = data + postData.get(key);
+			}
+			String secretKey = BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_APP_SECRET);
+			Mac sha256_HMAC;
+			sha256_HMAC = Mac.getInstance("HmacSHA256");
+			SecretKeySpec secret_key_spec = new SecretKeySpec(secretKey.getBytes(), "HmacSHA256");
+			sha256_HMAC.init(secret_key_spec);
+			String signature = Base64.getEncoder().encodeToString(sha256_HMAC.doFinal(data.getBytes()));
+			if (StringUtils.equalsIgnoreCase(signature, invoice.getCashfreeSignature())) {
+				return true;
+			}
+		} catch (NoSuchAlgorithmException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		} catch (InvalidKeyException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+		return false;
 	}
 
 }

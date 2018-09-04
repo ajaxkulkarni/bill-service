@@ -5,12 +5,22 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.core.MultivaluedMap;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -38,9 +48,13 @@ import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.bo.impl.BillAdminBoImpl;
 import com.rns.web.billapp.service.bo.impl.BillSchedulerBoImpl;
 import com.rns.web.billapp.service.bo.impl.BillUserBoImpl;
+import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBUser;
+import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
@@ -50,7 +64,9 @@ import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillLogAppender;
 import com.rns.web.billapp.service.util.BillMailUtil;
+import com.rns.web.billapp.service.util.BillPaymentUtil;
 import com.rns.web.billapp.service.util.BillPropertyUtil;
+import com.rns.web.billapp.service.util.BillSMSUtil;
 import com.rns.web.billapp.service.util.CommonUtils;
 import com.rns.web.billapp.service.util.LoggingUtil;
 import com.sun.jersey.api.client.Client;
@@ -82,17 +98,17 @@ public class BillTest {
 		
 		BillServiceRequest request = new BillServiceRequest();
 		BillUser user = new BillUser();
-		user.setName("Ajinkya KUL");
+		user.setName("Sakal company");
 		//user.setPanDetails("AK12345");
-		user.setPhone("1231231231");
-		user.setAadharNumber("1233");
-		user.setId(1);
+		user.setPhone("555555555");
+		user.setAadharNumber("444411114444");
+		//user.setId(1);
 		//User business
 		BillBusiness business = new BillBusiness();
-		business.setId(2);
-		business.setName("AK business and sons");
-		business.setDescription("Some business");
-		business.setAddress("AK Business center");
+		//business.setId(2);
+		business.setName("Sakal paper company");
+		business.setDescription("Testing the new registration");
+		business.setAddress("Pune");
 		BillSector businessSector = new BillSector(2);
 		business.setBusinessSector(businessSector);
 		
@@ -130,9 +146,9 @@ public class BillTest {
 		BillBusiness business = new BillBusiness();
 		business.setId(2);
 		BillItem item = new BillItem();
-		item.setId(1);
+		//item.setId(1);
 		BillItem parentItem = new BillItem();
-		parentItem.setId(2);
+		parentItem.setId(1);
 		item.setParentItem(parentItem);
 		request.setBusiness(business);
 		request.setItem(item);
@@ -398,7 +414,7 @@ public class BillTest {
 			scheduler.calculateInvoices(new SimpleDateFormat(BillConstants.DATE_FORMAT).parse("2018-07-" + day));
 		}*/
 		
-		scheduler.calculateInvoices(new SimpleDateFormat(BillConstants.DATE_FORMAT).parse("2018-08-19"));
+		scheduler.calculateInvoices(new SimpleDateFormat(BillConstants.DATE_FORMAT).parse("2018-08-22"));
 	}
 	
 	@Test
@@ -446,6 +462,39 @@ public class BillTest {
 		user.setName("Abhishek");
 		mailUtil.setUser(user);
 		mailUtil.sendMail();
+	}
+	
+	@Test
+	public void testSMS() {
+		
+		BillInvoice invoice = new BillInvoice();
+		invoice.setMonth(3);
+		invoice.setYear(2018);
+		invoice.setAmount(new BigDecimal(110));
+		invoice.setPendingBalance(new BigDecimal(20));
+		invoice.setComments("Pending service charge ..");
+		List<BillItem> items = new ArrayList<BillItem>();
+		BillItem item1 = new BillItem();
+		item1.setId(3);
+		item1.setQuantity(BigDecimal.TEN);
+		item1.setPrice(new BigDecimal(100));
+		BillItem parent1 = new BillItem();
+		parent1.setId(1);
+		item1.setParentItem(parent1);
+		items.add(item1);
+		invoice.setInvoiceItems(items);
+		
+		BillUser user = new BillUser();
+		user.setName("Ajinkya");
+		user.setPhone("9923283604");
+		BillBusiness currentBusiness = new BillBusiness();
+		currentBusiness.setName("My Business");
+		user.setCurrentBusiness(currentBusiness);
+		BillSubscription currentSubscription = new BillSubscription();
+		currentSubscription.setId(1);
+		user.setCurrentSubscription(currentSubscription);
+
+		BillSMSUtil.sendSMS(user, invoice, BillConstants.MAIL_TYPE_INVOICE);
 	}
 	
 	@Test
@@ -505,7 +554,71 @@ public class BillTest {
 	}
 	
 	@Test
+	public void testSendInvoice() {
+		BillServiceRequest request = new BillServiceRequest();
+		request.setRequestType(BillConstants.REQUEST_TYPE_EMAIL);
+		BillInvoice invoice = new BillInvoice();
+		invoice.setId(18);
+		request.setInvoice(invoice);
+		userbo.sendCustomerInvoice(request);
+	}
+	
+	@Test
 	public void testHoliday() {
 		new BillLogDAOImpl(adminBo.getSessionFactory().openSession()).getHolidays(9, 23, CommonUtils.convertDate("2018-09-23"));
 	}
+	
+	@Test
+	public void testAtom() {
+		BillInvoice invoice = new BillInvoice();
+		invoice.setId(1);
+		invoice.setPayable(new BigDecimal("100"));
+		BillDBUser vendor = new BillDBUser();
+		vendor.setEmail("vendor@gmail.com");
+		BillPaymentUtil.prepareAtomRequest(invoice, vendor);
+		System.out.println(invoice.getAtomPaymentUrl());
+	}
+	
+	@Test
+	public void testSum() {
+		Map<String, Object> restr = new HashMap<String, Object>();
+		//restr.put("status", BillConstants.INVOICE_STATUS_PAID);
+		Date fromDate = CommonUtils.convertDate("2018-08-01");
+		Date toDate = CommonUtils.convertDate("2018-08-31");
+		System.out.println(new BillGenericDaoImpl(userbo.getSessionFactory().openSession()).getSum(BillDBUserBusiness.class, "id", restr, fromDate, toDate, "count"));
+	}
+	
+	@Test
+	public void testOutstanding() {
+		System.out.println(new BillInvoiceDaoImpl(userbo.getSessionFactory().openSession()).getCustomerOutstanding(8, 2018, 8).get(0)[0]);
+	}
+	
+	@Test
+	public void testCheckSum() throws NoSuchAlgorithmException, InvalidKeyException {
+		Map<String, String> postData = new HashMap<String, String>();
+		String appId = BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_APP_ID);
+		postData.put("appId", appId);
+		postData.put("orderId", "15.17");
+		postData.put("orderAmount", "25.00");
+		postData.put("orderCurrency", "INR");
+		postData.put("orderNote", "January 2018 monthly payment");
+		postData.put("customerName", "Shiva");
+		postData.put("customerEmail", "ajinkyakulkarni1491@yahoo.com");
+		postData.put("customerPhone", "9923283604");
+		String returnUrl = BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_RETURN_URL);
+		postData.put("returnUrl", returnUrl);
+		//postData.put("notifyUrl", "");
+		System.out.println("== DATA == " + postData);
+		String data = "";
+		SortedSet<String> keys = new TreeSet<String>(postData.keySet());
+		for (String key : keys) {
+			data = data + key + postData.get(key);
+		}
+		Mac sha256_HMAC = Mac.getInstance("HmacSHA256");
+		SecretKeySpec secret_key_spec = new SecretKeySpec(BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_APP_SECRET).getBytes(), "HmacSHA256");
+		sha256_HMAC.init(secret_key_spec);
+		System.out.println(Base64.getEncoder().encodeToString(sha256_HMAC.doFinal(data.getBytes())));
+	}
+	//{txStatus=[SUCCESS], orderAmount=[25.00], orderId=[15.20], paymentMode=[NET_BANKING], txTime=[2018-09-02 19:56:56], signature=[edaQObEw8HR13Ti+gL+4kOE/sm7blzKQlsYeWsrMIcM=], txMsg=[Y], referenceId=[3876647]}
+	
 }

@@ -14,6 +14,7 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 @Entity
 @Table(name = "business_items")
@@ -30,6 +31,7 @@ public class BillDBItemBusiness {
 	private String status;
 	private BillDBItemParent parent;
 	private BillDBUserBusiness business;
+	private String access;
 	
 	public BillDBItemBusiness(Integer businessItemId) {
 		this.id = businessItemId;
@@ -131,6 +133,15 @@ public class BillDBItemBusiness {
 	
 	public void setBusiness(BillDBUserBusiness business) {
 		this.business = business;
+	}
+
+	@Column(name = "access")
+	public String getAccess() {
+		return access;
+	}
+
+	public void setAccess(String access) {
+		this.access = access;
 	}
 	
 }

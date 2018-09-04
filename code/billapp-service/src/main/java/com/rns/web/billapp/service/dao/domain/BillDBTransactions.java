@@ -30,6 +30,10 @@ public class BillDBTransactions {
 	private BillDBInvoice invoice;
 	private BillDBSubscription subscription;
 	private BillDBUserBusiness business;
+	private String comments;
+	private String response;
+	private String transactionDate;
+	
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -122,6 +126,30 @@ public class BillDBTransactions {
 	}
 	public void setBusiness(BillDBUserBusiness business) {
 		this.business = business;
+	}
+	
+	@Column(name = "comments")
+	public String getComments() {
+		return comments;
+	}
+	public void setComments(String comments) {
+		this.comments = comments;
+	}
+	
+	@Column(name = "response")
+	public String getResponse() {
+		return response;
+	}
+	public void setResponse(String response) {
+		this.response = response;
+	}
+	
+	@Column(name = "transaction_date")
+	public String getTransactionDate() {
+		return transactionDate;
+	}
+	public void setTransactionDate(String transactionDate) {
+		this.transactionDate = transactionDate;
 	}
 	
 

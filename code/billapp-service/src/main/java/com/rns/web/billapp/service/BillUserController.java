@@ -363,8 +363,10 @@ public class BillUserController {
 			invoice.setPaymentMode(formParams.getFirst("discriminator"));
 			String signature = BillPaymentUtil.getResponseHash(invoice, formParams.getFirst("prod"));
 			if(!StringUtils.equals(signature, formParams.getFirst("signature"))) {
-				url = new URI(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + "Failed") ;
-				return Response.temporaryRedirect(url).build();
+				/*url = new URI(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + "Failed") ;
+				return Response.temporaryRedirect(url).build();*/
+				invoice.setStatus(BillConstants.INVOICE_STATUS_FAILED);
+				invoice.setComments("Signature not matched");
 			}
 			BillServiceRequest request = new BillServiceRequest();
 			request.setInvoice(invoice);
@@ -384,6 +386,47 @@ public class BillUserController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse updateUserCredentials(BillServiceRequest request) {
 		return userBo.updatePaymentCredentials(request);
+	}
+	
+	@POST
+	@Path("/cashfree/paymentResult")
+	// @Produces(MediaType.APPLICATION_JSON)
+	public Response cashfreePaymentResult(MultivaluedMap<String, String> formParams) {
+		URI url = null;
+		try {
+			
+			LoggingUtil.logMessage("Cashfree Payment result -- " + formParams);
+			
+			BillInvoice invoice = new BillInvoice();
+			String orderId = formParams.getFirst("orderId");
+			String[] split = StringUtils.split(orderId, BillPaymentUtil.TXID_SEPARATOR);
+			invoice.setPaymentRequestId(formParams.getFirst("txTime"));
+			invoice.setTxTime(formParams.getFirst("txTime"));
+			invoice.setPaymentId(formParams.getFirst("referenceId"));
+			invoice.setStatus(formParams.getFirst("txStatus"));
+			invoice.setAmount(new BigDecimal(formParams.getFirst("orderAmount")));
+			invoice.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_CASHFREE);
+			invoice.setPaymentMode(formParams.getFirst("paymentMode"));
+			invoice.setCashfreeSignature(formParams.getFirst("signature"));
+			invoice.setComments(formParams.getFirst("txMsg"));
+			if(!BillPaymentUtil.verifyCashfreeSignature(invoice, orderId)) {
+				/*url = new URI(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + "Failed") ;
+				return Response.temporaryRedirect(url).build();*/
+				invoice.setStatus(BillConstants.INVOICE_STATUS_FAILED);
+				invoice.setComments("Signature not matched");
+			}
+			invoice.setId(new Integer(split[0]));
+			invoice.setPaymentResponse(formParams.toString());
+			BillServiceRequest request = new BillServiceRequest();
+			request.setInvoice(invoice);
+			BillServiceResponse response = userBo.completePayment(request);
+			LoggingUtil.logMessage("Redirect after payment to --" + response.getInvoice().getPaymentUrl());
+			url = new URI(response.getInvoice().getPaymentUrl());
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+
+		return Response.temporaryRedirect(url).build();
 	}
 	
 }

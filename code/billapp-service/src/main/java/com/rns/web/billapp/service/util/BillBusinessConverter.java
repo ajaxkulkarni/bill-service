@@ -148,29 +148,34 @@ public class BillBusinessConverter {
 		}
 	}
 
-	public static BillDBTransactions getTransaction(BillDBInvoice invoice) {
-		if(invoice == null || invoice.getId() == null) {
+	public static BillDBTransactions getTransaction(BillDBInvoice dbInvoice, BillInvoice invoice) {
+		if(dbInvoice == null || dbInvoice.getId() == null) {
 			return null;
 		}
 		BillDBTransactions transactions = new BillDBTransactions();
-		transactions.setInvoice(invoice);
-		transactions.setAmount(invoice.getPaidAmount());
+		transactions.setInvoice(dbInvoice);
+		transactions.setAmount(dbInvoice.getPaidAmount());
 		transactions.setCreatedDate(new Date());
-		transactions.setStatus(invoice.getStatus());
-		transactions.setMedium(invoice.getPaymentMedium());
-		transactions.setMode(invoice.getPaymentMode());
-		transactions.setReferenceNo(invoice.getPaymentRequestId());
-		transactions.setPaymentId(invoice.getPaymentId());
-		transactions.setSubscription(invoice.getSubscription());
-		if(invoice.getSubscription() != null) {
-			transactions.setBusiness(invoice.getSubscription().getBusiness());
+		transactions.setStatus(dbInvoice.getStatus());
+		transactions.setMedium(dbInvoice.getPaymentMedium());
+		transactions.setMode(dbInvoice.getPaymentMode());
+		transactions.setReferenceNo(dbInvoice.getPaymentRequestId());
+		transactions.setPaymentId(dbInvoice.getPaymentId());
+		transactions.setSubscription(dbInvoice.getSubscription());
+		if(dbInvoice.getSubscription() != null) {
+			transactions.setBusiness(dbInvoice.getSubscription().getBusiness());
+		}
+		if(invoice != null) {
+			transactions.setResponse(invoice.getPaymentResponse());
+			transactions.setTransactionDate(invoice.getTxTime());
+			transactions.setComments(invoice.getComments());
 		}
 		return transactions;
 	}
 	
-	public static void updatePaymentURL(BillInvoice invoice, BillDBInvoice dbInvoice, BillDBSubscription customerSubscription)
+	public static void updatePaymentURL(BillInvoice invoice, BillDBInvoice dbInvoice, BillDBSubscription customerSubscription, Session session)
 			throws IllegalAccessException, InvocationTargetException, JsonParseException, JsonMappingException, IOException {
-		BillRuleEngine.calculatePayable(invoice);
+		BillRuleEngine.calculatePayable(invoice, dbInvoice, session);
 		LoggingUtil.logMessage("Updating payment URL - " + customerSubscription.getBusiness());
 		BillDBUser vendor = customerSubscription.getBusiness().getUser();
 		BillPaymentCredentials credentials = new BillPaymentCredentials();
@@ -190,6 +195,14 @@ public class BillBusinessConverter {
 			BillBusinessConverter.setPaymentCredentials(vendor, credentials);
 		}
 	}
+	
+	public static void updatePaymentTransactionLog(Session session, BillDBInvoice dbInvoice, BillInvoice invoice) {
+		BillDBTransactions transaction = BillBusinessConverter.getTransaction(dbInvoice, invoice);
+		if(transaction != null) {
+			session.persist(transaction);
+		}
+	}
+
 
 
 }

@@ -71,13 +71,13 @@ public class BillSMSUtil implements BillConstants {
 				StringBuilder builder = new StringBuilder();
 				builder.append(" ---------------- ").append("\n");
 				for(BillItem invoiceItem: invoice.getInvoiceItems()) {
-					builder.append(CommonUtils.getStringValue(invoiceItem.getQuantity())).append("  ");
+					builder.append(CommonUtils.getStringValue(invoiceItem.getQuantity(), true)).append("  ");
 					if(invoiceItem.getParentItem() != null) {
 						builder.append(CommonUtils.getStringValue(invoiceItem.getParentItem().getName()));
 					} else {
 						builder.append(CommonUtils.getStringValue(invoiceItem.getName()));
 					}
-					builder.append(" = ").append(CommonUtils.getStringValue(invoiceItem.getPrice()));
+					builder.append(" = ").append(CommonUtils.getStringValue(invoiceItem.getPrice(), false));
 					builder.append("\n");
 				}
 				builder.append(" ---------------- ").append("\n");

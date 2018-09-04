@@ -5,6 +5,7 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Criteria;
 import org.hibernate.FetchMode;
 import org.hibernate.Query;
@@ -53,10 +54,13 @@ public class BillInvoiceDaoImpl {
        return null;
 	}
 
-	public List<BillDBInvoice> getAllInvoices(Integer subscriptionId) {
+	public List<BillDBInvoice> getAllInvoices(Integer subscriptionId, String status) {
 		Criteria criteria = session.createCriteria(BillDBInvoice.class)
 				 .add(Restrictions.eq("subscription.id", subscriptionId))
 				 .add(invoiceNotDeleted());
+		if(StringUtils.isNotBlank(status)) {
+			criteria.add(Restrictions.eq("status", status));
+		}
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
 		return criteria.list();
@@ -127,14 +131,12 @@ public class BillInvoiceDaoImpl {
 		return query.list();
 	}
 	
-	public List<Object[]> getCustomerOutstanding(Date date, Integer businessId, Integer currentMonth, Integer currentYear, Integer subscriptionId) {
-		Query query = session.createQuery("select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance) from BillDBInvoice invoice where invoice.status!=:paid AND invoice.status!=:deleted AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) AND invoice.subscription.id=:customer");
+	public List<Object[]> getCustomerOutstanding(Integer currentMonth, Integer currentYear, Integer subscriptionId) {
+		Query query = session.createQuery("select sum(invoice.amount), sum(invoice.pendingBalance), sum(invoice.serviceCharge) , sum(invoice.creditBalance),invoice.subscription from BillDBInvoice invoice where invoice.status!=:paid AND invoice.status!=:deleted AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) AND invoice.subscription.id=:customer group by invoice.subscription.id");
 		query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
-		query.setInteger("businessId", businessId);
 		query.setInteger("currentMonth", currentMonth);
 		query.setInteger("currentYear", currentYear);
 		query.setString("deleted", BillConstants.INVOICE_STATUS_DELETED);
-		query.setString("disabled", BillConstants.STATUS_DELETED);
 		query.setInteger("customer", subscriptionId);
 		return query.list();
 	}
@@ -154,5 +156,5 @@ public class BillInvoiceDaoImpl {
 		query.setString("disabled", BillConstants.STATUS_DELETED);
 		return query.list();
 	}
-
+	
 }

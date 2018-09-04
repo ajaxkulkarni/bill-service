@@ -136,14 +136,14 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 				subject = StringUtils.replace(subject, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
 				subject = StringUtils.replace(subject, "{year}", CommonUtils.getStringValue(invoice.getYear()));
-				subject = StringUtils.replace(subject, "{amount}", CommonUtils.getStringValue(invoice.getPayable()));
+				subject = StringUtils.replace(subject, "{amount}", CommonUtils.getStringValue(invoice.getPayable(), false));
 
 				if (CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
 					String invoiceItemsTemplate = CommonUtils.readFile("email/invoice_items.html");
 					StringBuilder builder = new StringBuilder();
 					for (BillItem invoiceItem : invoice.getInvoiceItems()) {
-						String invoiceItemRow = StringUtils.replace(invoiceItemsTemplate, "{amount}", CommonUtils.getStringValue(invoiceItem.getPrice()));
-						invoiceItemRow = StringUtils.replace(invoiceItemRow, "{quantity}", CommonUtils.getStringValue(invoiceItem.getQuantity()));
+						String invoiceItemRow = StringUtils.replace(invoiceItemsTemplate, "{amount}", CommonUtils.getStringValue(invoiceItem.getPrice(), false));
+						invoiceItemRow = StringUtils.replace(invoiceItemRow, "{quantity}", CommonUtils.getStringValue(invoiceItem.getQuantity(), true));
 						if (invoiceItem.getParentItem() != null) {
 							invoiceItemRow = StringUtils.replace(invoiceItemRow, "{name}", CommonUtils.getStringValue(invoiceItem.getParentItem().getName()));
 						} else {
@@ -223,15 +223,15 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{invoiceId}", CommonUtils.getStringValue(invoice.getId()));
 		result = StringUtils.replace(result, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
 		result = StringUtils.replace(result, "{year}", CommonUtils.getStringValue(invoice.getYear()));
-		result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(invoice.getAmount()));
-		result = StringUtils.replace(result, "{serviceCharge}", CommonUtils.getStringValue(invoice.getServiceCharge()));
-		result = StringUtils.replace(result, "{pending}", CommonUtils.getStringValue(invoice.getPendingBalance()));
-		result = StringUtils.replace(result, "{credit}", CommonUtils.getStringValue(invoice.getCreditBalance()));
-		result = StringUtils.replace(result, "{internetFees}", CommonUtils.getStringValue(invoice.getInternetFees()));
-		result = StringUtils.replace(result, "{payable}", CommonUtils.getStringValue(invoice.getPayable()));
+		result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(invoice.getAmount(), false));
+		result = StringUtils.replace(result, "{serviceCharge}", CommonUtils.getStringValue(invoice.getServiceCharge(), false));
+		result = StringUtils.replace(result, "{pending}", CommonUtils.getStringValue(invoice.getPendingBalance(), false));
+		result = StringUtils.replace(result, "{credit}", CommonUtils.getStringValue(invoice.getCreditBalance(), false));
+		result = StringUtils.replace(result, "{internetFees}", CommonUtils.getStringValue(invoice.getInternetFees(), false));
+		result = StringUtils.replace(result, "{payable}", CommonUtils.getStringValue(invoice.getPayable(), false));
 		result = StringUtils.replace(result, "{createdDate}", CommonUtils.convertDate(invoice.getCreatedDate()));
 		result = StringUtils.replace(result, "{paymentUrl}", CommonUtils.getStringValue(invoice.getPaymentUrl()));
-		result = StringUtils.replace(result, "{paidAmount}", CommonUtils.getStringValue(invoice.getPaidAmount()));
+		result = StringUtils.replace(result, "{paidAmount}", CommonUtils.getStringValue(invoice.getPaidAmount(), false));
 		result = StringUtils.replace(result, "{paymentId}", CommonUtils.getStringValue(invoice.getPaymentId()));
 		return result;
 	}

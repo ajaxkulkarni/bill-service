@@ -42,6 +42,14 @@ public class BillInvoice {
 	private String paymentMode;
 	private String paymentMessage;
 	private String atomPaymentUrl;
+	private String cashfreeSignature;
+	private String cashFreeRedirectUrl;
+	private String cashFreeAppId;
+	private String cashFreePaymentUrl;
+	private String cashFreeTxId;
+	private BigDecimal outstandingBalance;
+	private String paymentResponse;
+	private String txTime;
 	
 	public Integer getId() {
 		return id;
@@ -204,6 +212,54 @@ public class BillInvoice {
 	}
 	public void setAtomPaymentUrl(String atomPaymentUrl) {
 		this.atomPaymentUrl = atomPaymentUrl;
+	}
+	public String getCashfreeSignature() {
+		return cashfreeSignature;
+	}
+	public void setCashfreeSignature(String cashfreeSignature) {
+		this.cashfreeSignature = cashfreeSignature;
+	}
+	public String getCashFreeRedirectUrl() {
+		return cashFreeRedirectUrl;
+	}
+	public void setCashFreeRedirectUrl(String cashFreeRedirectUrl) {
+		this.cashFreeRedirectUrl = cashFreeRedirectUrl;
+	}
+	public String getCashFreeAppId() {
+		return cashFreeAppId;
+	}
+	public void setCashFreeAppId(String cashFreeAppId) {
+		this.cashFreeAppId = cashFreeAppId;
+	}
+	public String getCashFreePaymentUrl() {
+		return cashFreePaymentUrl;
+	}
+	public void setCashFreePaymentUrl(String cashFreePaymentUrl) {
+		this.cashFreePaymentUrl = cashFreePaymentUrl;
+	}
+	public String getCashFreeTxId() {
+		return cashFreeTxId;
+	}
+	public void setCashFreeTxId(String cashFreeTxId) {
+		this.cashFreeTxId = cashFreeTxId;
+	}
+	public BigDecimal getOutstandingBalance() {
+		return outstandingBalance;
+	}
+	public void setOutstandingBalance(BigDecimal outstandingBalance) {
+		this.outstandingBalance = outstandingBalance;
+	}
+	public String getPaymentResponse() {
+		return paymentResponse;
+	}
+	public void setPaymentResponse(String paymentResponse) {
+		this.paymentResponse = paymentResponse;
+	}
+	public String getTxTime() {
+		return txTime;
+	}
+	public void setTxTime(String txTime) {
+		this.txTime = txTime;
 	}
 	
 }

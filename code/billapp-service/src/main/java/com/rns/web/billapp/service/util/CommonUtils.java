@@ -19,6 +19,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Session;
 
+import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
+import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
+
 public class CommonUtils {
 	
 	
@@ -110,11 +113,14 @@ public class CommonUtils {
 		return value.toString();
 	}
 
-	public static String getStringValue(BigDecimal value) {
+	public static String getStringValue(BigDecimal value, boolean stripZeroes) {
 		if(value == null) {
 			return "";
 		}
-		return value.toString();
+		if(!stripZeroes) {
+			return value.toString();
+		}
+		return value.stripTrailingZeros().toPlainString();
 	}
 
 	public static String getDate(Date date) {
@@ -169,6 +175,9 @@ public class CommonUtils {
 	
 	public static Date getMonthFirstDate(Integer month, Integer year) {
 		Calendar c = Calendar.getInstance();
+		if(month > 12) {
+			month = 1;
+		}
 		if(month != null) {
 			c.set(Calendar.MONTH, month - 1);
 		}
@@ -251,5 +260,52 @@ public class CommonUtils {
 	public static String encode(String string) throws UnsupportedEncodingException {
 		return URLEncoder.encode(string, "UTF-8");
 	}
+
+
+	public static long noOfDays(Date date, Date date2) {
+		if(date == null || date2 == null) {
+			return 0;
+		}
+		return (date.getTime() - date2.getTime())/(1000*60*60*24);
+	}
+
+
+	public static Date addToDate(Date date, int field, Integer duration) {
+		if(date == null) {
+			return null;
+		}
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		cal.add(field, duration);
+		return cal.getTime();
+	}
+
+
+	public static String generateCouponCode(BillDBSchemes schemes, BillDBCustomerCoupons coupons) {
+		if(schemes == null || coupons == null) {
+			return "";
+		}
+		if(StringUtils.isBlank(schemes.getSchemeCode()) || coupons.getId() == null) {
+			return  "";
+		}
+		String couponId = StringUtils.reverse(coupons.getId().toString());
+		couponId = StringUtils.substring(couponId, 0, couponId.length()); 
+		return schemes.getSchemeCode() + StringUtils.leftPad(couponId, 6, "0");
+	}
+	
+	public static void main(String[] args) {
+		String str = "12345";
+		str = StringUtils.reverse(str);
+		System.out.println(StringUtils.substring(str, 0, 6));
+	}
+	
+	public static BigDecimal getAmount(Object value) {
+		BigDecimal amount = (BigDecimal) value;
+		if(amount != null) {
+			return amount;
+		}
+		return BigDecimal.ZERO;
+	}
+	
 	
 }

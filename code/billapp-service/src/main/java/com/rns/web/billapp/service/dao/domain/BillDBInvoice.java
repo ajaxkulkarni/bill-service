@@ -43,6 +43,9 @@ public class BillDBInvoice {
 	private String paymentMedium;
 	private String paymentMode;
 	private String paymentUrl;
+	private Integer paymentAttempt;
+	private String settlementStatus;
+	private Date settlementDate;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -213,6 +216,30 @@ public class BillDBInvoice {
 	}
 	public void setPaymentUrl(String paymentUrl) {
 		this.paymentUrl = paymentUrl;
+	}
+	
+	@Column(name = "payment_attempts")
+	public Integer getPaymentAttempt() {
+		return paymentAttempt;
+	}
+	public void setPaymentAttempt(Integer paymentAttempt) {
+		this.paymentAttempt = paymentAttempt;
+	}
+	
+	@Column(name = "settlement")
+	public String getSettlementStatus() {
+		return settlementStatus;
+	}
+	public void setSettlementStatus(String settlementStatus) {
+		this.settlementStatus = settlementStatus;
+	}
+	
+	@Column(name = "settlement_date")
+	public Date getSettlementDate() {
+		return settlementDate;
+	}
+	public void setSettlementDate(Date settlementDate) {
+		this.settlementDate = settlementDate;
 	}
 	
 

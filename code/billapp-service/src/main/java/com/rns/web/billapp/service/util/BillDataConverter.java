@@ -3,11 +3,13 @@ package com.rns.web.billapp.service.util;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Session;
 
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
@@ -19,6 +21,7 @@ import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
 import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
@@ -185,7 +188,7 @@ public class BillDataConverter implements BillConstants {
 			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
 			for(BillDBInvoice dbInvoice: invoices) {
 				BillInvoice invoice = getInvoice(beanUtils, dbInvoice);
-				BillRuleEngine.calculatePayable(invoice);
+				BillRuleEngine.calculatePayable(invoice, null, null);
 				if(dbInvoice.getSubscription() != null && dbInvoice.getSubscription().getBusiness() != null) {
 					invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + invoice.getId());
 					BillUser customer = new BillUser();
@@ -314,4 +317,28 @@ public class BillDataConverter implements BillConstants {
 		credentials.setInstaId(vendor.getInstaId());
 	}
 
+	public static List<BillUserLog> formatLogs(Set<BillUserLog> logs) {
+		List<BillUserLog> userLogs = new ArrayList<BillUserLog>();
+		if(CollectionUtils.isNotEmpty(logs)) {
+			for(BillUserLog log: logs) {
+				if(!containsLog(userLogs, log)) {
+					userLogs.add(log);
+				}
+			}
+		}
+		return userLogs;
+	}
+
+	private static boolean containsLog(List<BillUserLog> userLogs, BillUserLog log) {
+		for(BillUserLog existing: userLogs) {
+			if(DateUtils.isSameDay(existing.getFromDate(), log.getFromDate()) && DateUtils.isSameDay(existing.getToDate(), log.getToDate())) {
+				if(existing.getItem() != null && existing.getItem().getName() != null && log.getItem() != null && log.getItem().getName() != null) {
+					existing.getItem().setName(existing.getItem().getName() + " | " + log.getItem().getName());
+				}
+				return true;
+			}
+		}
+		return false;
+	}
+	
 }

@@ -31,6 +31,11 @@
 		<property name="executor" ref="executor" />
 	</bean>
 	
+	<bean id="businessBo" class="com.rns.web.billapp.service.bo.impl.BillBusinessBoImpl">
+		<property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory" />
+		<property name="executor" ref="executor" />
+	</bean>
+	
 	<bean id="schedulerBo" class="com.rns.web.billapp.service.bo.impl.BillSchedulerBoImpl">
 		<property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory" />
 		<property name="executor" ref="executor" />
@@ -82,6 +87,10 @@
 				<value>com.rns.web.billapp.service.dao.domain.BillDBOrderItems</value>
 				<value>com.rns.web.billapp.service.dao.domain.BillDBItemInvoice</value>
 				<value>com.rns.web.billapp.service.dao.domain.BillDBHoliday</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBTransactions</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBB2BPayments</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBSchemes</value>
 			</list>
 		</property>
 		<property name="hibernateProperties">

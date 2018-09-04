@@ -37,12 +37,16 @@ public class BillPropertyUtil {
 	public static final String ATOM_CLIENT_CODE = "atom.client.code";
 	public static final String ATOM_PAYMENT_URL = "atom.payment.url";
 	public static final String ATOM_REDIRECT_URL = "atom.redirect.url";
+	
+	public static final String CASHFREE_APP_ID = "cashfree.app.id";
+	public static final String CASHFREE_APP_SECRET = "cashfree.app.secret";
+	public static final String CASHFREE_RETURN_URL = "cashfree.return.url";
+	public static final String CASHFREE_PAYMENT_URL = "cashfree.payment.url";
 
+	
 	public static final String ADMIN_USERNAME = "admin.username";
 	public static final String ADMIN_PASSWORD = "admin.password";
 	public static final String ADMIN_TOKEN = "admin.token";
-	
-	
 	
 	public static String getProperty(String name) {
 		try {
