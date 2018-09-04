@@ -490,6 +490,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						dbInvoice.setPaidDate(new Date());
 						dbInvoice.setPaymentType(BillConstants.PAYMENT_OFFLINE);
 						dbInvoice.setStatus(invoice.getStatus());
+						dbInvoice.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_CASH);
+						dbInvoice.setPaymentMode(BillConstants.PAYMENT_OFFLINE);
 						BillBusinessConverter.updatePaymentTransactionLog(session, dbInvoice, invoice);
 					} else {
 						dbInvoice.setStatus(invoice.getStatus());
