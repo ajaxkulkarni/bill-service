@@ -262,17 +262,24 @@ public class BillPaymentUtil {
 		System.out.println("Request signature ::" + signature_request);
 
 		StringBuilder builder = new StringBuilder();
-		builder.append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PAYMENT_URL)).append("?").append("login=").append(login).append("&").append("pass=")
-				.append(pass).append("&").append("ttype=").append(ttype).append("&").append("prodid=")
-				.append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID)).append("&").append("amt=").append(amt).append("&").append("txncurr=")
-				.append(txncurr).append("&").append("txnscamt=").append("0").append("&").append("custacc=").append("1234567890").append("&")
-				.append("clientcode=").append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_CLIENT_CODE)).append("&").append("txnid=").append(txnid)
-				.append("&").append("date=").append(CommonUtils.convertDate(new Date(), "dd/MM/yyyy")).append("&").append("ru=")
-				.append(/* "https://paynetzuat.atomtech.in/paynetzclient/ResponseParam.jsp" */BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_REDIRECT_URL))
+		builder.append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PAYMENT_URL))
+				.append("?").append("login=").append(login)
+				.append("&").append("pass=").append(pass).append("&")
+				.append("ttype=").append(ttype).append("&")
+				.append("prodid=").append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID)).append("&")
+				.append("amt=").append(amt).append("&")
+				.append("txncurr=").append(txncurr).append("&")
+				.append("txnscamt=").append("0").append("&")
+				.append("custacc=").append("1234567890").append("&")
+				.append("clientcode=").append(BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_CLIENT_CODE)).append("&")
+				.append("txnid=").append(txnid).append("&")
+				.append("date=").append(CommonUtils.convertDate(new Date(), "dd/MM/yyyy"))
+				.append("&").append("ru=").append(/* "https://paynetzuat.atomtech.in/paynetzclient/ResponseParam.jsp" */BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_REDIRECT_URL))
 				.append("&").append("signature=").append(signature_request);
 		// .append("&").append("mprod=").append(getProducts(vendor.getEmail(),
 		// amt));
-
+		
+		LoggingUtil.logMessage("Atom payment URL == " + builder.toString() + " PROD ID - " + BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID));
 		invoice.setAtomPaymentUrl(builder.toString());
 	}
 
