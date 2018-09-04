@@ -767,7 +767,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					paymentAttempt++;
 					dbInvoice.setPaymentAttempt(paymentAttempt);
 					BillPaymentUtil.prepareHdfcRequest(invoice, customer);
-					//BillPaymentUtil.prepareCashFreeSignature(invoice, customer, paymentAttempt);
+					BillPaymentUtil.prepareCashFreeSignature(invoice, customer, paymentAttempt);
 					BillPaymentUtil.prepareAtomRequest(invoice, vendor);
 					//Only if InstaMojo payment request is not already generated
 					if(StringUtils.isBlank(invoice.getPaymentUrl())) {
