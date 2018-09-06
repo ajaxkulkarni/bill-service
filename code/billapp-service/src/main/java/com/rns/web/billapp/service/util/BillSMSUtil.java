@@ -86,13 +86,13 @@ public class BillSMSUtil implements BillConstants {
 				if(invoice.getPendingBalance() != null && BigDecimal.ZERO.compareTo(invoice.getPendingBalance()) < 0) {
 					builder.append("Pending = ").append(CommonUtils.getStringValue(invoice.getPendingBalance(), false)).append("\n");;
 				}
-				if(invoice.getServiceCharge() != null && BigDecimal.ZERO.compareTo(invoice.getPendingBalance()) < 0) {
+				if(invoice.getServiceCharge() != null && BigDecimal.ZERO.compareTo(invoice.getServiceCharge()) < 0) {
 					builder.append("Service charge = ").append(CommonUtils.getStringValue(invoice.getServiceCharge(), false)).append("\n");;
 				}
-				if(invoice.getCreditBalance() != null && BigDecimal.ZERO.compareTo(invoice.getPendingBalance()) < 0) {
+				if(invoice.getCreditBalance() != null && BigDecimal.ZERO.compareTo(invoice.getCreditBalance()) < 0) {
 					builder.append("Credit = ").append(CommonUtils.getStringValue(invoice.getCreditBalance(), false)).append("\n");;
 				}
-				if(invoice.getOutstandingBalance() != null && BigDecimal.ZERO.compareTo(invoice.getPendingBalance()) < 0) {
+				if(invoice.getOutstandingBalance() != null && BigDecimal.ZERO.compareTo(invoice.getOutstandingBalance()) < 0) {
 					builder.append("Outstanding = ").append(CommonUtils.getStringValue(invoice.getOutstandingBalance(), false)).append("\n");;
 				}
 				builder.append(SMS_COSMETIC_SEPARATOR).append("\n");
