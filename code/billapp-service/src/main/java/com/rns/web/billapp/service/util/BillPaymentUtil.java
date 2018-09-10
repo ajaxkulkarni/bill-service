@@ -378,6 +378,9 @@ public class BillPaymentUtil {
 		postData.put("orderNote", invoicePurpose);
 		postData.put("customerName", customer.getName());
 		postData.put("customerEmail", customer.getEmail());
+		if(StringUtils.isBlank(customer.getEmail())) {
+			postData.put("customerEmail", "customer@payperbill.in");
+		}
 		postData.put("customerPhone", customer.getPhone());
 		String returnUrl = BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_RETURN_URL);
 		postData.put("returnUrl", returnUrl);
