@@ -10,12 +10,15 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -28,6 +31,7 @@ import org.springframework.stereotype.Component;
 
 import com.ccavenue.security.AesCryptUtil;
 import com.rns.web.billapp.service.bo.api.BillUserBo;
+import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.domain.BillFile;
@@ -368,6 +372,7 @@ public class BillUserController {
 				invoice.setStatus(BillConstants.INVOICE_STATUS_FAILED);
 				invoice.setComments("Signature not matched");
 			}
+			invoice.setPaymentResponse(formParams.toString());
 			BillServiceRequest request = new BillServiceRequest();
 			request.setInvoice(invoice);
 			BillServiceResponse response = userBo.completePayment(request);
@@ -429,4 +434,35 @@ public class BillUserController {
 		return Response.temporaryRedirect(url).build();
 	}
 	
+	@GET
+	@Path("/getImage/{type}/{id}")
+	@Produces(MediaType.MULTIPART_FORM_DATA)
+	public Response getImage(@PathParam("type") String type, @PathParam("id") Integer id) {
+		//LoggingUtil.logObject("Image request:", userId);
+		try {
+			BillServiceRequest request = new BillServiceRequest();
+			if(StringUtils.equals("logo", type)) {
+				BillBusiness business = new BillBusiness();
+				business.setId(id);
+				request.setBusiness(business);
+				request.setRequestType(type);
+			}
+			BillServiceResponse sResponse = userBo.getFile(request);
+			ResponseBuilder response = null;
+			if(sResponse.getFile() != null) {
+				response = Response.ok(sResponse.getFile().getFileData());
+				if(sResponse.getFile().getFileName() != null) {
+					response.header("Content-Disposition", "filename=" + sResponse.getFile().getFileName());
+				} else {
+					response.header("Content-Disposition", "filename=" + "image.png");
+				}
+			}
+			return response.build();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+		return null;
+	}
 }

@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
@@ -35,7 +36,7 @@ import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 
 public class BillBusinessConverter {
 	
-	public static void updateBusinessDetails(BillUser user, BillGenericDaoImpl dao, BillDBUser existingUser) throws IllegalAccessException, InvocationTargetException {
+	public static void updateBusinessDetails(BillUser user, BillGenericDaoImpl dao, BillDBUser existingUser) throws IllegalAccessException, InvocationTargetException, IOException {
 		BillBusiness currentBusiness = user.getCurrentBusiness();
 		if(currentBusiness != null) {
 			BillDBUserBusiness billDBUserBusiness = new BillDBUserBusiness();
@@ -53,6 +54,16 @@ public class BillBusinessConverter {
 				if(billDBUserBusiness.getSector() != null) {
 					session.persist(billDBUserBusiness);
 				}
+			}
+			if(currentBusiness.getLogo() != null) {
+				String folderLoc = BillConstants.ROOT_FOLDER_LOCATION + billDBUserBusiness.getId();
+				File folder = new File(folderLoc);
+				if(!folder.exists()) {
+					folder.mkdirs();
+				}
+				String logoLoc = folderLoc + "/logo_" + currentBusiness.getLogo().getFilePath();
+				CommonUtils.writeToFile(currentBusiness.getLogo().getFileData(), logoLoc);
+				billDBUserBusiness.setLogoImg(logoLoc);
 			}
 			//Update business locations
 			updateBusinessLocations(currentBusiness, billDBUserBusiness, session);

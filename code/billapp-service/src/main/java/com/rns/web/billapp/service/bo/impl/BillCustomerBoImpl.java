@@ -122,7 +122,7 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 			
 			BillDBCustomerCoupons coupons = new BillDBCustomerCoupons();
 			NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
-			nullAwareBeanUtils.copyProperties(coupons, request.getScheme());
+			//nullAwareBeanUtils.copyProperties(coupons, request.getScheme());
 			
 			coupons.setAcceptedDate(new Date());
 			coupons.setStatus(STATUS_ACTIVE);

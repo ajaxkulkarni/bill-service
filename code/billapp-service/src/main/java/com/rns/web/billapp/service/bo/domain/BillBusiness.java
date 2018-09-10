@@ -9,6 +9,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.rns.web.billapp.service.domain.BillFile;
 
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -29,6 +30,8 @@ public class BillBusiness implements Serializable {
 	private List<BillLocation> businessLocations;
 	private List<BillItem> items;
 	private String identificationNumber;
+	private BillFile logo;
+	private String mapLocation;
 
 	public Integer getId() {
 		return id;
@@ -89,6 +92,18 @@ public class BillBusiness implements Serializable {
 	}
 	public void setIdentificationNumber(String identificationNumber) {
 		this.identificationNumber = identificationNumber;
+	}
+	public BillFile getLogo() {
+		return logo;
+	}
+	public void setLogo(BillFile logo) {
+		this.logo = logo;
+	}
+	public String getMapLocation() {
+		return mapLocation;
+	}
+	public void setMapLocation(String mapLocation) {
+		this.mapLocation = mapLocation;
 	}
 	
 }

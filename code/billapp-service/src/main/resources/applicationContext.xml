@@ -17,7 +17,7 @@
 	
 	
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
-		<property name="locations"  value="classpath:db.properties"/>
+		<property name="locations"  value="file:///home/service/properties/bill-db.properties"/>
 	</bean>
 	
 
@@ -32,6 +32,11 @@
 	</bean>
 	
 	<bean id="businessBo" class="com.rns.web.billapp.service.bo.impl.BillBusinessBoImpl">
+		<property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory" />
+		<property name="executor" ref="executor" />
+	</bean>
+	
+	<bean id="customerBo" class="com.rns.web.billapp.service.bo.impl.BillCustomerBoImpl">
 		<property name="sessionFactory" ref="hibernate4AnnotatedSessionFactory" />
 		<property name="executor" ref="executor" />
 	</bean>

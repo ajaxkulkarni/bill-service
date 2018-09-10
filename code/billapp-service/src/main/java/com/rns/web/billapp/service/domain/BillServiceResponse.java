@@ -36,6 +36,7 @@ public class BillServiceResponse {
 	private List<BillOrder> orders; 
 	private BillAdminDashboard dashboard;
 	private List<BillBusiness> businesses;
+	private BillFile file;
 	
 	public BillServiceResponse() {
 		setStatus(BillConstants.STATUS_OK);
@@ -154,6 +155,14 @@ public class BillServiceResponse {
 
 	public void setBusinesses(List<BillBusiness> businesses) {
 		this.businesses = businesses;
+	}
+
+	public BillFile getFile() {
+		return file;
+	}
+
+	public void setFile(BillFile file) {
+		this.file = file;
 	}
 	
 }

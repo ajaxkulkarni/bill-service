@@ -32,6 +32,8 @@ public class BillDBUserBusiness {
 	private String address;
 	private Set<BillDBLocation> locations = new HashSet<BillDBLocation>();
 	private String identificationNumber;
+	private String mapLocation;
+	private String logoImg;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -116,6 +118,22 @@ public class BillDBUserBusiness {
 	}
 	public void setIdentificationNumber(String identificationNumber) {
 		this.identificationNumber = identificationNumber;
+	}
+	
+	@Column(name = "map_location")
+	public String getMapLocation() {
+		return mapLocation;
+	}
+	public void setMapLocation(String mapLocation) {
+		this.mapLocation = mapLocation;
+	}
+	
+	@Column(name = "logo_img")
+	public String getLogoImg() {
+		return logoImg;
+	}
+	public void setLogoImg(String logoImg) {
+		this.logoImg = logoImg;
 	}
 	
 

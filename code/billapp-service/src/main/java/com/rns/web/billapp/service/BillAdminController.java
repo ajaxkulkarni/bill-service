@@ -24,8 +24,10 @@ import org.springframework.stereotype.Component;
 
 import com.rns.web.billapp.service.bo.api.BillAdminBo;
 import com.rns.web.billapp.service.bo.api.BillSchedulerBo;
+import com.rns.web.billapp.service.bo.api.BillUserBo;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillItem;
+import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
@@ -60,6 +62,18 @@ public class BillAdminController {
 	}
 	public void setSchedulerBo(BillSchedulerBo schedulerBo) {
 		this.schedulerBo = schedulerBo;
+	}
+	
+	@Autowired(required = true)
+	@Qualifier(value = "userBo")
+	BillUserBo userBo;
+
+	public void setUserBo(BillUserBo userBo) {
+		this.userBo = userBo;
+	}
+
+	public BillUserBo getUserBo() {
+		return userBo;
 	}
 	
 	@POST
@@ -207,6 +221,47 @@ public class BillAdminController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse getAllVendors(BillServiceRequest request) {
 		return adminBo.getAllVendors(request);
+	}
+	
+	@POST
+	@Path("/updateBusinessInfo")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateBusinessInfo(@FormDataParam("logo") InputStream logoFile,
+			@FormDataParam("logo") FormDataContentDisposition logoFileDetails, @FormDataParam("business") String user) {
+		LoggingUtil.logObject("Business/user update request", user);
+		ObjectMapper mapper = new ObjectMapper();
+		BillServiceResponse response = new BillServiceResponse();
+		try {
+			BillUser billUser = mapper.readValue(user, BillUser.class);
+			if (billUser != null) {
+				if (logoFile != null) {
+					BillFile file = new BillFile();
+					file.setFileData(logoFile);
+					file.setFileSize(new BigDecimal((logoFileDetails.getSize())));
+					file.setFileType(logoFileDetails.getType());
+					file.setFilePath(logoFileDetails.getFileName());
+					billUser.getCurrentBusiness().setLogo(file);
+				}
+				BillServiceRequest request = new BillServiceRequest();
+				request.setUser(billUser);
+				response = userBo.updateUserInfo(request);
+			} else {
+				response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+			}
+
+		} catch (JsonParseException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		} catch (JsonMappingException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		} catch (IOException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		}
+		LoggingUtil.logObject("Business/user update response", response);
+		return response;
 	}
 	
 }

@@ -68,6 +68,11 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 					return response;
 				}
 			} else {
+				dbScheme = billGenericDaoImpl.getEntityByKey(BillDBSchemes.class, "schemeCode", scheme.getSchemeCode(), true);
+				if(dbScheme != null) {
+					response.setResponse(ERROR_CODE_GENERIC, "Scheme already exists with the same code! Please use a different code!");
+					return response;
+				}
 				dbScheme = new BillDBSchemes();
 				dbScheme.setStatus(STATUS_ACTIVE);
 				dbScheme.setCreatedDate(new Date());

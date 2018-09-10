@@ -17,5 +17,7 @@ public interface BillAdminBo {
 	BillServiceResponse generateBills(BillServiceRequest request);
 	BillServiceResponse getSummary(BillServiceRequest request);
 	BillServiceResponse getAllVendors(BillServiceRequest request);
+	//BillServiceResponse updateBusiness(BillServiceRequest request);
+	
 	
 }
