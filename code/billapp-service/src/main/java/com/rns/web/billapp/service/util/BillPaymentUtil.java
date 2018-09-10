@@ -377,10 +377,10 @@ public class BillPaymentUtil {
 		String invoicePurpose = invoicePurpose(invoice);
 		postData.put("orderNote", invoicePurpose);
 		postData.put("customerName", customer.getName());
-		postData.put("customerEmail", customer.getEmail());
 		if(StringUtils.isBlank(customer.getEmail())) {
-			postData.put("customerEmail", "contact@payperbill.in");
+			customer.setEmail("contact@payperbill.in");
 		}
+		postData.put("customerEmail", customer.getEmail());
 		postData.put("customerPhone", customer.getPhone());
 		String returnUrl = BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_RETURN_URL);
 		postData.put("returnUrl", returnUrl);
