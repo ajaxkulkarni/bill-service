@@ -1,7 +1,7 @@
 <web-app id="WebApp_ID" version="2.4"
 	xmlns="http://java.sun.com/xml/ns/j2ee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee 
-	http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
+	http://java.sun.com/xml/ns/j2ee/web-app_3_0.xsd">
 	<display-name>Billing RESTful Web Application</display-name>
 
 	<context-param>
@@ -17,6 +17,7 @@
 		<servlet-name>jersey-serlvet</servlet-name>
 		<!-- <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class> -->
 		<servlet-class>com.sun.jersey.spi.spring.container.servlet.SpringServlet</servlet-class>
+
 		<init-param>
 			<param-name>com.sun.jersey.config.property.packages</param-name>
 			<param-value>com.rns.web.billapp.service</param-value>
@@ -25,10 +26,8 @@
 			<param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
 			<param-value>true</param-value>
 		</init-param>
-		<!-- <init-param>
-			<param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name>
-			<param-value>com.rns.web.billapp.service</param-value>
-		</init-param> -->
+		<!-- <init-param> <param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name> 
+			<param-value>com.rns.web.billapp.service</param-value> </init-param> -->
 		<init-param>
 			<param-name>jersey.config.server.provider.packages</param-name>
 			<param-value>com.rns.web.billapp.service</param-value>
@@ -37,7 +36,17 @@
 			<param-name>com.sun.jersey.spi.container.ContainerRequestFilters</param-name>
 			<param-value>com.rns.web.billapp.service.AuthFilter</param-value>
 		</init-param>
+
+		<multipart-config>
+			<!-- 52MB max -->
+			<max-file-size>52428800</max-file-size>
+			<max-request-size>52428800</max-request-size>
+			<file-size-threshold>0</file-size-threshold>
+		</multipart-config>
+
 		<load-on-startup>1</load-on-startup>
+
+
 	</servlet>
 
 	<servlet-mapping>
@@ -54,19 +63,15 @@
 		<filter-name>CORS</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
-	
-	<!-- <filter>
-		<filter-name>requestFilter</filter-name>
-		<filter-class>com.rns.web.billapp.service.AuthFilter</filter-class>
-	</filter>
 
-	<filter-mapping>
-		<filter-name>requestFilter</filter-name>
-		<url-pattern>/*</url-pattern>
-	</filter-mapping> -->
+	<!-- <filter> <filter-name>requestFilter</filter-name> <filter-class>com.rns.web.billapp.service.AuthFilter</filter-class> 
+		</filter> <filter-mapping> <filter-name>requestFilter</filter-name> <url-pattern>/*</url-pattern> 
+		</filter-mapping> -->
 
 	<!-- <filter> <filter-name>CorsFilter</filter-name> <filter-class>org.apache.catalina.filters.CorsFilter</filter-class> 
 		</filter> <filter-mapping> <filter-name>CorsFilter</filter-name> <url-pattern>/*</url-pattern> 
 		</filter-mapping> -->
+
+
 
 </web-app>
