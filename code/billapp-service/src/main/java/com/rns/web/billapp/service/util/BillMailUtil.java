@@ -1,8 +1,12 @@
 package com.rns.web.billapp.service.util;
 
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +29,7 @@ import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
@@ -183,13 +188,13 @@ public class BillMailUtil implements BillConstants, Runnable {
 			BodyPart messageBodyPart = new MimeBodyPart();
 			messageBodyPart.setContent(result, "text/html; charset=utf-8");
 			multipart.addBodyPart(messageBodyPart);
-			BodyPart image = new MimeBodyPart();
+			/*BodyPart image = new MimeBodyPart();
 			DataSource fds = new FileDataSource(BillMailUtil.class.getClassLoader().getResource("email/PayPerBill.png").getPath());
 			image.setDataHandler(new DataHandler(fds));
 			image.setHeader("Content-ID", "<image>");
-			multipart.addBodyPart(image);
+			multipart.addBodyPart(image);*/
 
-			message.setContent(multipart);
+			message.setContent(result, "text/html; charset=utf-8");
 			// message.setContent(result, "text/html; charset=utf-8");
 
 			if (isAdminMail()) {
@@ -366,5 +371,15 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_INVOICE_GENERATION, "Invoices generated for {month} {year}");
 		}
 	});
+	
+	public static String encodeFileToBase64Binary(String fileName) throws IOException {
+	    File file = new File(fileName);
+	    byte[] encoded = org.apache.commons.codec.binary.Base64.encodeBase64(FileUtils.readFileToByteArray(file));
+	    return new String(encoded, StandardCharsets.US_ASCII);
+	}
+	
+	public static void main(String[] args) throws IOException {
+		System.out.println(encodeFileToBase64Binary(BillMailUtil.class.getClassLoader().getResource("email/PayPerBill.png").getPath()));
+	}
 
 }
