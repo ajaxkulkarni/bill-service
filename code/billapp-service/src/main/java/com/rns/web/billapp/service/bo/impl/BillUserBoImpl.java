@@ -8,10 +8,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
+import javax.persistence.criteria.Order;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.BeanUtilsBean;
@@ -57,6 +60,7 @@ import com.rns.web.billapp.service.util.BillBusinessConverter;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillMailUtil;
+import com.rns.web.billapp.service.util.BillNameSorter;
 import com.rns.web.billapp.service.util.BillPaymentUtil;
 import com.rns.web.billapp.service.util.BillPropertyUtil;
 import com.rns.web.billapp.service.util.BillRuleEngine;
@@ -570,7 +574,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			List<BillDBLocation> locations = dao.getEntities(BillDBLocation.class, true);
+			List<BillDBLocation> locations = dao.getEntities(BillDBLocation.class, true, "name", "asc");
 			response.setLocations(BillDataConverter.getLocations(locations));
 
 		} catch (Exception e) {
@@ -591,7 +595,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			List<BillDBItemParent> items = dao.getEntitiesByKey(BillDBItemParent.class, "sector.id", request.getSector().getId(), true);
+			List<BillDBItemParent> items = dao.getEntitiesByKey(BillDBItemParent.class, "sector.id", request.getSector().getId(), true, "name", "asc");
 			response.setItems(BillDataConverter.getItems(items));
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -611,7 +615,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			List<BillDBItemBusiness> items = dao.getEntitiesByKey(BillDBItemBusiness.class, "business.id", request.getBusiness().getId(), true);
+			List<BillDBItemBusiness> items = dao.getEntitiesByKey(BillDBItemBusiness.class, "business.id", request.getBusiness().getId(), true, null, null);
 			response.setItems(BillDataConverter.getBusinessItems(items));
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -667,6 +671,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					users.add(user);
 				}
 			}
+			Collections.sort(users, new BillNameSorter());
 			response.setUsers(users);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));

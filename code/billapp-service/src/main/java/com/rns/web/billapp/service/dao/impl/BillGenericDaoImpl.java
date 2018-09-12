@@ -41,23 +41,35 @@ public class BillGenericDaoImpl {
 		return null;
 	}
 
-	public <T> List getEntities(Class<T> type, boolean activeEntity) {
+	public <T> List getEntities(Class<T> type, boolean activeEntity, String sortKey, String order) {
 		Criteria criteria = session.createCriteria(type);
 		if (activeEntity) {
 			criteria.add(activeCriteria());
 		}
+		addOrder(sortKey, order, criteria);
 		return criteria.list();
+	}
+
+	private void addOrder(String sortKey, String order, Criteria criteria) {
+		if(StringUtils.isNotBlank(sortKey) && order != null) {
+			if(StringUtils.equals(order, "asc")) {
+				criteria.addOrder(org.hibernate.criterion.Order.asc(sortKey));
+			} else {
+				criteria.addOrder(org.hibernate.criterion.Order.desc(sortKey));
+			}
+		}
 	}
 
 	public static SimpleExpression activeCriteria() {
 		return Restrictions.eq("status", BillConstants.STATUS_ACTIVE);
 	}
 
-	public <T> List<T> getEntitiesByKey(Class<T> type, String key, Object value, boolean activeEntity) {
+	public <T> List<T> getEntitiesByKey(Class<T> type, String key, Object value, boolean activeEntity, String sortKey, String order) {
 		Criteria criteria = session.createCriteria(type).add(Restrictions.eq(key, value));
 		if (activeEntity) {
 			criteria.add(activeCriteria());
 		}
+		addOrder(sortKey, order, criteria);
 		return criteria.list();
 	}
 

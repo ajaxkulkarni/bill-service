@@ -156,7 +156,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			List<BillDBItemParent> items = dao.getEntities(BillDBItemParent.class, true);
+			List<BillDBItemParent> items = dao.getEntities(BillDBItemParent.class, true, "name", "asc");
 			response.setItems(BillDataConverter.getItems(items));
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));

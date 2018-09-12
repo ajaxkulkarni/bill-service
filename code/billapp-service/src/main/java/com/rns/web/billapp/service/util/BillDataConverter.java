@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -106,6 +107,7 @@ public class BillDataConverter implements BillConstants {
 			BillItem businessItem = getBusinessItem(beanUtils, item);
 			businessItems.add(businessItem);
 		}
+		Collections.sort(businessItems, new BillNameSorter());
 		return businessItems;
 	}
 
@@ -133,6 +135,7 @@ public class BillDataConverter implements BillConstants {
 			BillUser customer = getCustomerDetails(beanUtils, dbCustomer);
 			businessCustomers.add(customer);
 		}
+		Collections.sort(businessCustomers, new BillNameSorter());
 		return businessCustomers;
 	}
 
