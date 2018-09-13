@@ -216,6 +216,9 @@ public class BillPaymentUtil {
 	}
 
 	public static String invoicePurpose(BillInvoice invoice) {
+		if(invoice.getMonth() == null) {
+			return "";
+		}
 		return BillConstants.MONTHS[invoice.getMonth() - 1] + " " + invoice.getYear() + " monthly payment";
 	}
 

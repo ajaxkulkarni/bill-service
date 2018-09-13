@@ -6,16 +6,12 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import javax.activation.DataHandler;
-import javax.activation.DataSource;
-import javax.activation.FileDataSource;
 import javax.mail.BodyPart;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -53,10 +49,11 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	private String type;
 	private BillUser user;
-	private List<String> users;
+	private List<BillUser> users;
 	private String messageText;
 	private String mailSubject;
 	private BillInvoice invoice;
+	private List<BillInvoice> invoices;
 
 	public void setUser(BillUser user) {
 		this.user = user;
@@ -138,28 +135,17 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 			if (invoice != null) {
 				result = prepareInvoiceInfo(result, invoice);
-
-				subject = StringUtils.replace(subject, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
+				
+				if(invoice.getMonth() != null) {
+					subject = StringUtils.replace(subject, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
+				}
 				subject = StringUtils.replace(subject, "{year}", CommonUtils.getStringValue(invoice.getYear()));
 				subject = StringUtils.replace(subject, "{amount}", CommonUtils.getStringValue(invoice.getPayable(), false));
-
-				if (CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
-					String invoiceItemsTemplate = CommonUtils.readFile("email/invoice_items.html");
-					StringBuilder builder = new StringBuilder();
-					for (BillItem invoiceItem : invoice.getInvoiceItems()) {
-						String invoiceItemRow = StringUtils.replace(invoiceItemsTemplate, "{amount}", CommonUtils.getStringValue(invoiceItem.getPrice(), false));
-						invoiceItemRow = StringUtils.replace(invoiceItemRow, "{quantity}", CommonUtils.getStringValue(invoiceItem.getQuantity(), true));
-						if (invoiceItem.getParentItem() != null) {
-							invoiceItemRow = StringUtils.replace(invoiceItemRow, "{name}", CommonUtils.getStringValue(invoiceItem.getParentItem().getName()));
-						} else {
-							invoiceItemRow = StringUtils.replace(invoiceItemRow, "{name}", CommonUtils.getStringValue(invoiceItem.getName()));
-						}
-						builder.append(invoiceItemRow);
-					}
-					result = StringUtils.replace(result, "{invoiceItems}", builder.toString());
-				} else {
-					result = StringUtils.replace(result, "{invoiceItems}", "");
-				}
+				subject = StringUtils.replace(subject, "{date}", CommonUtils.convertDate(invoice.getPaidDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
+				
+				result = appendInvoiceItems(result);
+				
+				result = appendCustomers(result);
 
 				String businessName = "";
 				if (currentBusiness != null) {
@@ -220,13 +206,53 @@ public class BillMailUtil implements BillConstants, Runnable {
 		return "";
 	}
 
+	private String appendInvoiceItems(String result) throws FileNotFoundException {
+		if (CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
+			String invoiceItemsTemplate = CommonUtils.readFile("email/invoice_items.html");
+			StringBuilder builder = new StringBuilder();
+			for (BillItem invoiceItem : invoice.getInvoiceItems()) {
+				String invoiceItemRow = StringUtils.replace(invoiceItemsTemplate, "{amount}", CommonUtils.getStringValue(invoiceItem.getPrice(), false));
+				invoiceItemRow = StringUtils.replace(invoiceItemRow, "{quantity}", CommonUtils.getStringValue(invoiceItem.getQuantity(), true));
+				if (invoiceItem.getParentItem() != null) {
+					invoiceItemRow = StringUtils.replace(invoiceItemRow, "{name}", CommonUtils.getStringValue(invoiceItem.getParentItem().getName()));
+				} else {
+					invoiceItemRow = StringUtils.replace(invoiceItemRow, "{name}", CommonUtils.getStringValue(invoiceItem.getName()));
+				}
+				builder.append(invoiceItemRow);
+			}
+			result = StringUtils.replace(result, "{invoiceItems}", builder.toString());
+		} else {
+			result = StringUtils.replace(result, "{invoiceItems}", "");
+		}
+		return result;
+	}
+	
+	private String appendCustomers(String result) throws FileNotFoundException {
+		if (CollectionUtils.isNotEmpty(users)) {
+			String invoiceItemsTemplate = CommonUtils.readFile("email/invoices_list.html");
+			StringBuilder builder = new StringBuilder();
+			for (BillUser customer : users) {
+				String row = new String(invoiceItemsTemplate);
+				row = prepareUserInfo(row, customer);
+				row = prepareInvoiceInfo(row, customer.getCurrentInvoice());
+				builder.append(row);
+			}
+			result = StringUtils.replace(result, "{invoices}", builder.toString());
+		} else {
+			result = StringUtils.replace(result, "{invoices}", "");
+		}
+		return result;
+	}
+
 	private boolean isAdminMail() {
 		return StringUtils.contains(type, "Admin");
 	}
 
 	public static String prepareInvoiceInfo(String result, BillInvoice invoice) {
 		result = StringUtils.replace(result, "{invoiceId}", CommonUtils.getStringValue(invoice.getId()));
-		result = StringUtils.replace(result, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
+		if(invoice.getMonth() != null) {
+			result = StringUtils.replace(result, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
+		}
 		result = StringUtils.replace(result, "{year}", CommonUtils.getStringValue(invoice.getYear()));
 		result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(invoice.getAmount(), false));
 		result = StringUtils.replace(result, "{serviceCharge}", CommonUtils.getStringValue(invoice.getServiceCharge(), false));
@@ -239,6 +265,10 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{paymentUrl}", CommonUtils.getStringValue(invoice.getPaymentUrl()));
 		result = StringUtils.replace(result, "{paidAmount}", CommonUtils.getStringValue(invoice.getPaidAmount(), false));
 		result = StringUtils.replace(result, "{paymentId}", CommonUtils.getStringValue(invoice.getPaymentId()));
+		result = StringUtils.replace(result, "{paymentMode}", CommonUtils.getStringValue(invoice.getPaymentMode()));
+		result = StringUtils.replace(result, "{settlementId}", CommonUtils.getStringValue(invoice.getPaymentId()));
+		result = StringUtils.replace(result, "{settlementAmount}", CommonUtils.getStringValue(invoice.getPayable(), false));
+		result = StringUtils.replace(result, "{date}", CommonUtils.convertDate(invoice.getPaidDate()));
 		return result;
 	}
 
@@ -277,6 +307,10 @@ public class BillMailUtil implements BillConstants, Runnable {
 			} else {
 				result = StringUtils.replace(result, "{itemName}", "");
 			}
+		}
+		if(user.getFinancialDetails() != null) {
+			result = StringUtils.replace(result, "{accountNumber}", user.getFinancialDetails().getAccountNumber());
+			result = StringUtils.replace(result, "{ifscCode}", user.getFinancialDetails().getIfscCode());
 		}
 		return result;
 	}
@@ -328,7 +362,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 	 * mp.addBodyPart(messsageBody); message.setContent(mp); }
 	 */
 
-	public void setUsers(List<String> users) {
+	public void setUsers(List<BillUser> users) {
 		this.users = users;
 	}
 
@@ -353,6 +387,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_HOLIDAY, "customer_holiday.html");
 			put(MAIL_TYPE_REGISTRATION_ADMIN, "registration_admin.html");
 			put(MAIL_TYPE_INVOICE_GENERATION, "invoice_generation.html");
+			put(MAIL_TYPE_SETTLEMENT_SUMMARY, "settlement_summary.html");
 		}
 	});
 
@@ -369,6 +404,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_HOLIDAY, "Public holiday alert");
 			put(MAIL_TYPE_REGISTRATION_ADMIN, "Alert: New vendor registration!");
 			put(MAIL_TYPE_INVOICE_GENERATION, "Invoices generated for {month} {year}");
+			put(MAIL_TYPE_SETTLEMENT_SUMMARY, "Your settlement of Rs. {amount} is processed on {date}");
 		}
 	});
 	
@@ -380,6 +416,14 @@ public class BillMailUtil implements BillConstants, Runnable {
 	
 	public static void main(String[] args) throws IOException {
 		System.out.println(encodeFileToBase64Binary(BillMailUtil.class.getClassLoader().getResource("email/PayPerBill.png").getPath()));
+	}
+
+	public List<BillInvoice> getInvoices() {
+		return invoices;
+	}
+
+	public void setInvoices(List<BillInvoice> invoices) {
+		this.invoices = invoices;
 	}
 
 }

@@ -46,6 +46,7 @@ public class BillDBInvoice {
 	private Integer paymentAttempt;
 	private String settlementStatus;
 	private Date settlementDate;
+	private String settlementRef;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -240,6 +241,14 @@ public class BillDBInvoice {
 	}
 	public void setSettlementDate(Date settlementDate) {
 		this.settlementDate = settlementDate;
+	}
+	
+	@Column(name = "settlement_ref")
+	public String getSettlementRef() {
+		return settlementRef;
+	}
+	public void setSettlementRef(String settlementRef) {
+		this.settlementRef = settlementRef;
 	}
 	
 

@@ -4,6 +4,8 @@ import java.io.InputStream;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
+import org.apache.poi.ss.usermodel.Workbook;
+
 public class BillFile implements Serializable {
 	
 	/**
@@ -15,6 +17,7 @@ public class BillFile implements Serializable {
 	private InputStream fileData;
 	private String fileType;
 	private BigDecimal fileSize;
+	private Workbook wb;
 	
 	public String getFileName() {
 		return fileName;
@@ -45,6 +48,12 @@ public class BillFile implements Serializable {
 	}
 	public void setFileSize(BigDecimal fileSize) {
 		this.fileSize = fileSize;
+	}
+	public Workbook getWb() {
+		return wb;
+	}
+	public void setWb(Workbook workbook) {
+		this.wb = workbook;
 	}
 	
 	

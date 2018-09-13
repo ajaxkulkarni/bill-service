@@ -118,6 +118,7 @@ public class BillSMSUtil implements BillConstants {
 			put(MAIL_TYPE_HOLIDAY, "Hello {name}! Your order from {businessName} for {sector} will not be delivered today due to a public holiday - {holidayName}");
 			put(MAIL_TYPE_REGISTRATION_ADMIN, "We have a new registration - \n Name - {name} \n Email {email} \n Phone - {phone}");
 			put(MAIL_TYPE_INVOICE_GENERATION, "Hi {name} ! Invoices generated for {month} {year}. Please review the invoices before sending out to customers. \n No of invoices = {amount} \n Amount raised = {payable}.");
+			put(MAIL_TYPE_SETTLEMENT_SUMMARY, "Your settlement of Rs. {amount} is processed on {date}. Please check your email {email} for more details. \n Reference no - {settlementId}. \n Payment will be credited to your account in 24 hours.");
 		}
 	});
 	

@@ -20,6 +20,7 @@ import org.hibernate.sql.JoinType;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
+import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.CommonUtils;
 
@@ -157,4 +158,34 @@ public class BillInvoiceDaoImpl {
 		return query.list();
 	}
 	
+	/*public List<Object[]> getInvoiceSettlements(String settlementType) {
+		Query query = session.createQuery("select sum(tx.amount),tx.business from BillDBTransactions tx where tx.status=:status AND (tx.medium=:cashfreePayment OR tx.medium) group by tx.business.id");
+		query.setString("status", settlementType);
+		query.setString("cashfreePayment", BillConstants.PAYMENT_MEDIUM_CASHFREE);
+		query.setString("atom", BillConstants.PAYMENT_MEDIUM_ATOM);
+		return query.list();
+	}*/
+	
+	public List<BillDBTransactions> getInvoiceSettlements(String settlementType, Integer businessId) {
+		String queryString = "from BillDBTransactions tx where tx.status=:status AND (tx.medium=:cashfreePayment OR tx.medium=:atom)";
+		if(businessId != null) {
+			queryString = queryString + " AND business.id=:businessId";
+		}
+		Query query = session.createQuery(queryString);
+		query.setString("status", settlementType);
+		query.setString("cashfreePayment", BillConstants.PAYMENT_MEDIUM_CASHFREE);
+		query.setString("atom", BillConstants.PAYMENT_MEDIUM_ATOM);
+		if(businessId != null) {
+			query.setInteger("businessId", businessId);
+		}
+		return query.list();
+	}
+	
+	/*public int updateSettlement(Integer businessId, String status, String oldStatus) {
+		Query query = session.createQuery("update BillDBTransactions set status=:status where status=:oldStatus AND business.id=:business");
+		query.setString("status", status);
+		query.setString("oldStatus", oldStatus);
+		query.setInteger("business", businessId);
+		return query.executeUpdate();
+	}*/
 }

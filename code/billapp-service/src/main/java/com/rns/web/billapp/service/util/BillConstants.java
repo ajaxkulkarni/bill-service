@@ -11,6 +11,12 @@ public interface BillConstants {
 	String REQUEST_TYPE_EMAIL = "EMAIL";
 	String REQUEST_TYPE_OVERWRITE = "Overwrite";
 	String ACCESS_ADMIN = "Admin";
+	String ACTION_SETTLEMENT_COMPLETED = "COMPLETED";
+	String ACTION_SETTLEMENT = "SETTLE";
+	String ACTION_SETTLEMENTS_DATA_EXPORT = "DOWNLOAD";
+	String ACTION_SETTLEMENT_INITIATE = "INITIATE";
+	String ACTION_SETTLEMENT_PENDING = "PENDING";
+	String ACTION_SETTLEMENT_INITIATED = "INITIATED";
 	
 	Integer ERROR_CODE_FATAL = -999;
 	Integer ERROR_CODE_GENERIC = -111;
@@ -68,6 +74,8 @@ public interface BillConstants {
 	String INVOICE_STATUS_PAID = "Credit";
 	String INVOICE_STATUS_DELETED = "Deleted";
 	String INVOICE_STATUS_FAILED = "Failed";
+	String INVOICE_SETTLEMENT_STATUS_INITIATED = "Initiated";
+	String INVOICE_SETTLEMENT_STATUS_SETTLED = "Settled";
 	
 	String USER_DB_ATTR_PHONE = "phone";
 	String ID_ATTR = "id";
@@ -88,6 +96,7 @@ public interface BillConstants {
 	String MAIL_TYPE_PAUSE_BUSINESS = "PauseDeliveryBusiness";
 	String MAIL_TYPE_HOLIDAY = "PauseDeliveryHoliday";
 	String MAIL_TYPE_INVOICE_GENERATION = "InvoicesGenerated";
+	String MAIL_TYPE_SETTLEMENT_SUMMARY = "Settlement";
 
 	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
 

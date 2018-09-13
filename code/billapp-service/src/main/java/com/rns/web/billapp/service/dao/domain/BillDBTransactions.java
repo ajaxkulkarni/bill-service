@@ -33,7 +33,8 @@ public class BillDBTransactions {
 	private String comments;
 	private String response;
 	private String transactionDate;
-	
+	private Date settlementDate;
+	private String settlementRef;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -150,6 +151,22 @@ public class BillDBTransactions {
 	}
 	public void setTransactionDate(String transactionDate) {
 		this.transactionDate = transactionDate;
+	}
+	
+	@Column(name = "settlement_date")
+	public Date getSettlementDate() {
+		return settlementDate;
+	}
+	public void setSettlementDate(Date settlementDate) {
+		this.settlementDate = settlementDate;
+	}
+	
+	@Column(name = "settlement_ref")
+	public String getSettlementRef() {
+		return settlementRef;
+	}
+	public void setSettlementRef(String settlementRef) {
+		this.settlementRef = settlementRef;
 	}
 	
 

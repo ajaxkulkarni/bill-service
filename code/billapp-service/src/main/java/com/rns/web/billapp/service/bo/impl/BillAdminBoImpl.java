@@ -10,6 +10,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -23,6 +24,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import com.rns.web.billapp.service.bo.api.BillAdminBo;
 import com.rns.web.billapp.service.bo.domain.BillAdminDashboard;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -32,8 +34,10 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
+import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
@@ -45,6 +49,7 @@ import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillExcelUtil;
 import com.rns.web.billapp.service.util.BillMailUtil;
 import com.rns.web.billapp.service.util.BillPropertyUtil;
+import com.rns.web.billapp.service.util.BillRuleEngine;
 import com.rns.web.billapp.service.util.BillSMSUtil;
 import com.rns.web.billapp.service.util.BillUserLogUtil;
 import com.rns.web.billapp.service.util.CommonUtils;
@@ -426,6 +431,144 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 				businessList.add(userBusiness);
 			}
 			response.setBusinesses(businessList);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getSettlements(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			BillInvoiceDaoImpl billInvoiceDaoImpl = new BillInvoiceDaoImpl(session);
+			//List<Object[]> resultSet = billInvoiceDaoImpl.getInvoiceSettlements(request.getRequestType());
+			String status = "";
+			if(StringUtils.equalsIgnoreCase(ACTION_SETTLEMENT_INITIATE, request.getRequestType()) || StringUtils.equalsIgnoreCase(ACTION_SETTLEMENT_PENDING, request.getRequestType())) {
+				status = INVOICE_STATUS_PAID;
+			} else if (StringUtils.equalsIgnoreCase(ACTION_SETTLEMENTS_DATA_EXPORT, request.getRequestType()) || StringUtils.equalsIgnoreCase(ACTION_SETTLEMENT_INITIATED, request.getRequestType())) {
+				status = INVOICE_SETTLEMENT_STATUS_INITIATED;
+			} else if (StringUtils.equalsIgnoreCase(ACTION_SETTLEMENT, request.getRequestType())) {
+				status = INVOICE_SETTLEMENT_STATUS_INITIATED;
+			} else if (StringUtils.equalsIgnoreCase(ACTION_SETTLEMENT_COMPLETED, request.getRequestType())) {
+				status = INVOICE_SETTLEMENT_STATUS_SETTLED;
+			}
+			Integer businessId = null;
+			if(request.getBusiness() != null) {
+				businessId = request.getBusiness().getId();
+			}
+			List<BillDBTransactions> resultSet = billInvoiceDaoImpl.getInvoiceSettlements(status, businessId);
+			if(CollectionUtils.isNotEmpty(resultSet)) {
+				List<BillBusiness> businesses = new ArrayList<BillBusiness>();
+				Map<Integer, List<BillUser>> paidInvoiceMap = new HashMap<Integer, List<BillUser>>();
+				for(BillDBTransactions txn: resultSet) {
+					BigDecimal amount = /*CommonUtils.getAmount(row[0])*/ txn.getAmount();
+					BillDBUserBusiness dbBusiness = txn.getBusiness();
+					if(dbBusiness != null) {
+						if(StringUtils.equalsIgnoreCase(ACTION_SETTLEMENT_INITIATE, request.getRequestType())) {
+							//Initiate the settlement for the transaction
+							txn.setStatus(INVOICE_SETTLEMENT_STATUS_INITIATED);
+							continue;
+						} else if (StringUtils.equalsIgnoreCase(ACTION_SETTLEMENT, request.getRequestType())) {
+							txn.setStatus(INVOICE_SETTLEMENT_STATUS_SETTLED);
+							txn.setSettlementDate(new Date());
+							txn.setSettlementRef(request.getInvoice().getPaymentId());
+							//Update all the invoices with settlement details
+							List<BillDBInvoice> paidInvoices = new BillGenericDaoImpl(session).getEntitiesByKey(BillDBInvoice.class, "paymentId", txn.getPaymentId(), false, null, null);
+							if(CollectionUtils.isNotEmpty(paidInvoices)) {
+								for(BillDBInvoice paidInvoice: paidInvoices) {
+									paidInvoice.setSettlementDate(new Date());
+									paidInvoice.setSettlementStatus(INVOICE_SETTLEMENT_STATUS_SETTLED);
+									paidInvoice.setSettlementRef(request.getInvoice().getPaymentId());
+									BillUser customer = BillDataConverter.getCustomerDetails(new NullAwareBeanUtils(), paidInvoice.getSubscription());
+									if(paidInvoiceMap.get(dbBusiness.getId()) == null) {
+										paidInvoiceMap.put(dbBusiness.getId(), new ArrayList<BillUser>());
+									}
+									//To keep track of business wise payments settled and send mail
+									BillInvoice currentInvoice = BillDataConverter.getInvoice(new NullAwareBeanUtils(), paidInvoice);
+									BillRuleEngine.calculatePayable(currentInvoice, null, null);
+									customer.setCurrentInvoice(currentInvoice);
+									paidInvoiceMap.get(dbBusiness.getId()).add(customer);
+								}
+							}
+						}
+						//Check for existing business. If present add the total to the same
+						for(BillBusiness existing: businesses) {
+							if(existing.getId().intValue() == dbBusiness.getId().intValue()) {
+								existing.getOwner().getCurrentInvoice().setAmount(existing.getOwner().getCurrentInvoice().getAmount().add(txn.getAmount()));
+								continue;
+							}
+						}
+						BillInvoice invoice = new BillInvoice();
+						invoice.setAmount(amount);
+						BillBusiness business = BillDataConverter.getBusiness(dbBusiness);
+						BillUser vendor = business.getOwner();
+						BillDBUserFinancialDetails dbFinancials = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserFinancialDetails.class, "user.id", vendor.getId() ,true);
+						if(dbFinancials != null) {
+							BillFinancialDetails financials = new BillFinancialDetails();
+							new NullAwareBeanUtils().copyProperties(financials, dbFinancials);
+							vendor.setFinancialDetails(financials);
+						}
+						vendor.setCurrentInvoice(invoice);
+						businesses.add(business);
+					}
+				}
+				response.setBusinesses(businesses);
+				if(StringUtils.equalsIgnoreCase(ACTION_SETTLEMENTS_DATA_EXPORT, request.getRequestType())) {
+					//Generate Excel for NEFT transfers
+					response.setFile(BillExcelUtil.generateExcel(businesses));
+				}
+				if(StringUtils.equalsIgnoreCase(ACTION_SETTLEMENT, request.getRequestType())) {
+					//Send mails to vendors with details of the settlement
+					if(CollectionUtils.isNotEmpty(paidInvoiceMap.entrySet()) && CollectionUtils.isNotEmpty(businesses)) {
+						for(Entry<Integer, List<BillUser>> e: paidInvoiceMap.entrySet()) {
+							for(BillBusiness business: businesses) {
+								if(business.getId() == e.getKey()) {
+									BillUser owner = business.getOwner();
+									BillBusiness ownerBusiness = new BillBusiness();
+									ownerBusiness.setName(business.getName());
+									owner.setCurrentBusiness(ownerBusiness);
+									BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_SETTLEMENT_SUMMARY, owner);
+									mailUtil.setUsers(e.getValue());
+									BillInvoice currentInvoice = owner.getCurrentInvoice();
+									currentInvoice.setPaidDate(new Date());
+									currentInvoice.setPayable(currentInvoice.getAmount());
+									currentInvoice.setPaymentId(request.getInvoice().getPaymentId());
+									mailUtil.setInvoice(currentInvoice);
+									executor.execute(mailUtil);
+									BillSMSUtil.sendSMS(owner, currentInvoice, MAIL_TYPE_SETTLEMENT_SUMMARY);
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+			tx.commit();
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse initiateSettlements(BillServiceRequest request) {
+		return null;
+	}
+
+	public BillServiceResponse settlePayments(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);

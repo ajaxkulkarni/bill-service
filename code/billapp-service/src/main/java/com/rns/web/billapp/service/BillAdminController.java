@@ -1,5 +1,7 @@
 package com.rns.web.billapp.service;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -15,6 +17,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -262,6 +265,35 @@ public class BillAdminController {
 		}
 		LoggingUtil.logObject("Business/user update response", response);
 		return response;
+	}
+	
+	@POST
+	@Path("/downloadTransferExcel")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces("application/vnd.ms-excel")
+	public Response downloadTransferExcel(BillServiceRequest request) {
+		try {
+			BillFile file = adminBo.getSettlements(request).getFile();
+			XSSFWorkbook wb = (XSSFWorkbook) file.getWb();
+			ByteArrayOutputStream os = new ByteArrayOutputStream();
+			wb.write(os);
+			InputStream is = new ByteArrayInputStream(os.toByteArray());
+			ResponseBuilder response = Response.ok(is);
+			response.header("Content-Disposition","attachment; filename=" + file.getFileName());  
+			return response.build();
+		} catch (Exception e) {
+			LoggingUtil.logError("Error in download data - " + e);
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+		return Response.serverError().build();
+	}
+	
+	@POST
+	@Path("/getSettlements")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getSettlements(BillServiceRequest request) {
+		return adminBo.getSettlements(request);
 	}
 	
 }
