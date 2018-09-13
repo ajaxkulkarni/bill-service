@@ -498,11 +498,16 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 							}
 						}
 						//Check for existing business. If present add the total to the same
+						boolean found = false;
 						for(BillBusiness existing: businesses) {
 							if(existing.getId().intValue() == dbBusiness.getId().intValue()) {
 								existing.getOwner().getCurrentInvoice().setAmount(existing.getOwner().getCurrentInvoice().getAmount().add(txn.getAmount()));
-								continue;
+								found = true;
+								break;
 							}
+						}
+						if(found) {
+							continue;
 						}
 						BillInvoice invoice = new BillInvoice();
 						invoice.setAmount(amount);
