@@ -545,6 +545,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 									currentInvoice.setPayable(currentInvoice.getAmount());
 									currentInvoice.setPaymentId(request.getInvoice().getPaymentId());
 									mailUtil.setInvoice(currentInvoice);
+									mailUtil.setCopyAdmins(true);
 									executor.execute(mailUtil);
 									BillSMSUtil.sendSMS(owner, currentInvoice, MAIL_TYPE_SETTLEMENT_SUMMARY);
 									break;

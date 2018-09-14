@@ -45,7 +45,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 	private static final String MAIL_AUTH = "true";
 	private static final String MAIL_PORT = "25";// "587";
 
-	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, help@payperbill.in" };
+	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, help@payperbill.in, rssplsocial@gmail.com" };
 
 	private String type;
 	private BillUser user;
@@ -54,6 +54,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 	private String mailSubject;
 	private BillInvoice invoice;
 	private List<BillInvoice> invoices;
+	private boolean copyAdmins;
 
 	public void setUser(BillUser user) {
 		this.user = user;
@@ -190,6 +191,10 @@ public class BillMailUtil implements BillConstants, Runnable {
 				message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(getEmails(users)));
 			}*/ else {
 				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(user.getEmail()));
+			}
+			
+			if(copyAdmins) {
+				message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(getEmails(Arrays.asList(ADMIN_MAILS))));
 			}
 
 			message.setSubject(subject);
@@ -424,6 +429,14 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	public void setInvoices(List<BillInvoice> invoices) {
 		this.invoices = invoices;
+	}
+
+	public boolean isCopyAdmins() {
+		return copyAdmins;
+	}
+
+	public void setCopyAdmins(boolean copyAdmins) {
+		this.copyAdmins = copyAdmins;
 	}
 
 }
