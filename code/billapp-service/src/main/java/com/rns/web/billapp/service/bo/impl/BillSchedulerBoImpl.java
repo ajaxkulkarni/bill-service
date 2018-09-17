@@ -377,9 +377,12 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 		return null;
 	}
 	private BigDecimal calculatePricing(Integer day, String weekDaysString, String pricingString) {
+		if(StringUtils.isBlank(weekDaysString) || StringUtils.isBlank(pricingString)) {
+			return null;
+		}
 		String[] weekdays = StringUtils.split(weekDaysString, ",");
 		String[] pricing = StringUtils.split(pricingString, ",");
-		if(ArrayUtils.isNotEmpty(weekdays)) {
+		if(ArrayUtils.isNotEmpty(weekdays) && ArrayUtils.isNotEmpty(pricing)) {
 			for(int i = 0; i < weekdays.length; i++) {
 				if(day == Integer.parseInt(weekdays[i])) {
 					if(pricing.length > i) {
