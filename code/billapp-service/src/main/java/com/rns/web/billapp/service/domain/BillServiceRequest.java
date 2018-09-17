@@ -30,6 +30,7 @@ public class BillServiceRequest {
 	private List<BillItem> items;
 	private BillFile file;
 	private BillScheme scheme;
+	private List<BillUser> users;
 	
 	public BillUser getUser() {
 		return user;
@@ -109,6 +110,14 @@ public class BillServiceRequest {
 
 	public void setScheme(BillScheme scheme) {
 		this.scheme = scheme;
+	}
+
+	public List<BillUser> getUsers() {
+		return users;
+	}
+
+	public void setUsers(List<BillUser> users) {
+		this.users = users;
 	}
 
 }

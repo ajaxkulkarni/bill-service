@@ -17,10 +17,12 @@ import org.hibernate.criterion.SQLCriterion;
 import org.hibernate.sql.JoinType;
 
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
+import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
+import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.CommonUtils;
 
 public class BillVendorDaoImpl {
@@ -79,7 +81,7 @@ public class BillVendorDaoImpl {
 	}
 
 	public List<Object[]> getItemOrderSummary(Date date, Integer businessId) {
-		Query query = session.createQuery("select sum(items.quantity),items.businessItem,items.order from BillDBOrderItems items where items.order.orderDate=:date AND items.order.business.id=:businessId group by items.businessItem");
+		Query query = session.createQuery("select sum(items.quantity),items.businessItem,items.order,sum(items.costPrice),sum(items.amount) from BillDBOrderItems items where items.order.orderDate=:date AND items.order.business.id=:businessId group by items.businessItem");
 		query.setDate("date", date);
 		query.setInteger("businessId", businessId);
 		return query.list();

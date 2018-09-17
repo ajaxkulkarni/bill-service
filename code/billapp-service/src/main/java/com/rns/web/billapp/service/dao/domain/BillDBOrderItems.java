@@ -27,6 +27,7 @@ public class BillDBOrderItems {
 	private BillDBItemBusiness businessItem;
 	private BillDBItemSubscription subscribedItem;
 	private BillDBOrders order;
+	private BigDecimal costPrice;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -95,6 +96,14 @@ public class BillDBOrderItems {
 	}
 	public void setOrder(BillDBOrders order) {
 		this.order = order;
+	}
+	
+	@Column(name = "cost_price")
+	public BigDecimal getCostPrice() {
+		return costPrice;
+	}
+	public void setCostPrice(BigDecimal costPrice) {
+		this.costPrice = costPrice;
 	}
 	
 

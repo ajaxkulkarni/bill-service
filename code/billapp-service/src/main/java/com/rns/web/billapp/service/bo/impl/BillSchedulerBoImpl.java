@@ -186,9 +186,9 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 					noDeliveries++;
 					item.setAmount(BigDecimal.ZERO);
 				} else {
-					BigDecimal itemPrice = calculatePrice(itemSub, cal, previousAmount);
+					BigDecimal itemPrice = calculatePrice(itemSub, cal, previousAmount, item);
 					if(itemPrice != null) {
-						item.setAmount(itemPrice);
+						item.setAmount(itemPrice.multiply(item.getQuantity()));
 						orderTotal = orderTotal.add(itemPrice);
 					}
 				}
@@ -323,7 +323,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 		return billDBOrders;
 	}
 	
-	private BigDecimal calculatePrice(BillDBItemSubscription itemSub, Calendar cal, BigDecimal previousAmount) {
+	private BigDecimal calculatePrice(BillDBItemSubscription itemSub, Calendar cal, BigDecimal previousAmount, BillDBOrderItems item) {
 		if(itemSub.getPrice() != null) {
 			if(StringUtils.equals(itemSub.getPriceType(), FREQ_MONTHLY)) {
 				//Only deduct ONCE each month
@@ -343,16 +343,34 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 			BillDBItemParent parentItem = businessItem.getParent();
 			if(parentItem != null) {
 				if(StringUtils.equals(FREQ_DAILY, parentItem.getFrequency()) && StringUtils.isNotBlank(parentItem.getWeekDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+					//Calculate cost price
+					BigDecimal costPrice = calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(), parentItem.getWeeklyCostPrice());
+					if(costPrice == null) {
+						item.setCostPrice(parentItem.getCostPrice().multiply(item.getQuantity()));
+					} else {
+						item.setCostPrice(costPrice.multiply(item.getQuantity()));
+					}
+					
 					BigDecimal price = calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(), parentItem.getWeeklyPricing());
 					if(price != null) {
 						return price;
 					}
 				} else if ( (StringUtils.equals(FREQ_WEEKLY, parentItem.getFrequency()) || StringUtils.equals(FREQ_MONTHLY, parentItem.getFrequency())) && StringUtils.isNotBlank(parentItem.getMonthDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+					//Calculate cost price
+					BigDecimal costPrice = calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyCostPrice());
+					if(costPrice == null) {
+						item.setCostPrice(parentItem.getCostPrice().multiply(item.getQuantity()));
+					} else {
+						item.setCostPrice(costPrice.multiply(item.getQuantity()));
+					}
+					
 					BigDecimal price = calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyPricing());
 					if(price != null) {
 						return price;
 					}
 				}
+				
+				item.setCostPrice(parentItem.getCostPrice());
 				return parentItem.getPrice();
 			}
 		}

@@ -296,4 +296,12 @@ public class BillAdminController {
 		return adminBo.getSettlements(request);
 	}
 	
+	@POST
+	@Path("/updateOrders")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateParentTemp(BillServiceRequest request) {
+		return adminBo.updateOrders(request);
+	}
+	
 }

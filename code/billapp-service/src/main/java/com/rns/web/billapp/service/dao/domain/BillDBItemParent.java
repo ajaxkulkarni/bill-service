@@ -31,6 +31,8 @@ public class BillDBItemParent {
 	private BillDBSector sector;
 	private String weeklyPricing;
 	private String imagePath;
+	private BigDecimal costPrice;
+	private String weeklyCostPrice;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -129,6 +131,22 @@ public class BillDBItemParent {
 	}
 	public void setImagePath(String imagePath) {
 		this.imagePath = imagePath;
+	}
+	
+	@Column(name = "cost_price")
+	public BigDecimal getCostPrice() {
+		return costPrice;
+	}
+	public void setCostPrice(BigDecimal costPrice) {
+		this.costPrice = costPrice;
+	}
+	
+	@Column(name = "weekly_cost_price")
+	public String getWeeklyCostPrice() {
+		return weeklyCostPrice;
+	}
+	public void setWeeklyCostPrice(String weeklyCostPrice) {
+		this.weeklyCostPrice = weeklyCostPrice;
 	}
 	
 }

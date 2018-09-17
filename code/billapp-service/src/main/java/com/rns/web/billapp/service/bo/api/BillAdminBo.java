@@ -19,7 +19,5 @@ public interface BillAdminBo {
 	BillServiceResponse getAllVendors(BillServiceRequest request);
 	//BillServiceResponse updateBusiness(BillServiceRequest request);
 	BillServiceResponse getSettlements(BillServiceRequest request); //get initiated/pending/settled
-	BillServiceResponse initiateSettlements(BillServiceRequest request);
-	BillServiceResponse settlePayments(BillServiceRequest request);
-	
+	BillServiceResponse updateOrders(BillServiceRequest request);
 }

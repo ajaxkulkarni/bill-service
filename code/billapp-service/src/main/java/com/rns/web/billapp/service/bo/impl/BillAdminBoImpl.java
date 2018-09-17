@@ -40,6 +40,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillOrderDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
@@ -565,16 +566,31 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		return response;
 	}
 
-	public BillServiceResponse initiateSettlements(BillServiceRequest request) {
-		return null;
-	}
-
-	public BillServiceResponse settlePayments(BillServiceRequest request) {
+	public BillServiceResponse updateOrders(BillServiceRequest request) {
 		BillServiceResponse response = new BillServiceResponse();
 		Session session = null;
 		try {
 			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
 			
+			if(request.getItem() != null) {
+				if(request.getItem().getParentItemId() != null) {
+					if(request.getItem().getCostPrice() != null) {
+						//Update all orders with this parent item
+						List<BillDBOrderItems> orderItems = new BillOrderDaoImpl(session).getOrderItems(request.getRequestedDate(), request.getItem().getParentItemId());
+						if(CollectionUtils.isNotEmpty(orderItems)) {
+							for(BillDBOrderItems orderItem: orderItems) {
+								if(orderItem.getQuantity() == null) {
+									continue;
+								}
+								orderItem.setCostPrice(orderItem.getQuantity().multiply(request.getItem().getCostPrice()));
+							}
+						}
+					}
+				}
+			}
+			
+			tx.commit();
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
@@ -583,5 +599,6 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		}
 		return response;
 	}
+
 
 }

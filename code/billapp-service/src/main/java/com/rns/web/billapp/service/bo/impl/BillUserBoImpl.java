@@ -941,6 +941,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			BillVendorDaoImpl dao = new BillVendorDaoImpl(session);
 			List<Object[]> result = dao.getItemOrderSummary(request.getRequestedDate(), request.getBusiness().getId());
 			List<BillItem> items = new ArrayList<BillItem>();
+			BigDecimal totalPayable = BigDecimal.ZERO;
+			BigDecimal totalProfit = BigDecimal.ZERO;
 			if (CollectionUtils.isNotEmpty(result)) {
 				for (Object[] row : result) {
 					if (ArrayUtils.isEmpty(row)) {
@@ -950,13 +952,32 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillDBItemBusiness businessItem = (BillDBItemBusiness) row[1];
 					BillDBOrders order = (BillDBOrders) row[2];
 					BillItem item = BillDataConverter.getBusinessItem(new NullAwareBeanUtils(), businessItem);
+					BigDecimal costPrice = (BigDecimal) row[3];
+					BigDecimal sellingPrice = (BigDecimal) row[4];
 					if (item != null) {
 						item.setQuantity(total);
+						item.setCostPrice(costPrice);
+						item.setPrice(sellingPrice);
+						if(total != null && BigDecimal.ZERO.compareTo(total) < 0) {
+							if(costPrice != null) {
+								item.setUnitCostPrice(costPrice.divide(total));
+								totalPayable = totalPayable.add(costPrice);
+							}
+							if(sellingPrice != null) {
+								item.setUnitSellingPrice(sellingPrice.divide(total));
+								totalProfit = totalProfit.add(sellingPrice);
+							}
+						}
+						
 						items.add(item);
 					}
 
 				}
 			}
+			BillInvoice invoice = new BillInvoice();
+			invoice.setPayable(totalPayable);
+			invoice.setAmount(totalProfit);
+			response.setInvoice(invoice);
 			response.setItems(items);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -984,8 +1005,13 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					if (ArrayUtils.isEmpty(row)) {
 						continue;
 					}
-					BigDecimal total = (BigDecimal) row[0];
 					BillDBSubscription subscription = (BillDBSubscription) row[1];
+					BillUser customer = new BillUser();
+					new NullAwareBeanUtils().copyProperties(customer, subscription);
+					if(userNotPresent(request.getUsers(), customer)) {
+						continue;
+					}
+					BigDecimal total = (BigDecimal) row[0];
 					if (StringUtils.equals(STATUS_DELETED, subscription.getStatus())) {
 						continue;
 					}
@@ -1001,25 +1027,28 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						invoice.setCreditBalance((BigDecimal) row[4]);
 					}
 					BillRuleEngine.calculatePayable(invoice, null, null);
-					BillUser customer = new BillUser();
-					new NullAwareBeanUtils().copyProperties(customer, subscription);
+					
 					customer.setCurrentInvoice(invoice);
 					users.add(customer);
 					if (StringUtils.equals(REQUEST_TYPE_EMAIL, request.getRequestType()) && total != null && total.compareTo(BigDecimal.ZERO) > 0) {
 						BillDBInvoice lastUnpaid = new BillInvoiceDaoImpl(session).getLatestUnPaidInvoice(subscription.getId());
 						if (lastUnpaid != null) {
-
+							BillInvoice lastInvoice = BillDataConverter.getInvoice(new NullAwareBeanUtils(), lastUnpaid);
+							BillRuleEngine.calculatePayable(lastInvoice, lastUnpaid, session);
 							invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + lastUnpaid.getId());
 							BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
+							customer.setCurrentBusiness(BillDataConverter.getBusiness(subscription.getBusiness()));
 							mailUtil.setUser(customer);
-							mailUtil.setInvoice(invoice);
+							mailUtil.setInvoice(lastInvoice);
 							executor.execute(mailUtil);
-							response.setResponse(BillSMSUtil.sendSMS(customer, invoice, MAIL_TYPE_INVOICE));
+							BillSMSUtil.sendSMS(customer, lastInvoice, MAIL_TYPE_INVOICE);
 						}
 					}
 				}
 			}
-			response.setUsers(users);
+			if (!StringUtils.equals(REQUEST_TYPE_EMAIL, request.getRequestType())) {
+				response.setUsers(users);
+			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
@@ -1027,6 +1056,18 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			CommonUtils.closeSession(session);
 		}
 		return response;
+	}
+
+	private boolean userNotPresent(List<BillUser> users, BillUser searchUser) {
+		if(CollectionUtils.isEmpty(users)) {
+			return false;
+		}
+		for(BillUser user: users) {
+			if(searchUser.getId().intValue() == user.getId().intValue()) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	public BillServiceResponse getCustomerActivity(BillServiceRequest request) {
