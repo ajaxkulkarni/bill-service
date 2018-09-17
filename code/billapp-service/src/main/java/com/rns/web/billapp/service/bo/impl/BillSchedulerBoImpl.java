@@ -346,7 +346,9 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 					//Calculate cost price
 					BigDecimal costPrice = calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(), parentItem.getWeeklyCostPrice());
 					if(costPrice == null) {
-						item.setCostPrice(parentItem.getCostPrice().multiply(item.getQuantity()));
+						if(parentItem.getCostPrice() != null && item.getQuantity() != null) {
+							item.setCostPrice(parentItem.getCostPrice().multiply(item.getQuantity()));
+						}
 					} else {
 						item.setCostPrice(costPrice.multiply(item.getQuantity()));
 					}
@@ -359,7 +361,9 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 					//Calculate cost price
 					BigDecimal costPrice = calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyCostPrice());
 					if(costPrice == null) {
-						item.setCostPrice(parentItem.getCostPrice().multiply(item.getQuantity()));
+						if(parentItem.getCostPrice() != null && item.getQuantity() != null) {
+							item.setCostPrice(parentItem.getCostPrice().multiply(item.getQuantity()));
+						}
 					} else {
 						item.setCostPrice(costPrice.multiply(item.getQuantity()));
 					}
