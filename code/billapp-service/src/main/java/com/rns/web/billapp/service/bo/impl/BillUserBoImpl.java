@@ -3,9 +3,9 @@ package com.rns.web.billapp.service.bo.impl;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -13,8 +13,6 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import javax.persistence.criteria.Order;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.BeanUtilsBean;
@@ -960,11 +958,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						item.setPrice(sellingPrice);
 						if(total != null && BigDecimal.ZERO.compareTo(total) < 0) {
 							if(costPrice != null) {
-								item.setUnitCostPrice(costPrice.divide(total));
+								item.setUnitCostPrice(costPrice.divide(total, RoundingMode.HALF_UP));
 								totalPayable = totalPayable.add(costPrice);
 							}
 							if(sellingPrice != null) {
-								item.setUnitSellingPrice(sellingPrice.divide(total));
+								item.setUnitSellingPrice(sellingPrice.divide(total, RoundingMode.HALF_UP));
 								totalProfit = totalProfit.add(sellingPrice);
 							}
 						}
