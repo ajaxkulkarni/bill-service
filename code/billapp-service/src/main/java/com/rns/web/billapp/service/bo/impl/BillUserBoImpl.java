@@ -13,6 +13,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.beanutils.BeanUtilsBean;
@@ -42,6 +43,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
@@ -72,6 +74,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 
 	private SessionFactory sessionFactory;
 	private ThreadPoolTaskExecutor executor;
+	
+	private static Set<Integer> invoicesInProgress = new ConcurrentSkipListSet<Integer>();
 
 	public SessionFactory getSessionFactory() {
 		return sessionFactory;
@@ -835,9 +839,22 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		BillServiceResponse response = new BillServiceResponse();
 		Session session = null;
 		try {
+			
 			session = this.sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
 			BillInvoice currentInvoice = request.getInvoice();
+			if(invoicesInProgress.contains(currentInvoice.getId())) {
+				LoggingUtil.logMessage("Already working with this invoice .." + currentInvoice.getId());
+				return response;
+			}
+			invoicesInProgress.add(currentInvoice.getId()); //Locked
+			BillDBTransactions existingTransction = new BillGenericDaoImpl(session).getEntityByKey(BillDBTransactions.class, "paymentId",
+					currentInvoice.getPaymentId(), false);
+			if(existingTransction != null) {
+				LoggingUtil.logMessage("Already transacted with this invoice .." + currentInvoice.getId() + " PID " + currentInvoice.getPaymentId() + " txn " + existingTransction.getId());
+				return response;
+			}
+			
 			BillDBInvoice invoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, "paymentRequestId",
 					currentInvoice.getPaymentRequestId(), false);
 			if (invoice == null) {
@@ -859,6 +876,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				if (CollectionUtils.isNotEmpty(failedInvoices)) {
 					invoicesPaidOff.addAll(failedInvoices);
 				}
+				LoggingUtil.logMessage("Pending invoices = >" + pendingInvoices + " failed invoices =>" + failedInvoices);
 				if (CollectionUtils.isNotEmpty(invoicesPaidOff)) {
 					for (BillDBInvoice paidInvoice : invoicesPaidOff) {
 						updateInvoicePaymentStatus(currentInvoice, paidInvoice);
@@ -878,6 +896,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			sendEmails(currentInvoice, invoice, nullAwareBeanUtils);
 
 			tx.commit();
+			
+			invoicesInProgress.remove(currentInvoice.getId()); //Un-Locked
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
@@ -898,6 +918,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			invoice.setSettlementStatus(INVOICE_STATUS_PENDING);
 		}
 		invoice.setStatus(INVOICE_STATUS_PAID);
+		LoggingUtil.logMessage("Updating invoice .. " + invoice.getId());
 	}
 
 	private void sendEmails(BillInvoice currentInvoice, BillDBInvoice invoice, NullAwareBeanUtils nullAwareBeanUtils)
