@@ -20,6 +20,7 @@ public class BillDBLocation {
 	private String mapLocation;
 	private Date createdDate;
 	private String status;
+	private String city;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -69,6 +70,14 @@ public class BillDBLocation {
 	}
 	public void setStatus(String status) {
 		this.status = status;
+	}
+	
+	@Column(name = "city")
+	public String getCity() {
+		return city;
+	}
+	public void setCity(String city) {
+		this.city = city;
 	}
 	
 }

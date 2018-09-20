@@ -312,4 +312,12 @@ public class BillAdminController {
 		return adminBo.getTransactions(request);
 	}
 	
+	@POST
+	@Path("/updateLocation")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateLocation(BillServiceRequest request) {
+		return adminBo.updateLocations(request);
+	}
+	
 }

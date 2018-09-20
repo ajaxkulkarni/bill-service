@@ -25,6 +25,7 @@ public class BillLocation implements Serializable {
 	private String mapLocation;
 	private Date createdDate;
 	private String status;
+	private String city;
 	
 	public BillLocation(Integer id) {
 		setId(id);
@@ -69,6 +70,14 @@ public class BillLocation implements Serializable {
 	}
 	public void setStatus(String status) {
 		this.status = status;
+	}
+
+	public String getCity() {
+		return city;
+	}
+
+	public void setCity(String city) {
+		this.city = city;
 	}
 	
 

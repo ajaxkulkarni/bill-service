@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
@@ -32,6 +31,7 @@ import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
+import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
@@ -611,6 +611,36 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			List<BillUser> users = BillDataConverter.getTransactions(transactions);
 			response.setUsers(users);
 			
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse updateLocations(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			if(request.getLocation().getId() != null) {
+				BillDBLocation existing = new BillGenericDaoImpl(session).getEntityByKey(BillDBLocation.class, ID_ATTR, request.getLocation().getId(), true);
+				if(existing == null) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_INVALID_ITEM);
+					return response;
+				}
+				new NullAwareBeanUtils().copyProperties(existing, request.getLocation());
+			} else {
+				BillDBLocation location = new BillDBLocation();
+				new NullAwareBeanUtils().copyProperties(location, request.getLocation());
+				location.setCreatedDate(new Date());
+				location.setStatus(STATUS_ACTIVE);
+				session.persist(location);
+			}			
+			tx.commit();
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);

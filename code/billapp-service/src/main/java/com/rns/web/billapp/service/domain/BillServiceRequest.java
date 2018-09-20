@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
+import com.rns.web.billapp.service.bo.domain.BillLocation;
 import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -31,6 +32,7 @@ public class BillServiceRequest {
 	private BillFile file;
 	private BillScheme scheme;
 	private List<BillUser> users;
+	private BillLocation location;
 	
 	public BillUser getUser() {
 		return user;
@@ -118,6 +120,14 @@ public class BillServiceRequest {
 
 	public void setUsers(List<BillUser> users) {
 		this.users = users;
+	}
+
+	public BillLocation getLocation() {
+		return location;
+	}
+
+	public void setLocation(BillLocation location) {
+		this.location = location;
 	}
 
 }
