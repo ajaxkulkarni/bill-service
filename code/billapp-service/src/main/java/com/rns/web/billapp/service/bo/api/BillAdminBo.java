@@ -20,4 +20,5 @@ public interface BillAdminBo {
 	//BillServiceResponse updateBusiness(BillServiceRequest request);
 	BillServiceResponse getSettlements(BillServiceRequest request); //get initiated/pending/settled
 	BillServiceResponse updateOrders(BillServiceRequest request);
+	BillServiceResponse getTransactions(BillServiceRequest request);
 }

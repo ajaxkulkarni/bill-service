@@ -3,7 +3,6 @@ package com.rns.web.billapp.service.util;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +30,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
@@ -299,13 +299,8 @@ public class BillDataConverter implements BillConstants {
 	}
 	
 	public static BillBusiness getBusiness(BillDBUserBusiness billDBUserBusiness) throws IllegalAccessException, InvocationTargetException {
-		BillBusiness business = new BillBusiness();
+		BillBusiness business = getBusinessBasic(billDBUserBusiness);
 		NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
-		if(billDBUserBusiness.getSector() != null) {
-			BillSector sector = new BillSector();
-			nullAwareBeanUtils.copyProperties(sector, billDBUserBusiness.getSector());
-			business.setBusinessSector(sector);	
-		}
 		if(billDBUserBusiness.getUser() != null) {
 			BillUser owner = new BillUser();
 			nullAwareBeanUtils.copyProperties(owner, billDBUserBusiness.getUser());
@@ -314,7 +309,18 @@ public class BillDataConverter implements BillConstants {
 		if(CollectionUtils.isNotEmpty(billDBUserBusiness.getLocations())) {
 			business.setBusinessLocations(getLocations(new ArrayList<BillDBLocation>(billDBUserBusiness.getLocations())));
 		}
+		return business;
+	}
+
+	public static BillBusiness getBusinessBasic(BillDBUserBusiness billDBUserBusiness) throws IllegalAccessException, InvocationTargetException {
+		BillBusiness business = new BillBusiness();
+		NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
 		nullAwareBeanUtils.copyProperties(business, billDBUserBusiness);
+		if(billDBUserBusiness.getSector() != null) {
+			BillSector sector = new BillSector();
+			nullAwareBeanUtils.copyProperties(sector, billDBUserBusiness.getSector());
+			business.setBusinessSector(sector);	
+		}
 		return business;
 	}
 
@@ -346,6 +352,30 @@ public class BillDataConverter implements BillConstants {
 			}
 		}
 		return false;
+	}
+	
+	public static List<BillUser> getTransactions(List<BillDBTransactions> transactions) throws IllegalAccessException, InvocationTargetException {
+		List<BillUser> users = new ArrayList<BillUser>();
+		if(CollectionUtils.isNotEmpty(transactions)) {
+			NullAwareBeanUtils beanutils = new NullAwareBeanUtils();
+			for(BillDBTransactions txn: transactions) {
+				BillUser user = new BillUser();
+				if(txn.getSubscription() != null) {
+					beanutils.copyProperties(user, txn.getSubscription());
+				}
+				BillInvoice invoice = new BillInvoice();
+				if(txn.getInvoice() != null) {
+					beanutils.copyProperties(invoice, txn.getInvoice());
+				}
+				beanutils.copyProperties(invoice, txn);
+				user.setCurrentInvoice(invoice);
+				if(txn.getBusiness() != null) {
+					user.setCurrentBusiness(BillDataConverter.getBusinessBasic(txn.getBusiness()));
+				}
+				users.add(user);
+			}
+		}
+		return users;
 	}
 	
 }

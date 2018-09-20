@@ -304,4 +304,12 @@ public class BillAdminController {
 		return adminBo.updateOrders(request);
 	}
 	
+	@POST
+	@Path("/getTransactions")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getTransactions(BillServiceRequest request) {
+		return adminBo.getTransactions(request);
+	}
+	
 }
