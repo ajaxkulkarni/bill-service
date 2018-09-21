@@ -607,7 +607,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		Session session = null;
 		try {
 			session = this.sessionFactory.openSession();
-			List<BillDBTransactions> transactions = new BillTransactionsDaoImpl(session).getTransactions();
+			List<BillDBTransactions> transactions = new BillTransactionsDaoImpl(session).getTransactions(null, null);
 			List<BillUser> users = BillDataConverter.getTransactions(transactions);
 			response.setUsers(users);
 			

@@ -52,6 +52,7 @@ import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillSubscriptionDAOImpl;
+import com.rns.web.billapp.service.dao.impl.BillTransactionsDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
@@ -1173,6 +1174,36 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getTransactions(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if(request.getBusiness() == null || request.getBusiness().getId() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Integer month = CommonUtils.getCalendarValue(new Date(), Calendar.MONTH);
+			Integer year = CommonUtils.getCalendarValue(new Date(), Calendar.YEAR);
+			if(request.getInvoice() != null && request.getInvoice().getMonth() != null && request.getInvoice().getYear() != null) {
+				month = request.getInvoice().getMonth();
+				year = request.getInvoice().getYear();
+			}
+			BillUserLog log = new BillUserLog();
+			log.setFromDate(CommonUtils.getMonthFirstDate(month, year));
+			log.setToDate(CommonUtils.getMonthLastDate(month, year));
+			List<BillDBTransactions> transactions = new BillTransactionsDaoImpl(session).getTransactions(log, request.getBusiness().getId());
+			List<BillUser> users = BillDataConverter.getTransactions(transactions);
+			response.setUsers(users);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
 		} finally {
 			CommonUtils.closeSession(session);
 		}

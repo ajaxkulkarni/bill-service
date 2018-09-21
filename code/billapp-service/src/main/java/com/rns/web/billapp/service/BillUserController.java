@@ -425,8 +425,10 @@ public class BillUserController {
 			BillServiceRequest request = new BillServiceRequest();
 			request.setInvoice(invoice);
 			BillServiceResponse response = userBo.completePayment(request);
-			LoggingUtil.logMessage("Redirect after payment to --" + response.getInvoice().getPaymentUrl());
-			url = new URI(response.getInvoice().getPaymentUrl());
+			if(response.getInvoice() != null) {
+				LoggingUtil.logMessage("Redirect after payment to --" + response.getInvoice().getPaymentUrl());
+				url = new URI(response.getInvoice().getPaymentUrl());
+			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		}
@@ -464,5 +466,13 @@ public class BillUserController {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		}
 		return null;
+	}
+	
+	@POST
+	@Path("/getTransactions")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getTransactions(BillServiceRequest request) {
+		return userBo.getTransactions(request);
 	}
 }
