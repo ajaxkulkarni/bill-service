@@ -53,6 +53,7 @@ public class BillBusinessConverter {
 				billDBUserBusiness.setCreatedDate(new Date());
 				if(billDBUserBusiness.getSector() != null) {
 					session.persist(billDBUserBusiness);
+					currentBusiness.setId(billDBUserBusiness.getId()); //For reference while adding distributor via admin
 				}
 			}
 			if(currentBusiness.getLogo() != null) {

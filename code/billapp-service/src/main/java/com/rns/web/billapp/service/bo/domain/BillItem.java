@@ -41,6 +41,7 @@ public class BillItem implements Serializable {
 	private String weeklyCostPrice;
 	private BigDecimal unitCostPrice;
 	private BigDecimal unitSellingPrice;
+	private String access;
 	
 	public Integer getId() {
 		return id;
@@ -167,6 +168,12 @@ public class BillItem implements Serializable {
 	}
 	public void setUnitSellingPrice(BigDecimal unitSellingPrice) {
 		this.unitSellingPrice = unitSellingPrice;
+	}
+	public String getAccess() {
+		return access;
+	}
+	public void setAccess(String access) {
+		this.access = access;
 	}
 	
 }

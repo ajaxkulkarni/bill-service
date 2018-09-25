@@ -2,6 +2,8 @@ package com.rns.web.billapp.service.util;
 
 import java.util.Comparator;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 
@@ -21,7 +23,7 @@ public class BillNameSorter implements Comparator<Object> {
 			BillUser user1 = (BillUser) o1;
 			BillUser user2 = (BillUser) o2;
 			if(user1.getName() != null && user2.getName() != null) {
-				return user1.getName().compareTo(user2.getName());
+				return user1.getName().compareToIgnoreCase(user2.getName());
 			}
 		}
 		return 0;

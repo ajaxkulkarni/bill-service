@@ -307,5 +307,12 @@ public class CommonUtils {
 		return BigDecimal.ZERO;
 	}
 	
+	public static BigDecimal formatDecimal(BigDecimal value) {
+		if(value == null) {
+			return value;
+		}
+		return value.stripTrailingZeros();
+	}
+	
 	
 }

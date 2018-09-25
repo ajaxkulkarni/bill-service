@@ -32,6 +32,7 @@ public class BillBusiness implements Serializable {
 	private String identificationNumber;
 	private BillFile logo;
 	private String mapLocation;
+	private String type;
 
 	public Integer getId() {
 		return id;
@@ -104,6 +105,12 @@ public class BillBusiness implements Serializable {
 	}
 	public void setMapLocation(String mapLocation) {
 		this.mapLocation = mapLocation;
+	}
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
 	}
 	
 }

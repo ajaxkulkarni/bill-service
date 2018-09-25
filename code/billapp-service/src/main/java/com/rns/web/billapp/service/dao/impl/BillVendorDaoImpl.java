@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service.dao.impl;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -17,6 +18,7 @@ import org.hibernate.criterion.SQLCriterion;
 import org.hibernate.sql.JoinType;
 
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
+import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
@@ -85,6 +87,23 @@ public class BillVendorDaoImpl {
 		query.setDate("date", date);
 		query.setInteger("businessId", businessId);
 		return query.list();
+	}
+	
+	public List<BillDBItemBusiness> getBusinessesByItemAccess(Integer parentItem, String access, List<BillDBLocation> locations) {
+		 Criteria criteria = session.createCriteria(BillDBItemBusiness.class);
+		 criteria.add(Restrictions.eq("access", access));
+		 criteria.createCriteria("parent").add(Restrictions.eq("id", parentItem));
+		 List<Integer> list = new ArrayList<Integer>();
+		 if(CollectionUtils.isNotEmpty(locations)) {
+			 for(BillDBLocation loc: locations) {
+				 list.add(loc.getId());
+			 }
+		 }
+		 Criteria businessCriteria = criteria.createCriteria("business").add(BillGenericDaoImpl.activeCriteria());
+		 if(CollectionUtils.isNotEmpty(list)) {
+			 businessCriteria.createCriteria("locations").add(Restrictions.in("id", list));
+		 }
+		 return criteria.list();
 	}
 	
 	public BillDBItemBusiness getBusinessItemByParent(Integer parentId, Integer businessId) {

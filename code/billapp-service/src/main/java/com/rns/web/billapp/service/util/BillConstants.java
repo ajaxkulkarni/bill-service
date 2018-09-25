@@ -11,6 +11,7 @@ public interface BillConstants {
 	String REQUEST_TYPE_EMAIL = "EMAIL";
 	String REQUEST_TYPE_OVERWRITE = "Overwrite";
 	String ACCESS_ADMIN = "Admin";
+	String ACCESS_DISTRIBUTOR = "Distributor";
 	String ACTION_SETTLEMENT_COMPLETED = "COMPLETED";
 	String ACTION_SETTLEMENT = "SETTLE";
 	String ACTION_SETTLEMENTS_DATA_EXPORT = "DOWNLOAD";

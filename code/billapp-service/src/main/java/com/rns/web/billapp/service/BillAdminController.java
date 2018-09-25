@@ -5,6 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.util.List;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
@@ -16,11 +17,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -231,7 +235,7 @@ public class BillAdminController {
 	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse updateBusinessInfo(@FormDataParam("logo") InputStream logoFile,
-			@FormDataParam("logo") FormDataContentDisposition logoFileDetails, @FormDataParam("business") String user) {
+			@FormDataParam("logo") FormDataContentDisposition logoFileDetails, @FormDataParam("business") String user, @FormDataParam("items") String items) {
 		LoggingUtil.logObject("Business/user update request", user);
 		ObjectMapper mapper = new ObjectMapper();
 		BillServiceResponse response = new BillServiceResponse();
@@ -249,6 +253,15 @@ public class BillAdminController {
 				BillServiceRequest request = new BillServiceRequest();
 				request.setUser(billUser);
 				response = userBo.updateUserInfo(request);
+				if(StringUtils.isNotBlank(items)) {
+					List<BillItem> itemList = mapper.readValue(items, new TypeReference<List<BillItem>>(){});
+					request.setItems(itemList);
+					request.setBusiness(request.getUser().getCurrentBusiness());
+					if(CollectionUtils.isNotEmpty(itemList) && request.getUser().getCurrentBusiness() != null && request.getUser().getCurrentBusiness().getId() != null) {
+						userBo.updateBusinessItem(request);
+					}
+				}
+				
 			} else {
 				response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
 			}

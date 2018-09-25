@@ -34,6 +34,8 @@ public class BillDBUserBusiness {
 	private String identificationNumber;
 	private String mapLocation;
 	private String logoImg;
+	private String type;
+
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -134,6 +136,14 @@ public class BillDBUserBusiness {
 	}
 	public void setLogoImg(String logoImg) {
 		this.logoImg = logoImg;
+	}
+	
+	@Column(name = "type")
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
 	}
 	
 
