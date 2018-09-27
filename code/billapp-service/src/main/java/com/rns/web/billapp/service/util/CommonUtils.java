@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
@@ -311,6 +313,7 @@ public class CommonUtils {
 		if(value == null) {
 			return value;
 		}
+		value = value.round(new MathContext(1, RoundingMode.HALF_UP));
 		return value.stripTrailingZeros();
 	}
 	
