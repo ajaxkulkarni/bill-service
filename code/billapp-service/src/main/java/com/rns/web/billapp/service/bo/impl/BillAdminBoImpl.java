@@ -254,6 +254,14 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			
 			Map<Integer, BillUser> vendors = new HashMap<Integer, BillUser>();
 			
+			Integer businessId = null;
+			
+			if(request.getBusiness() != null) {
+				businessId = request.getBusiness().getId();
+			}
+			
+			LoggingUtil.logMessage(" ### Invoice generation started for " + fromDate + " to " + toDate + " business " + businessId);
+			
 			if (CollectionUtils.isNotEmpty(result)) {
 				for (Object[] row : result) {
 					if (ArrayUtils.isEmpty(row)) {
@@ -264,7 +272,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					if (StringUtils.equals(STATUS_DELETED, subscription.getStatus())) {
 						continue;
 					}
-					if (request.getBusiness() != null && request.getBusiness().getId() != subscription.getBusiness().getId()) {
+					if (businessId != null && businessId != subscription.getBusiness().getId()) {
 						continue;
 					}
 					if(request.getUser() != null && request.getUser().getId() != null && request.getUser().getId() != subscription.getId()) {
@@ -320,8 +328,13 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					if (dbInvoice.getId() == null) {
 						session.persist(dbInvoice);
 					}
+					String userName = "";
+					if(dbInvoice.getSubscription() != null) {
+						userName = dbInvoice.getSubscription().getName();
+					}
+					LoggingUtil.logMessage("Generated invoice  "  + dbInvoice.getId() + " for user .. " + userName);
 					//User map for sending mails later
-					if(dbInvoice.getSubscription() != null && dbInvoice.getSubscription().getBusiness() != null && dbInvoice.getSubscription().getBusiness().getUser() != null) {
+					/*if(dbInvoice.getSubscription() != null && dbInvoice.getSubscription().getBusiness() != null && dbInvoice.getSubscription().getBusiness().getUser() != null) {
 						BillUser user = vendors.get(dbInvoice.getSubscription().getBusiness().getUser().getId());
 						if(user == null) {
 							user = new BillUser();
@@ -339,7 +352,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 							user.getCurrentInvoice().setAmount(user.getCurrentInvoice().getPayable().add(dbInvoice.getAmount()));
 							user.getCurrentInvoice().setPayable(user.getCurrentInvoice().getAmount().add(BigDecimal.ONE));
 						}
-					}
+					}*/
 				}
 			}
 
@@ -353,7 +366,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					BillSMSUtil.sendSMS(key, key.getCurrentInvoice(), MAIL_TYPE_INVOICE_GENERATION);
 				}
 			}
-			
+			LoggingUtil.logMessage(" ### Invoice generation ended ## ");
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
