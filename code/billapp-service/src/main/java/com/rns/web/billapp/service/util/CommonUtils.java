@@ -313,7 +313,8 @@ public class CommonUtils {
 		if(value == null) {
 			return value;
 		}
-		value = value.round(new MathContext(1, RoundingMode.HALF_UP));
+		//value = value.round(new MathContext(1, RoundingMode.HALF_UP));
+		value = value.setScale(2, RoundingMode.HALF_EVEN);
 		return value.stripTrailingZeros();
 	}
 	
