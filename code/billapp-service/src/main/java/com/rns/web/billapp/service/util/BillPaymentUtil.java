@@ -387,7 +387,7 @@ public class BillPaymentUtil {
 		postData.put("customerPhone", customer.getPhone());
 		String returnUrl = BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_RETURN_URL);
 		postData.put("returnUrl", returnUrl);
-		//postData.put("notifyUrl", "");
+		postData.put("notifyUrl", returnUrl);
 		System.out.println("== DATA == " + postData);
 		String data = "";
 		SortedSet<String> keys = new TreeSet<String>(postData.keySet());
