@@ -854,6 +854,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				return response;
 			}
 			invoicesInProgress.add(currentInvoice.getId()); // Locked
+			LoggingUtil.logMessage("Locked .. " + currentInvoice.getId() + " -- " + invoicesInProgress);
 			BillDBTransactions existingTransction = new BillGenericDaoImpl(session).getEntityByKey(BillDBTransactions.class, "paymentId",
 					currentInvoice.getPaymentId(), false);
 			if (existingTransction != null) {
