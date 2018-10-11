@@ -419,6 +419,7 @@ public class BillUserController {
 				return Response.temporaryRedirect(url).build();*/
 				invoice.setStatus(BillConstants.INVOICE_STATUS_FAILED);
 				invoice.setComments("Signature not matched");
+				LoggingUtil.logMessage("Signature not matched for " + orderId);
 			}
 			invoice.setId(new Integer(split[0]));
 			invoice.setPaymentResponse(formParams.toString());

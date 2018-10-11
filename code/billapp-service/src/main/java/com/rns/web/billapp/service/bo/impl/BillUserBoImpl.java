@@ -845,13 +845,12 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 	public BillServiceResponse completePayment(BillServiceRequest request) {
 		BillServiceResponse response = new BillServiceResponse();
 		Session session = null;
+		BillInvoice currentInvoice = request.getInvoice();
 		try {
-
 			session = this.sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
-			BillInvoice currentInvoice = request.getInvoice();
 			if (invoicesInProgress.contains(currentInvoice.getId())) {
-				LoggingUtil.logMessage("Already working with this invoice .." + currentInvoice.getId());
+				LoggingUtil.logMessage("Already working with this invoice .." + currentInvoice.getId() + " Invoices in progress = " + invoicesInProgress);
 				return response;
 			}
 			invoicesInProgress.add(currentInvoice.getId()); // Locked
@@ -905,12 +904,15 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 
 			tx.commit();
 
-			invoicesInProgress.remove(currentInvoice.getId()); // Un-Locked
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
 		} finally {
 			CommonUtils.closeSession(session);
+			if(invoicesInProgress != null && currentInvoice != null && currentInvoice.getId() != null) {
+				invoicesInProgress.remove(currentInvoice.getId()); // Un-Locked
+				LoggingUtil.logMessage("Removed invoice .. " + currentInvoice.getId() + " .. " + invoicesInProgress);
+			}
 		}
 		return response;
 	}
