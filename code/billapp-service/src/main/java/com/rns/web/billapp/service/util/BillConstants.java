@@ -67,6 +67,7 @@ public interface BillConstants {
 	String SCHEME_TYPE_INVOICE = "INVOICE"; //Only after invoice is paid
 	String SCHEME_TYPE_GENERAL = "GENERAL";
 	int NS_SCHEME_DAYS_LIMIT = 5;
+	String NO = "N";
 	
 	String STATUS_DELETED = "D";
 	String STATUS_ACTIVE = "A";

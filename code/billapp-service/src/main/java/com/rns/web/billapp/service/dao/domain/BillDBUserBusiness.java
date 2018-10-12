@@ -35,7 +35,8 @@ public class BillDBUserBusiness {
 	private String mapLocation;
 	private String logoImg;
 	private String type;
-
+	private String showBillDetails;
+	
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -144,6 +145,14 @@ public class BillDBUserBusiness {
 	}
 	public void setType(String type) {
 		this.type = type;
+	}
+	
+	@Column(name = "show_bill_details")
+	public String getShowBillDetails() {
+		return showBillDetails;
+	}
+	public void setShowBillDetails(String showBillDetails) {
+		this.showBillDetails = showBillDetails;
 	}
 	
 

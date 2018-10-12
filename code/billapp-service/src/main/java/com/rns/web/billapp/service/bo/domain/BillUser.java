@@ -41,6 +41,7 @@ public class BillUser implements Serializable {
 	private BillInvoice currentInvoice;
 	private String holiday;
 	private String password;
+	private String showBillDetails;
 	
 	public Integer getId() {
 		return id;
@@ -163,6 +164,12 @@ public class BillUser implements Serializable {
 	}
 	public void setPassword(String password) {
 		this.password = password;
+	}
+	public String getShowBillDetails() {
+		return showBillDetails;
+	}
+	public void setShowBillDetails(String showBillDetails) {
+		this.showBillDetails = showBillDetails;
 	}
 	
 	/*@Override

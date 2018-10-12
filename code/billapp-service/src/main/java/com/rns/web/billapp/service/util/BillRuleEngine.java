@@ -6,10 +6,12 @@ import java.math.RoundingMode;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
+import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
@@ -102,5 +104,14 @@ public class BillRuleEngine {
 		}
 	}
 
+	public static boolean showBillDetails(BillUser user) {
+		if(StringUtils.equals(BillConstants.NO, user.getShowBillDetails())) {
+			return false;
+		} else if (user.getShowBillDetails() == null && user.getCurrentBusiness() != null && StringUtils.equals(BillConstants.NO, user.getCurrentBusiness().getShowBillDetails())) {
+			return false;
+		}
+		return true;
+	}
+	
 	
 }

@@ -36,6 +36,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
+import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
 
 public class BillDataConverter implements BillConstants {
@@ -55,6 +56,11 @@ public class BillDataConverter implements BillConstants {
 			BillDBUserBusiness dbBusiness = businesses.get(0);
 			business.setBusinessLocations(getLocations(new ArrayList<BillDBLocation>(dbBusiness.getLocations())));
 			nullBeans.copyProperties(business, dbBusiness);
+			if(StringUtils.isNotBlank(dbBusiness.getLogoImg())) {
+				BillFile logo = new BillFile();
+				logo.setFileName("logo");
+				business.setLogo(logo);
+			}
 			user.setCurrentBusiness(business);
 		}
 		BillDBUserFinancialDetails dbFinancials = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserFinancialDetails.class, "user.id", dbUser.getId(),
@@ -316,6 +322,11 @@ public class BillDataConverter implements BillConstants {
 		BillBusiness business = new BillBusiness();
 		NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
 		nullAwareBeanUtils.copyProperties(business, billDBUserBusiness);
+		if(StringUtils.isNotBlank(billDBUserBusiness.getLogoImg())) {
+			BillFile logo = new BillFile();
+			logo.setFileName("logo");
+			business.setLogo(logo);
+		}
 		if(billDBUserBusiness.getSector() != null) {
 			BillSector sector = new BillSector();
 			nullAwareBeanUtils.copyProperties(sector, billDBUserBusiness.getSector());

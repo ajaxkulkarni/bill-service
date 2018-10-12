@@ -1,5 +1,7 @@
 package com.rns.web.billapp.service;
 
+import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -10,6 +12,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -20,6 +23,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.codehaus.jackson.JsonParseException;
@@ -134,6 +138,48 @@ public class BillUserController {
 	public BillServiceResponse updateUserProfile(BillServiceRequest request) {
 		return userBo.updateUserInfo(request);
 	}
+	
+	@POST
+	@Path("/updateBusinessLogo")
+	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateBusinessLogo(@FormParam("logo") String logoFile,
+			@FormParam("fileName") String logoFileDetails, @FormParam("user") String user) {
+		LoggingUtil.logObject("Logo update request", user);
+		ObjectMapper mapper = new ObjectMapper();
+		BillServiceResponse response = new BillServiceResponse();
+		try {
+			byte byteArray[] = Base64.decodeBase64(logoFile);
+			BillUser billUser = mapper.readValue(user, BillUser.class);
+			if (billUser != null && billUser.getCurrentBusiness() != null) {
+				if (logoFile != null) {
+					BillFile file = new BillFile();
+					file.setFileData(new ByteArrayInputStream(byteArray));
+					//file.setFileData(logoFile);
+					file.setFilePath(logoFileDetails);
+					billUser.getCurrentBusiness().setLogo(file);
+				}
+				BillServiceRequest request = new BillServiceRequest();
+				request.setUser(billUser);
+				response = userBo.updateUserInfo(request);
+			} else {
+				response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+			}
+
+		} catch (JsonParseException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		} catch (JsonMappingException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		} catch (IOException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		}
+		LoggingUtil.logObject("Logo update response", response);
+		return response;
+	}
+
 
 	@POST
 	@Path("/updateBankDetails")

@@ -771,8 +771,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				BillPaymentCredentials credentials = new BillPaymentCredentials();
 				if (dbInvoice.getSubscription() != null) {
 					beanUtils.copyProperties(customer, dbInvoice.getSubscription());
-					BillBusiness business = new BillBusiness();
-					beanUtils.copyProperties(business, dbInvoice.getSubscription().getBusiness());
+					BillBusiness business = BillDataConverter.getBusinessBasic(dbInvoice.getSubscription().getBusiness());
 					customer.setCurrentBusiness(business);
 					vendor = dbInvoice.getSubscription().getBusiness().getUser();
 					BillDataConverter.setCredentials(vendor, credentials);

@@ -212,7 +212,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 	}
 
 	private String appendInvoiceItems(String result) throws FileNotFoundException {
-		if (CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
+		if (CollectionUtils.isNotEmpty(invoice.getInvoiceItems()) && BillRuleEngine.showBillDetails(user)) {
 			String invoiceItemsTemplate = CommonUtils.readFile("email/invoice_items.html");
 			StringBuilder builder = new StringBuilder();
 			for (BillItem invoiceItem : invoice.getInvoiceItems()) {

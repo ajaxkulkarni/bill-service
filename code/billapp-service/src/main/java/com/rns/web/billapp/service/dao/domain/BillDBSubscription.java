@@ -33,7 +33,7 @@ public class BillDBSubscription {
 	private String address;
 	private BillDBLocation location;
 	private Set<BillDBItemSubscription> subscriptions = new HashSet<BillDBItemSubscription>();
-	
+	private String showBillDetails;
 	
 	public BillDBSubscription(Integer id) {
 		setId(id);
@@ -136,5 +136,14 @@ public class BillDBSubscription {
 
 	public void setSubscriptions(Set<BillDBItemSubscription> subscriptions) {
 		this.subscriptions = subscriptions;
+	}
+
+	@Column(name = "show_bill_details")
+	public String getShowBillDetails() {
+		return showBillDetails;
+	}
+
+	public void setShowBillDetails(String showBillDetails) {
+		this.showBillDetails = showBillDetails;
 	}
 }
