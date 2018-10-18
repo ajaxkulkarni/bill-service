@@ -246,6 +246,10 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 					response.setResponse(ERROR_CODE_GENERIC, ERROR_UNPAID_INVOICE);
 					return response;
 				}
+				if (StringUtils.equalsIgnoreCase(PAYMENT_OFFLINE, dbInvoice.getPaymentType()) || StringUtils.equalsIgnoreCase(PAYMENT_MEDIUM_CASH, dbInvoice.getPaymentMedium())) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_CASH_INVOICE);
+					return response;
+				}
 				// Request for invoice schemes
 				BillDBCustomerCoupons existing = dao.getEntityByKey(BillDBCustomerCoupons.class, "invoice.id", request.getInvoice().getId(), true);
 				if (existing != null) {

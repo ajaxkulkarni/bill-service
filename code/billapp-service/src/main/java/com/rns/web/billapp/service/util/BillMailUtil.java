@@ -419,7 +419,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		{
 			put(MAIL_TYPE_INVOICE, "invoice_new.html");
 			put(MAIL_TYPE_PAYMENT_RESULT, "payment_result.html");
-			put(MAIL_TYPE_PAYMENT_RESULT_VENDOR, "payment_result.html");
+			put(MAIL_TYPE_PAYMENT_RESULT_VENDOR, "payment_result_admin.html");
 			put(MAIL_TYPE_REGISTRATION, "registration.html");
 			put(MAIL_TYPE_APPROVAL, "profile_approved.html");
 			put(MAIL_TYPE_NEW_CUSTOMER, "customer_added.html");

@@ -53,7 +53,8 @@ public interface BillConstants {
 	String ERROR_INCOMPLETE_SCHEME = "You have already accepted this scheme. Please complete the payment to proceed.";
 	String ERROR_ACCEPTED_SCHEME = "You have already accepted this scheme.";
 	String ERROR_ACCEPTED_SCHEME_INVOICE = "You have already accepted offer against this bill. Please select another bill.";
-	String ERROR_UNPAID_INVOICE = "Invoice is not paid. Please pay the invoice first to get offers.";
+	String ERROR_UNPAID_INVOICE = "This bill is not paid. Please pay the bill first to get offers.";
+	String ERROR_CASH_INVOICE = "Bill is paid by cash. Offers are only available for bills paid online using Pay Per Bill.";
 	String ERROR_SCHEME_EXPIRED = "Scheme/Offer is now expired";
 	String ERROR_SCHEME_NOT_STARTED = "Scheme/Offer has not started yet";
 	String ERROR_INSUFFICIENT_FIELDS_COUPON_VERIFICATION = "Customer phone number and coupon code are mandatory!";
