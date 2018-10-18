@@ -37,6 +37,7 @@ public class BillDBCustomerCoupons {
 	private String couponCode;
 	private String status;
 	private BillDBInvoice invoice;
+	private Date redeemDate;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -186,6 +187,14 @@ public class BillDBCustomerCoupons {
 	}
 	public void setInvoice(BillDBInvoice invoice) {
 		this.invoice = invoice;
+	}
+	
+	@Column(name = "redeem_date")
+	public Date getRedeemDate() {
+		return redeemDate;
+	}
+	public void setRedeemDate(Date redeemDate) {
+		this.redeemDate = redeemDate;
 	}
 	
 	

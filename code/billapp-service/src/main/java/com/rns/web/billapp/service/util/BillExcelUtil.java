@@ -132,7 +132,7 @@ public class BillExcelUtil {
 					if (StringUtils.isNotBlank(subscription.getEmail())) {
 						executor.execute(new BillMailUtil(BillConstants.MAIL_TYPE_NEW_CUSTOMER, customer));
 					}
-					BillSMSUtil.sendSMS(customer, null, BillConstants.MAIL_TYPE_NEW_CUSTOMER);
+					BillSMSUtil.sendSMS(customer, null, BillConstants.MAIL_TYPE_NEW_CUSTOMER, null);
 					LoggingUtil.logMessage("Added customer ..." + customer.getName());
 					if (row.getCell(colItems) != null) {
 						String[] items = StringUtils.split(dataFormatter.formatCellValue(row.getCell(colItems)), ",");

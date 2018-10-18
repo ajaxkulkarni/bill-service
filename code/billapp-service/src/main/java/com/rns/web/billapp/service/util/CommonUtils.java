@@ -8,7 +8,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
-import java.math.MathContext;
 import java.math.RoundingMode;
 import java.net.URL;
 import java.net.URLEncoder;
@@ -291,8 +290,11 @@ public class CommonUtils {
 			return  "";
 		}
 		String couponId = StringUtils.reverse(coupons.getId().toString());
-		couponId = StringUtils.substring(couponId, 0, couponId.length()); 
-		return schemes.getSchemeCode() + StringUtils.leftPad(couponId, 6, "0");
+		couponId = StringUtils.substring(couponId, 0, 6); 
+		couponId = StringUtils.leftPad(couponId, 6, "0");
+		Long randomValue = Math.round(Math.random()*100);
+		couponId = StringUtils.replaceOnce(couponId, "00", randomValue.toString());
+		return schemes.getSchemeCode() + couponId;
 	}
 	
 	public static void main(String[] args) {
@@ -316,6 +318,12 @@ public class CommonUtils {
 		//value = value.round(new MathContext(1, RoundingMode.HALF_UP));
 		value = value.setScale(2, RoundingMode.HALF_EVEN);
 		return value.stripTrailingZeros();
+	}
+	
+	public static boolean comparePhoneNumbers(String ph1, String ph2) {
+		String phone1 = new String(StringUtils.removeStart(StringUtils.replacePattern(ph1, "\\s+",""), "+91"));
+		String phone2 = new String(StringUtils.removeStart(StringUtils.replacePattern(ph2, "\\s+",""), "+91"));
+		return StringUtils.equals(phone1, phone2);
 	}
 	
 	

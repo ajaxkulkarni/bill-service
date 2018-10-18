@@ -18,10 +18,12 @@ import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
 import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
+import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
@@ -29,6 +31,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
+import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
@@ -147,6 +150,9 @@ public class BillDataConverter implements BillConstants {
 
 	public static BillUser getCustomerDetails(NullAwareBeanUtils beanUtils, BillDBSubscription dbCustomer)
 			throws IllegalAccessException, InvocationTargetException {
+		if(dbCustomer == null) {
+			return null;
+		}
 		BillUser customer = new BillUser();
 		BillSubscription subscription = new BillSubscription();
 		beanUtils.copyProperties(subscription, dbCustomer);
@@ -207,7 +213,7 @@ public class BillDataConverter implements BillConstants {
 					BillInvoice tempInvoice = new BillInvoice();
 					new NullAwareBeanUtils().copyProperties(tempInvoice, invoice);
 					BillRuleEngine.calculatePayable(tempInvoice, dbInvoice, session);
-					invoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customer, tempInvoice, BillConstants.MAIL_TYPE_INVOICE));
+					invoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customer, tempInvoice, BillConstants.MAIL_TYPE_INVOICE, null));
 				}
 				userInvoices.add(invoice);
 			}
@@ -387,6 +393,16 @@ public class BillDataConverter implements BillConstants {
 			}
 		}
 		return users;
+	}
+	
+	public static BillScheme getScheme(BillDBSchemes schemes, BillDBCustomerCoupons coupons, NullAwareBeanUtils nullAwareBeanUtils)
+			throws IllegalAccessException, InvocationTargetException {
+		BillScheme pickedScheme = new BillScheme();
+		nullAwareBeanUtils.copyProperties(pickedScheme, schemes);
+		pickedScheme.setCouponCode(coupons.getCouponCode());
+		pickedScheme.setValidTill(coupons.getValidTill());
+		pickedScheme.setStatus(coupons.getStatus());
+		return pickedScheme;
 	}
 	
 }

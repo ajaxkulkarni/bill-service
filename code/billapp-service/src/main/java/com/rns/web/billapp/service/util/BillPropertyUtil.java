@@ -47,6 +47,8 @@ public class BillPropertyUtil {
 	public static final String ADMIN_USERNAME = "admin.username";
 	public static final String ADMIN_PASSWORD = "admin.password";
 	public static final String ADMIN_TOKEN = "admin.token";
+
+	public static final String LOGO_URL = "logo.url";
 	
 	public static String getProperty(String name) {
 		try {

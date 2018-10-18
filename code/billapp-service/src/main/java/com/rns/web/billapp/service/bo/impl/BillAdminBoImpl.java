@@ -196,7 +196,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					nullAwareBeanUtils.copyProperties(approvedUser, existingUser);
 					// User activated notification
 					executor.execute(new BillMailUtil(MAIL_TYPE_APPROVAL, approvedUser));
-					BillSMSUtil.sendSMS(approvedUser, null, MAIL_TYPE_APPROVAL);
+					BillSMSUtil.sendSMS(approvedUser, null, MAIL_TYPE_APPROVAL, null);
 				}
 			}
 			tx.commit();
@@ -363,7 +363,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE_GENERATION, key);
 					mailUtil.setInvoice(key.getCurrentInvoice());
 					executor.execute(mailUtil);
-					BillSMSUtil.sendSMS(key, key.getCurrentInvoice(), MAIL_TYPE_INVOICE_GENERATION);
+					BillSMSUtil.sendSMS(key, key.getCurrentInvoice(), MAIL_TYPE_INVOICE_GENERATION, null);
 				}
 			}
 			LoggingUtil.logMessage(" ### Invoice generation ended ## ");
@@ -496,21 +496,34 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 							txn.setSettlementRef(request.getInvoice().getPaymentId());
 							//Update all the invoices with settlement details
 							List<BillDBInvoice> paidInvoices = new BillGenericDaoImpl(session).getEntitiesByKey(BillDBInvoice.class, "paymentId", txn.getPaymentId(), false, null, null);
+							if(paidInvoiceMap.get(dbBusiness.getId()) == null) {
+								paidInvoiceMap.put(dbBusiness.getId(), new ArrayList<BillUser>());
+							}
 							if(CollectionUtils.isNotEmpty(paidInvoices)) {
 								for(BillDBInvoice paidInvoice: paidInvoices) {
 									paidInvoice.setSettlementDate(new Date());
 									paidInvoice.setSettlementStatus(INVOICE_SETTLEMENT_STATUS_SETTLED);
 									paidInvoice.setSettlementRef(request.getInvoice().getPaymentId());
 									BillUser customer = BillDataConverter.getCustomerDetails(new NullAwareBeanUtils(), paidInvoice.getSubscription());
-									if(paidInvoiceMap.get(dbBusiness.getId()) == null) {
-										paidInvoiceMap.put(dbBusiness.getId(), new ArrayList<BillUser>());
-									}
 									//To keep track of business wise payments settled and send mail
 									BillInvoice currentInvoice = BillDataConverter.getInvoice(new NullAwareBeanUtils(), paidInvoice);
 									BillRuleEngine.calculatePayable(currentInvoice, null, null);
 									customer.setCurrentInvoice(currentInvoice);
 									paidInvoiceMap.get(dbBusiness.getId()).add(customer);
 								}
+							} else if (StringUtils.equals(PAYMENT_MODE_REWARD, txn.getMode())) {
+								//Reward
+								BillInvoice reward = new BillInvoice();
+								reward.setAmount(txn.getAmount());
+								reward.setPayable(txn.getAmount());
+								reward.setPaymentMode(PAYMENT_MODE_REWARD);
+								reward.setComments(txn.getComments());
+								BillUser customer = new BillUser();
+								if(txn.getSubscription() != null) {
+									customer = BillDataConverter.getCustomerDetails(new NullAwareBeanUtils(), txn.getSubscription());
+								}
+								customer.setCurrentInvoice(reward);
+								paidInvoiceMap.get(dbBusiness.getId()).add(customer);
 							}
 						}
 						//Check for existing business. If present add the total to the same
@@ -563,7 +576,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 									mailUtil.setInvoice(currentInvoice);
 									mailUtil.setCopyAdmins(true);
 									executor.execute(mailUtil);
-									BillSMSUtil.sendSMS(owner, currentInvoice, MAIL_TYPE_SETTLEMENT_SUMMARY);
+									BillSMSUtil.sendSMS(owner, currentInvoice, MAIL_TYPE_SETTLEMENT_SUMMARY, null);
 									break;
 								}
 							}

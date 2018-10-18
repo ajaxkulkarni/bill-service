@@ -35,6 +35,7 @@ public class BillScheme {
 	private String paymentId;
 	private String couponCode;
 	private String status;
+	private BillBusiness schemeBusiness;
 	
 	public Integer getId() {
 		return id;
@@ -161,6 +162,12 @@ public class BillScheme {
 	}
 	public void setStatus(String status) {
 		this.status = status;
+	}
+	public BillBusiness getSchemeBusiness() {
+		return schemeBusiness;
+	}
+	public void setSchemeBusiness(BillBusiness schemeBusiness) {
+		this.schemeBusiness = schemeBusiness;
 	}
 
 }

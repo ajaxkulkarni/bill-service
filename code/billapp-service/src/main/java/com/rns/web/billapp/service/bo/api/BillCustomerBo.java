@@ -9,5 +9,6 @@ public interface BillCustomerBo {
 	BillServiceResponse updateScheme(BillServiceRequest request); //Accept/update coupon
 	BillServiceResponse payScheme(BillServiceRequest request); //Complete Payment
 	BillServiceResponse getAllSchemes(BillServiceRequest request); //Get all available offers
+	BillServiceResponse redeemScheme(BillServiceRequest request);
 	
 }

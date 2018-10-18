@@ -32,6 +32,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
+import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 
 public class BillMailUtil implements BillConstants, Runnable {
@@ -55,6 +56,8 @@ public class BillMailUtil implements BillConstants, Runnable {
 	private BillInvoice invoice;
 	private List<BillInvoice> invoices;
 	private boolean copyAdmins;
+	private BillScheme selectedScheme;
+	private BillUser customerInfo;
 
 	public void setUser(BillUser user) {
 		this.user = user;
@@ -128,24 +131,33 @@ public class BillMailUtil implements BillConstants, Runnable {
 			BillBusiness currentBusiness = user.getCurrentBusiness();
 			if (user != null) {
 				result = prepareUserInfo(result, user);
+
 				if (currentBusiness != null) {
 					subject = StringUtils.replace(subject, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
+					if(selectedScheme != null) {
+						result = prepareSchemeInfo(result, selectedScheme, currentBusiness);
+						subject = StringUtils.replace(subject, "{schemeName}", CommonUtils.getStringValue(selectedScheme.getSchemeName()));
+					}
 				}
 				subject = StringUtils.replace(subject, "{name}", CommonUtils.getStringValue(user.getName()));
 			}
-
+			
+			if(customerInfo != null) {
+				result = prepareCustomerInfo(result, customerInfo);
+			}
+			
 			if (invoice != null) {
 				result = prepareInvoiceInfo(result, invoice);
-				
-				if(invoice.getMonth() != null) {
+
+				if (invoice.getMonth() != null) {
 					subject = StringUtils.replace(subject, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
 				}
 				subject = StringUtils.replace(subject, "{year}", CommonUtils.getStringValue(invoice.getYear()));
 				subject = StringUtils.replace(subject, "{amount}", CommonUtils.getStringValue(invoice.getPayable(), false));
 				subject = StringUtils.replace(subject, "{date}", CommonUtils.convertDate(invoice.getPaidDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
-				
+
 				result = appendInvoiceItems(result);
-				
+
 				result = appendCustomers(result);
 
 				String businessName = "";
@@ -175,29 +187,35 @@ public class BillMailUtil implements BillConstants, Runnable {
 			BodyPart messageBodyPart = new MimeBodyPart();
 			messageBodyPart.setContent(result, "text/html; charset=utf-8");
 			multipart.addBodyPart(messageBodyPart);
-			/*BodyPart image = new MimeBodyPart();
-			DataSource fds = new FileDataSource(BillMailUtil.class.getClassLoader().getResource("email/PayPerBill.png").getPath());
-			image.setDataHandler(new DataHandler(fds));
-			image.setHeader("Content-ID", "<image>");
-			multipart.addBodyPart(image);*/
+			/*
+			 * BodyPart image = new MimeBodyPart(); DataSource fds = new
+			 * FileDataSource(BillMailUtil.class.getClassLoader().getResource(
+			 * "email/PayPerBill.png").getPath()); image.setDataHandler(new
+			 * DataHandler(fds)); image.setHeader("Content-ID", "<image>");
+			 * multipart.addBodyPart(image);
+			 */
 
 			message.setContent(result, "text/html; charset=utf-8");
 			// message.setContent(result, "text/html; charset=utf-8");
 
 			if (isAdminMail()) {
 				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(getEmails(Arrays.asList(ADMIN_MAILS))));
-			} /*else if (CollectionUtils.isNotEmpty(users)) {
-				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse("talnoterns@gmail.com"));
-				message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(getEmails(users)));
-			}*/ else {
+			} /*
+				 * else if (CollectionUtils.isNotEmpty(users)) {
+				 * message.setRecipients(Message.RecipientType.TO,
+				 * InternetAddress.parse("talnoterns@gmail.com"));
+				 * message.setRecipients(Message.RecipientType.BCC,
+				 * InternetAddress.parse(getEmails(users))); }
+				 */ else {
 				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(user.getEmail()));
 			}
-			
-			if(copyAdmins) {
+
+			if (copyAdmins) {
 				message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(getEmails(Arrays.asList(ADMIN_MAILS))));
 			}
 
 			message.setSubject(subject);
+			
 			return result;
 
 		} catch (FileNotFoundException e) {
@@ -209,6 +227,13 @@ public class BillMailUtil implements BillConstants, Runnable {
 		}
 
 		return "";
+	}
+
+	public static String prepareCustomerInfo(String result, BillUser customerInfo) {
+		result = StringUtils.replace(result, "{customerName}", CommonUtils.getStringValue(customerInfo.getName()));
+		result = StringUtils.replace(result, "{customerEmail}", CommonUtils.getStringValue(customerInfo.getEmail()));
+		result = StringUtils.replace(result, "{customerPhone}", CommonUtils.getStringValue(customerInfo.getPhone()));
+		return result;
 	}
 
 	private String appendInvoiceItems(String result) throws FileNotFoundException {
@@ -231,7 +256,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		}
 		return result;
 	}
-	
+
 	private String appendCustomers(String result) throws FileNotFoundException {
 		if (CollectionUtils.isNotEmpty(users)) {
 			String invoiceItemsTemplate = CommonUtils.readFile("email/invoices_list.html");
@@ -255,8 +280,11 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	public static String prepareInvoiceInfo(String result, BillInvoice invoice) {
 		result = StringUtils.replace(result, "{invoiceId}", CommonUtils.getStringValue(invoice.getId()));
-		if(invoice.getMonth() != null) {
+		if (invoice.getMonth() != null) {
 			result = StringUtils.replace(result, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
+		}
+		if (StringUtils.equals(PAYMENT_MODE_REWARD, invoice.getPaymentMode())) {
+			result = StringUtils.replace(result, "{month}", invoice.getComments());
 		}
 		result = StringUtils.replace(result, "{year}", CommonUtils.getStringValue(invoice.getYear()));
 		result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(invoice.getAmount(), false));
@@ -289,13 +317,11 @@ public class BillMailUtil implements BillConstants, Runnable {
 				result = StringUtils.replace(result, "{sector}", CommonUtils.getStringValue(currentBusiness.getBusinessSector().getName()));
 			}
 			if (currentBusiness.getOwner() != null) {
-				result = StringUtils.replace(result, "{vendorContact}",
-						StringUtils.substringAfter(CommonUtils.getStringValue(currentBusiness.getOwner().getPhone()), "+91"));
+				result = StringUtils.replace(result, "{vendorContact}", StringUtils.substringAfter(CommonUtils.getStringValue(currentBusiness.getOwner().getPhone()), "+91"));
+				result = StringUtils.replace(result, "{vendorEmail}", CommonUtils.getStringValue(currentBusiness.getOwner().getEmail()));
 			}
-		}
-
-		if (currentBusiness != null) {
 			result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
+			result = StringUtils.replace(result, "{mapLocation}", CommonUtils.getStringValue(currentBusiness.getMapLocation()));
 			if (CollectionUtils.isNotEmpty(currentBusiness.getItems())) {
 				StringBuilder itemBuilder = new StringBuilder();
 				for (BillItem item : currentBusiness.getItems()) {
@@ -313,11 +339,21 @@ public class BillMailUtil implements BillConstants, Runnable {
 				result = StringUtils.replace(result, "{itemName}", "");
 			}
 		}
-		if(user.getFinancialDetails() != null) {
+		if (user.getFinancialDetails() != null) {
 			result = StringUtils.replace(result, "{accountNumber}", user.getFinancialDetails().getAccountNumber());
 			result = StringUtils.replace(result, "{ifscCode}", user.getFinancialDetails().getIfscCode());
 		}
 		return result;
+	}
+
+	public static String prepareSchemeInfo(String result, BillScheme scheme, BillBusiness business) {
+		result = StringUtils.replace(result, "{coupon}", CommonUtils.getStringValue(scheme.getCouponCode()));
+		result = StringUtils.replace(result, "{schemeName}", CommonUtils.getStringValue(scheme.getSchemeName()));
+		result = StringUtils.replace(result, "{schemeDescription}", CommonUtils.getStringValue(scheme.getComments()));
+		result = StringUtils.replace(result, "{offerValidity}", CommonUtils.convertDate(scheme.getValidTill(), DATE_FORMAT_DISPLAY_NO_YEAR));
+		result = StringUtils.replace(result, "{logoUrl}", BillPropertyUtil.getProperty(BillPropertyUtil.LOGO_URL) + business.getId());
+		result = StringUtils.replace(result, "{vendorCommission}", CommonUtils.getStringValue(scheme.getVendorCommission(), true));
+ 		return result;
 	}
 
 	private String getEmails(List<String> users) {
@@ -393,6 +429,12 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_REGISTRATION_ADMIN, "registration_admin.html");
 			put(MAIL_TYPE_INVOICE_GENERATION, "invoice_generation.html");
 			put(MAIL_TYPE_SETTLEMENT_SUMMARY, "settlement_summary.html");
+			put(MAIL_TYPE_COUPON_ACCEPTED, "scheme_accepted.html");
+			put(MAIL_TYPE_COUPON_ACCEPTED_ADMIN, "scheme_accepted_admin.html");
+			put(MAIL_TYPE_COUPON_ACCEPTED_BUSINESS, "scheme_accepted_business.html");
+			put(MAIL_TYPE_COUPON_REDEEMED, "scheme_redeemed.html");
+			put(MAIL_TYPE_COUPON_REDEEMED_ADMIN, "scheme_redeemed_admin.html");
+			put(MAIL_TYPE_COUPON_REDEEMED_BUSINESS, "scheme_redeemed_business.html");
 		}
 	});
 
@@ -410,15 +452,22 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_REGISTRATION_ADMIN, "Alert: New vendor registration!");
 			put(MAIL_TYPE_INVOICE_GENERATION, "Invoices generated for {month} {year}");
 			put(MAIL_TYPE_SETTLEMENT_SUMMARY, "Your settlement of Rs. {amount} is processed on {date}");
+			put(MAIL_TYPE_COUPON_ACCEPTED, "Your offer details for {schemeName}");
+			put(MAIL_TYPE_COUPON_ACCEPTED_ADMIN, "Your customer accepted offer for {schemeName}");
+			put(MAIL_TYPE_COUPON_ACCEPTED_BUSINESS, "New customer accepted your offer for {schemeName}");
+			put(MAIL_TYPE_COUPON_REDEEMED, "You have redeemed the offer {schemeName}");
+			put(MAIL_TYPE_COUPON_REDEEMED_ADMIN, "Congrats! Your customer redeemed the offer for {schemeName}");
+			put(MAIL_TYPE_COUPON_REDEEMED_BUSINESS, "The customer redeemed your offer for {schemeName}");
+			
 		}
 	});
-	
+
 	public static String encodeFileToBase64Binary(String fileName) throws IOException {
-	    File file = new File(fileName);
-	    byte[] encoded = org.apache.commons.codec.binary.Base64.encodeBase64(FileUtils.readFileToByteArray(file));
-	    return new String(encoded, StandardCharsets.US_ASCII);
+		File file = new File(fileName);
+		byte[] encoded = org.apache.commons.codec.binary.Base64.encodeBase64(FileUtils.readFileToByteArray(file));
+		return new String(encoded, StandardCharsets.US_ASCII);
 	}
-	
+
 	public static void main(String[] args) throws IOException {
 		System.out.println(encodeFileToBase64Binary(BillMailUtil.class.getClassLoader().getResource("email/PayPerBill.png").getPath()));
 	}
@@ -437,6 +486,22 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	public void setCopyAdmins(boolean copyAdmins) {
 		this.copyAdmins = copyAdmins;
+	}
+
+	public BillScheme getSelectedScheme() {
+		return selectedScheme;
+	}
+
+	public void setSelectedScheme(BillScheme selectedScheme) {
+		this.selectedScheme = selectedScheme;
+	}
+
+	public BillUser getCustomerInfo() {
+		return customerInfo;
+	}
+
+	public void setCustomerInfo(BillUser customerInfo) {
+		this.customerInfo = customerInfo;
 	}
 
 }

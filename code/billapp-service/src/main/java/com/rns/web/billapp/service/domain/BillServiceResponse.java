@@ -13,6 +13,7 @@ import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
 import com.rns.web.billapp.service.bo.domain.BillOrder;
+import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.util.BillConstants;
@@ -37,6 +38,8 @@ public class BillServiceResponse {
 	private BillAdminDashboard dashboard;
 	private List<BillBusiness> businesses;
 	private BillFile file;
+	private List<BillScheme> schemes;
+	private BillScheme scheme;
 	
 	public BillServiceResponse() {
 		setStatus(BillConstants.STATUS_OK);
@@ -163,6 +166,22 @@ public class BillServiceResponse {
 
 	public void setFile(BillFile file) {
 		this.file = file;
+	}
+
+	public List<BillScheme> getSchemes() {
+		return schemes;
+	}
+
+	public void setSchemes(List<BillScheme> schemes) {
+		this.schemes = schemes;
+	}
+
+	public BillScheme getScheme() {
+		return scheme;
+	}
+
+	public void setScheme(BillScheme scheme) {
+		this.scheme = scheme;
 	}
 	
 }

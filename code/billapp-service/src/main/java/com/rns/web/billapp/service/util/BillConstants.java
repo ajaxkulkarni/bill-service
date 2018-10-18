@@ -32,6 +32,7 @@ public interface BillConstants {
 	String PAYMENT_MEDIUM_ATOM = "ATOM";
 	String PAYMENT_MEDIUM_CASHFREE = "CASHFREE";
 	String PAYMENT_MEDIUM_CASH = "CASH";
+	String PAYMENT_MODE_REWARD = "REWARD";
 
 	String WARNING_NO_BUSINESS = "No business information found. Please complete your business details.";
 	String WARNING_NO_FINANCIALS = "No financial/ bank information found. Please complete your bank details to enable payment.";
@@ -51,9 +52,11 @@ public interface BillConstants {
 	String ERROR_SCHEME_NOT_FOUND = "This scheme/offer does not exist!";
 	String ERROR_INCOMPLETE_SCHEME = "You have already accepted this scheme. Please complete the payment to proceed.";
 	String ERROR_ACCEPTED_SCHEME = "You have already accepted this scheme.";
-	String ERROR_UNPAID_INVOICE = "Invoice is not paid. Please pay the invoice first to get coupons.";
+	String ERROR_ACCEPTED_SCHEME_INVOICE = "You have already accepted offer against this bill. Please select another bill.";
+	String ERROR_UNPAID_INVOICE = "Invoice is not paid. Please pay the invoice first to get offers.";
 	String ERROR_SCHEME_EXPIRED = "Scheme/Offer is now expired";
 	String ERROR_SCHEME_NOT_STARTED = "Scheme/Offer has not started yet";
+	String ERROR_INSUFFICIENT_FIELDS_COUPON_VERIFICATION = "Customer phone number and coupon code are mandatory!";
 	
 	String MSG_REGISTERED_SUCCESS = "Your profile has been registered successfully! Our team will review your profile and contact you further to approve it.";
 
@@ -99,6 +102,13 @@ public interface BillConstants {
 	String MAIL_TYPE_HOLIDAY = "PauseDeliveryHoliday";
 	String MAIL_TYPE_INVOICE_GENERATION = "InvoicesGenerated";
 	String MAIL_TYPE_SETTLEMENT_SUMMARY = "Settlement";
+	String MAIL_TYPE_COUPON_ACCEPTED = "CouponAccepted";
+	String MAIL_TYPE_COUPON_ACCEPTED_ADMIN = "CouponAcceptedAdmin";
+	String MAIL_TYPE_COUPON_ACCEPTED_BUSINESS = "CouponAcceptedBusiness";
+	String MAIL_TYPE_COUPON_REDEEMED = "CouponRedeemed";
+	String MAIL_TYPE_COUPON_REDEEMED_ADMIN = "CouponRedeemedAdmin";
+	String MAIL_TYPE_COUPON_REDEEMED_BUSINESS = "CouponRedeemedBusiness";
+	
 
 	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
 

@@ -124,9 +124,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						// admin
 						dbUser.setStatus(STATUS_ACTIVE);
 					} else {
-						BillSMSUtil.sendSMS(user, null, MAIL_TYPE_REGISTRATION);
+						BillSMSUtil.sendSMS(user, null, MAIL_TYPE_REGISTRATION, null);
 						executor.execute(new BillMailUtil(MAIL_TYPE_REGISTRATION, user));
-						BillSMSUtil.sendSMS(user, null, MAIL_TYPE_REGISTRATION_ADMIN);
+						BillSMSUtil.sendSMS(user, null, MAIL_TYPE_REGISTRATION_ADMIN, null);
 						executor.execute(new BillMailUtil(MAIL_TYPE_REGISTRATION_ADMIN, user));
 					}
 
@@ -307,7 +307,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				// New customer
 				user.setCurrentBusiness(business);
 				executor.execute(new BillMailUtil(MAIL_TYPE_NEW_CUSTOMER, user));
-				BillSMSUtil.sendSMS(user, null, MAIL_TYPE_NEW_CUSTOMER);
+				BillSMSUtil.sendSMS(user, null, MAIL_TYPE_NEW_CUSTOMER, null);
 			}
 			tx.commit();
 		} catch (Exception e) {
@@ -464,7 +464,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		billUser.getCurrentBusiness().setItems(items);
 		BillMailUtil billMailUtil = new BillMailUtil(mailType, billUser);
 		executor.execute(billMailUtil);
-		BillSMSUtil.sendSMS(billUser, null, mailType);
+		BillSMSUtil.sendSMS(billUser, null, mailType, null);
 	}
 
 	public BillServiceResponse updateCustomerInvoice(BillServiceRequest request) {
@@ -798,7 +798,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					mailUtil.setUser(customer);
 					mailUtil.setInvoice(invoice);
 					executor.execute(mailUtil);
-					response.setResponse(BillSMSUtil.sendSMS(customer, invoice, MAIL_TYPE_INVOICE));
+					response.setResponse(BillSMSUtil.sendSMS(customer, invoice, MAIL_TYPE_INVOICE, null));
 				}
 				response.setUser(customer);
 				response.setInvoice(invoice);
@@ -895,8 +895,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 
 			NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
 			nullAwareBeanUtils.copyProperties(currentInvoice, invoice);
-			currentInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + (currentInvoice.getStatus() + "/"
-					+ CommonUtils.encode(invoice.getSubscription().getBusiness().getName()) + "/" + invoice.getAmount() + "/" + invoice.getPaymentId()));
+			//currentInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + (currentInvoice.getStatus() + "/"
+			//		+ CommonUtils.encode(invoice.getSubscription().getBusiness().getName()) + "/" + invoice.getAmount() + "/" + invoice.getPaymentId()));
+			
+			currentInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + currentInvoice.getId());
 			response.setInvoice(currentInvoice);
 
 			BillBusinessConverter.updatePaymentTransactionLog(session, invoice, currentInvoice);
@@ -954,8 +956,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		if (StringUtils.isNotBlank(vendor.getEmail())) {
 			executor.execute(vendorMail);
 		}
-		BillSMSUtil.sendSMS(customer, currentInvoice, MAIL_TYPE_PAYMENT_RESULT);
-		BillSMSUtil.sendSMS(vendor, currentInvoice, MAIL_TYPE_PAYMENT_RESULT_VENDOR);
+		BillSMSUtil.sendSMS(customer, currentInvoice, MAIL_TYPE_PAYMENT_RESULT, null);
+		BillSMSUtil.sendSMS(vendor, currentInvoice, MAIL_TYPE_PAYMENT_RESULT_VENDOR, null);
 	}
 
 	public BillServiceResponse getDailySummary(BillServiceRequest request) {
@@ -1130,7 +1132,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 							mailUtil.setUser(customer);
 							mailUtil.setInvoice(lastInvoice);
 							executor.execute(mailUtil);
-							BillSMSUtil.sendSMS(customer, lastInvoice, MAIL_TYPE_INVOICE);
+							BillSMSUtil.sendSMS(customer, lastInvoice, MAIL_TYPE_INVOICE, null);
 						}
 					}
 				}

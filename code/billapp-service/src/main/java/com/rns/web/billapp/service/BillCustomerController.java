@@ -37,4 +37,20 @@ public class BillCustomerController {
 	public BillServiceResponse getInvoiceSummary(BillServiceRequest request) {
 		return customerBo.updateScheme(request);
 	}
+	
+	@POST
+	@Path("/getSchemes")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getSchemes(BillServiceRequest request) {
+		return customerBo.getAllSchemes(request);
+	}
+	
+	@POST
+	@Path("/redeemScheme")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse redeemScheme(BillServiceRequest request) {
+		return customerBo.redeemScheme(request);
+	}
 }

@@ -5,13 +5,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +32,6 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -41,6 +41,7 @@ import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
+import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -48,14 +49,15 @@ import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.bo.impl.BillAdminBoImpl;
 import com.rns.web.billapp.service.bo.impl.BillSchedulerBoImpl;
 import com.rns.web.billapp.service.bo.impl.BillUserBoImpl;
-import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
-import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
+import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
+import com.rns.web.billapp.service.dao.impl.BillOrderDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
@@ -269,7 +271,7 @@ public class BillTest {
 		changeLog.setToDate(CommonUtils.convertDate("2018-08-19"));
 		changeLog.setChangeType(BillConstants.LOG_CHANGE_TEMP);
 		Session session = userbo.getSessionFactory().openSession();
-		List<BillDBItemBusiness> items = new BillGenericDaoImpl(session).getEntitiesByKey(BillDBItemBusiness.class, "business.id", 11, true);
+		List<BillDBItemBusiness> items = new BillGenericDaoImpl(session).getEntitiesByKey(BillDBItemBusiness.class, "business.id", 11, true, null, null);
 		if(CollectionUtils.isNotEmpty(items)) {
 			List<BillItem> requestItems = new ArrayList<BillItem>();
 			System.out.println("Found " + items.size());
@@ -359,7 +361,7 @@ public class BillTest {
 		BillServiceRequest request = new BillServiceRequest();
 		BillSector sector = new BillSector(2);
 		request.setSector(sector);
-		System.out.println(userbo.getSectorItems(request).getItems());
+		System.out.println(userbo.getSectorItems(request).getItems().get(0).getName());
 	}
 	
 	@Test
@@ -368,7 +370,7 @@ public class BillTest {
 		BillBusiness business = new BillBusiness();
 		business.setId(2);
 		request.setBusiness(business);
-		System.out.println(userbo.getBusinessItems(request).getItems());
+		System.out.println(userbo.getBusinessItems(request).getItems().get(0).getParentItem().getName());
 	}
 	
 	@Test
@@ -377,7 +379,7 @@ public class BillTest {
 		BillBusiness business = new BillBusiness();
 		business.setId(2);
 		request.setBusiness(business);
-		System.out.println(userbo.getAllBusinessCustomers(request).getUsers());
+		System.out.println(userbo.getAllBusinessCustomers(request).getUsers().get(0).getName());
 	}
 	
 	@Test
@@ -386,10 +388,10 @@ public class BillTest {
 		BillBusiness business = new BillBusiness();
 		business.setId(2);
 		request.setBusiness(business);
-		request.setRequestedDate(new Date());
-		//System.out.println(userbo.loadDeliveries(request).getUsers());
+		request.setRequestedDate(CommonUtils.convertDate("2018-09-10"));
+		System.out.println(userbo.loadDeliveries(request).getUsers().get(0).getName());
 		
-		System.out.println(new BillVendorDaoImpl(userbo.getSessionFactory().openSession()).getDeliveries(null).get(0).getPhone());
+		//System.out.println(new BillVendorDaoImpl(userbo.getSessionFactory().openSession()).getDeliveries(null).get(0).getPhone());
 	}
 	
 	@Test
@@ -414,7 +416,7 @@ public class BillTest {
 			scheduler.calculateInvoices(new SimpleDateFormat(BillConstants.DATE_FORMAT).parse("2018-07-" + day));
 		}*/
 		
-		scheduler.calculateInvoices(new SimpleDateFormat(BillConstants.DATE_FORMAT).parse("2018-08-22"));
+		scheduler.calculateInvoices(new SimpleDateFormat(BillConstants.DATE_FORMAT).parse("2018-09-26"));
 	}
 	
 	@Test
@@ -459,9 +461,33 @@ public class BillTest {
 		BillMailUtil mailUtil = new BillMailUtil(BillConstants.MAIL_TYPE_REGISTRATION);
 		BillUser user = new BillUser();
 		user.setEmail("ajinkyashiva@gmail.com");
-		user.setName("Abhishek");
+		user.setName("Ajinkya");
 		mailUtil.setUser(user);
 		mailUtil.sendMail();
+	}
+	
+	@Test
+	public void testCouponMail() {
+		BillUser customer = new BillUser();
+		customer.setName("Ajinkya");
+		customer.setEmail("ajinkyashiva@gmail.com");
+		BillBusiness currentBusiness = new BillBusiness();
+		currentBusiness.setId(46);
+		currentBusiness.setName("McDonalds");
+		currentBusiness.setMapLocation("https://goo.gl/maps/eq4KYVSVyM82");
+		BillUser owner = new BillUser();
+		owner.setEmail("mcd@gmail.com");
+		owner.setPhone("+911231231231");
+		currentBusiness.setOwner(owner);
+		customer.setCurrentBusiness(currentBusiness);
+		BillMailUtil couponMail = new BillMailUtil(BillConstants.MAIL_TYPE_COUPON_ACCEPTED, customer);
+		BillScheme selectedScheme = new BillScheme();
+		selectedScheme.setSchemeName("50% OFF FLAT");
+		selectedScheme.setComments("50% OFF on all items");
+		selectedScheme.setValidTill(new Date());
+		selectedScheme.setCouponCode("MCD102018670001");
+		couponMail.setSelectedScheme(selectedScheme);
+		couponMail.sendMail();
 	}
 	
 	@Test
@@ -494,7 +520,7 @@ public class BillTest {
 		currentSubscription.setId(1);
 		user.setCurrentSubscription(currentSubscription);
 
-		BillSMSUtil.sendSMS(user, invoice, BillConstants.MAIL_TYPE_INVOICE);
+		BillSMSUtil.sendSMS(user, invoice, BillConstants.MAIL_TYPE_INVOICE, null);
 	}
 	
 	@Test
@@ -554,13 +580,18 @@ public class BillTest {
 	}
 	
 	@Test
-	public void testSendInvoice() {
-		BillServiceRequest request = new BillServiceRequest();
-		request.setRequestType(BillConstants.REQUEST_TYPE_EMAIL);
-		BillInvoice invoice = new BillInvoice();
-		invoice.setId(18);
-		request.setInvoice(invoice);
-		userbo.sendCustomerInvoice(request);
+	public void testSendInvoice() throws InterruptedException {
+		
+		synchronized (new Object()) {
+			BillServiceRequest request = new BillServiceRequest();
+			request.setRequestType(BillConstants.REQUEST_TYPE_EMAIL);
+			BillInvoice invoice = new BillInvoice();
+			invoice.setId(18);
+			request.setInvoice(invoice);
+			userbo.sendCustomerInvoice(request);
+			
+			Thread.currentThread().sleep(100000);
+		}
 	}
 	
 	@Test
@@ -620,5 +651,54 @@ public class BillTest {
 		System.out.println(Base64.getEncoder().encodeToString(sha256_HMAC.doFinal(data.getBytes())));
 	}
 	//{txStatus=[SUCCESS], orderAmount=[25.00], orderId=[15.20], paymentMode=[NET_BANKING], txTime=[2018-09-02 19:56:56], signature=[edaQObEw8HR13Ti+gL+4kOE/sm7blzKQlsYeWsrMIcM=], txMsg=[Y], referenceId=[3876647]}
+	
+	
+	@Test
+	public void testSorting() {
+		List<BillDBLocation> entities = new BillGenericDaoImpl(userbo.getSessionFactory().openSession()).getEntities(BillDBLocation.class, true, "name", "asc");
+		System.out.println(entities.get(0).getName());
+		
+		List<BillDBItemParent> items = new BillGenericDaoImpl(userbo.getSessionFactory().openSession()).getEntities(BillDBItemParent.class, true, "name", "asc");
+		System.out.println(items.get(0).getName());
+	}
+	
+	@Test
+	public void testSettlement() throws JsonGenerationException, JsonMappingException, IOException {
+		BillServiceRequest request = new BillServiceRequest();
+		request.setRequestType(BillConstants.INVOICE_STATUS_PAID);
+		System.out.println(new ObjectMapper().writeValueAsString(adminBo.getSettlements(request)));
+	}
+	
+	@Test
+	public void testUpdateOrders() {
+		System.out.println(new BillOrderDaoImpl(userbo.getSessionFactory().openSession()).getOrderItems(new Date(), 1));
+	}
+	
+	@Test
+	public void testGetTransactions() throws JsonGenerationException, JsonMappingException, IOException {
+		BillServiceRequest request = new BillServiceRequest();
+		BillBusiness business = new BillBusiness();
+		business.setId(9);
+		request.setBusiness(business);
+		BillInvoice invoice = new BillInvoice();
+		invoice.setMonth(8);
+		invoice.setYear(2018);
+		request.setInvoice(invoice);
+		System.out.println(new ObjectMapper().writeValueAsString(userbo.getTransactions(request)));
+	}
+	
+	@Test
+	public void testDistributors() {
+		List<BillDBLocation> locations = new ArrayList<BillDBLocation>();
+		BillDBLocation loc = new BillDBLocation();
+		loc.setId(3);
+		locations.add(loc);
+		new BillVendorDaoImpl(userbo.getSessionFactory().openSession()).getBusinessesByItemAccess(1, "Distributor", locations);
+	}
+	
+	@Test
+	public void testFormatDecimal() {
+		System.out.println(CommonUtils.formatDecimal(new BigDecimal(53.00)));
+	}
 	
 }

@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service.util;
 
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.util.Collections;
@@ -12,6 +13,7 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
+import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -23,42 +25,51 @@ public class BillSMSUtil implements BillConstants {
 	
 	private static final String SMS_COSMETIC_SEPARATOR = " ---------------- ";
 	private static final String SMS_URL = "http://api.msg91.com/api/sendhttp.php?sender=PAYBIL&route=4&mobiles={mobiles}&authkey=193344AsiDSe0j5a5db681&country=0&message={message}";
-	private static final String ADMIN_PHONES = "9923283604,9623736773"; 
+	private static final String ADMIN_PHONES = "9923283604,9623736773";
 	
-	public static String sendSMS(BillUser user, BillInvoice invoice, String type) {
+	private BillUser customer;
+	
+	public static String sendSMS(BillUser user, BillInvoice invoice, String type, BillScheme selectedScheme) {
 		String result = "";
 		try {
 			LoggingUtil.logMessage("Sending SMS to -- " + user.getPhone());
-			
-			result = generateResultMessage(user, invoice, type);
-			ClientConfig config = new DefaultClientConfig();
-			Client client = Client.create(config);
-			String smsUrl = SMS_URL;
-			smsUrl = StringUtils.replace(smsUrl, "{message}", URLEncoder.encode(result, "UTF-8"));
-			
-			if (StringUtils.contains(type, "Admin")) {
-				smsUrl = StringUtils.replace(smsUrl, "{mobiles}", ADMIN_PHONES);
-			} else {
-				smsUrl = StringUtils.replace(smsUrl, "{mobiles}", user.getPhone());
-			}
-			
-			WebResource webResource;
-			webResource = client.resource(smsUrl);
-			ClientResponse response = webResource.get(ClientResponse.class);
-			String entity = response.getEntity(String.class);
-			LoggingUtil.logMessage("SMS response -- " + entity);
+			result = generateResultMessage(user, invoice, type, selectedScheme);
+			sendSMSProcess(user, type, result);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		}
 		return result;
 	}
 
-	public static String generateResultMessage(BillUser user, BillInvoice invoice, String type) {
+	private static void sendSMSProcess(BillUser user, String type, String result) throws UnsupportedEncodingException {
+		ClientConfig config = new DefaultClientConfig();
+		Client client = Client.create(config);
+		String smsUrl = SMS_URL;
+		smsUrl = StringUtils.replace(smsUrl, "{message}", URLEncoder.encode(result, "UTF-8"));
+		
+		if (StringUtils.contains(type, "Admin")) {
+			smsUrl = StringUtils.replace(smsUrl, "{mobiles}", ADMIN_PHONES);
+		} else {
+			smsUrl = StringUtils.replace(smsUrl, "{mobiles}", user.getPhone());
+		}
+		
+		WebResource webResource;
+		webResource = client.resource(smsUrl);
+		ClientResponse response = webResource.get(ClientResponse.class);
+		String entity = response.getEntity(String.class);
+		LoggingUtil.logMessage("SMS response -- " + entity);
+	}
+
+	public static String generateResultMessage(BillUser user, BillInvoice invoice, String type, BillScheme selectedScheme) {
 		String result;
 		result = SMS_TEXT.get(type);
 		
 		if(user != null) {
 			result = BillMailUtil.prepareUserInfo(result, user);
+		}
+		
+		if(selectedScheme != null && user.getCurrentBusiness() != null) {
+			result = BillMailUtil.prepareSchemeInfo(result, selectedScheme, user.getCurrentBusiness());
 		}
 		
 		if(invoice != null) {
@@ -106,6 +117,29 @@ public class BillSMSUtil implements BillConstants {
 		}
 		return result;
 	}
+	
+	
+	
+	public void sendSms(BillUser user, BillInvoice invoice, String type, BillScheme selectedScheme) {
+		try {
+			LoggingUtil.logMessage("Sending SMS to -- " + user.getPhone());
+			String result = generateResultMessage(user, invoice, type, selectedScheme);
+			if(customer != null) {
+				result = BillMailUtil.prepareCustomerInfo(result, customer);
+			}
+			sendSMSProcess(user, type, result);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+	}
+
+	public BillUser getCustomer() {
+		return customer;
+	}
+
+	public void setCustomer(BillUser customer) {
+		this.customer = customer;
+	}
 
 	private static Map<String, String> SMS_TEXT = Collections.unmodifiableMap(new HashMap<String, String>() {
 		{
@@ -121,6 +155,10 @@ public class BillSMSUtil implements BillConstants {
 			put(MAIL_TYPE_REGISTRATION_ADMIN, "We have a new registration - \n Name - {name} \n Email {email} \n Phone - {phone}");
 			put(MAIL_TYPE_INVOICE_GENERATION, "Hi {name} ! Invoices generated for {month} {year}. Please review the invoices before sending out to customers. \n No of invoices = {amount} \n Amount raised = {payable}.");
 			put(MAIL_TYPE_SETTLEMENT_SUMMARY, "Your settlement of Rs. {amount} is processed on {date}. Please check your email {email} for more details. \n Reference no - {settlementId}. \n Payment will be credited to your account in 24 hours.");
+			put(MAIL_TYPE_COUPON_ACCEPTED, "Congratulations {name}! Your offer details for {schemeName}.\nCoupon code - {coupon}\nBusiness contact - {vendorContact} | {vendorEmail}\nOffer valid till - {offerValidity}\nStore location - {mapLocation}");
+			put(MAIL_TYPE_COUPON_ACCEPTED_BUSINESS, "Hi {name}! New customer {customerName} collected the offer for {schemeName}.\nCoupon code - {coupon}\nContact - {customerPhone} | {customerEmail}\nOffer valid till - {offerValidity}");
+			put(MAIL_TYPE_COUPON_REDEEMED, "Hello {name}! Your have redeemed the offer for {schemeName}.\nCoupon code - {coupon}\nContact vendor in case of any queries - {vendorContact} | {vendorEmail}");
+			put(MAIL_TYPE_COUPON_REDEEMED_BUSINESS, "Hi {name}! A customer {customerName} redeemed the offer for {schemeName}.\nCoupon code - {coupon}\nContact - {customerPhone} | {customerEmail}");
 		}
 	});
 	
