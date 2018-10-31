@@ -615,7 +615,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 								BigDecimal difference = newPrice.subtract(orderItem.getAmount());
 								orderItem.getOrder().setAmount(orderItem.getOrder().getAmount().add(difference));
 								orderItem.setAmount(newPrice);
-								LoggingUtil.logMessage("Changed value =>" + difference + " .. " + orderItem.getOrder().getId());
+								LoggingUtil.logMessage("Changed value =>" + difference + " .. " + orderItem.getOrder().getId() + " amount =>" + orderItem.getOrder().getAmount());
 							} else if(request.getItem().getCostPrice() != null) {
 								orderItem.setCostPrice(orderItem.getQuantity().multiply(request.getItem().getCostPrice()));
 							}
