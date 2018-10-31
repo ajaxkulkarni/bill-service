@@ -603,14 +603,20 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			
 			if(request.getItem() != null) {
 				if(request.getItem().getParentItemId() != null) {
-					if(request.getItem().getCostPrice() != null) {
-						//Update all orders with this parent item
-						List<BillDBOrderItems> orderItems = new BillOrderDaoImpl(session).getOrderItems(request.getRequestedDate(), request.getItem().getParentItemId());
-						if(CollectionUtils.isNotEmpty(orderItems)) {
-							for(BillDBOrderItems orderItem: orderItems) {
-								if(orderItem.getQuantity() == null) {
-									continue;
-								}
+					//Update all orders with this parent item
+					List<BillDBOrderItems> orderItems = new BillOrderDaoImpl(session).getOrderItems(request.getRequestedDate(), request.getItem().getParentItemId());
+					if(CollectionUtils.isNotEmpty(orderItems)) {
+						for(BillDBOrderItems orderItem: orderItems) {
+							if(orderItem.getQuantity() == null) {
+								continue;
+							}
+							if(StringUtils.equalsIgnoreCase("UPDATESP", request.getRequestType()) && orderItem.getAmount() != null) {
+								BigDecimal newPrice = orderItem.getQuantity().multiply(request.getItem().getPrice());
+								BigDecimal difference = newPrice.subtract(orderItem.getAmount());
+								orderItem.getOrder().setAmount(orderItem.getOrder().getAmount().add(difference));
+								orderItem.setAmount(newPrice);
+								LoggingUtil.logMessage("Changed value =>" + difference + " .. " + orderItem.getOrder().getId());
+							} else if(request.getItem().getCostPrice() != null) {
 								orderItem.setCostPrice(orderItem.getQuantity().multiply(request.getItem().getCostPrice()));
 							}
 						}
