@@ -4,27 +4,20 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import javax.persistence.FetchType;
-
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Criteria;
 import org.hibernate.FetchMode;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
-import org.hibernate.criterion.SQLCriterion;
 import org.hibernate.sql.JoinType;
 
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
-import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
-import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
-import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.CommonUtils;
 
 public class BillVendorDaoImpl {
@@ -125,6 +118,22 @@ public class BillVendorDaoImpl {
 		Criteria sectorCritaria = criteria.setFetchMode("sector", FetchMode.JOIN);
 		Criteria userCriteria = criteria.setFetchMode("user", FetchMode.JOIN);
 		return criteria.list();
+	}
+	
+	public List<Object[]> getBillSummary(Integer businessId, Integer parentItemId, Integer month, Integer year) {
+		//Query query = session.createQuery("select sum(items.quantity),items.businessItem,items.order,sum(items.price),sum(items.amount) from BillDBItemInvoice items where items.invoice.month=:month AND items.order.business.id=:businessId group by items.businessItem");
+		String sqlQuery = "from BillDBItemInvoice itemInvoice join itemInvoice.invoice join itemInvoice.invoice.subscription where itemInvoice.invoice.subscription.business=:businessId AND itemInvoice.invoice.month=:month AND itemInvoice.invoice.year=:year ";
+		if(parentItemId != null) {
+			sqlQuery = sqlQuery + " AND itemInvoice.businessItem.parent.id=:itemId";
+		}
+		Query query = session.createQuery(sqlQuery);
+		query.setInteger("businessId", businessId);
+		query.setInteger("month", month);
+		query.setInteger("year", year);
+		if(parentItemId != null) {
+			query.setInteger("itemId", parentItemId);
+		}
+		return query.list();
 	}
 	
 }

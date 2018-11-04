@@ -325,6 +325,17 @@ public class CommonUtils {
 		String phone2 = new String(StringUtils.removeStart(StringUtils.replacePattern(ph2, "\\s+",""), "+91"));
 		return StringUtils.equals(phone1, phone2);
 	}
+
+
+	public static Date getDate(Integer month, Integer year) {
+		if(month == null || year == null) {
+			return null;
+		}
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.MONTH, month - 1);
+		cal.set(Calendar.YEAR, year);
+		return cal.getTime();
+	}
 	
 	
 }

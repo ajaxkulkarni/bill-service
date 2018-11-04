@@ -36,12 +36,15 @@ import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
+import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
+import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
@@ -51,6 +54,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBUserLog;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
+import com.rns.web.billapp.service.dao.impl.BillSchemesDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillSubscriptionDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillTransactionsDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
@@ -889,6 +893,17 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						updateInvoicePaymentStatus(currentInvoice, paidInvoice);
 					}
 				}
+				
+				List<BillDBSchemes> rewardSchemes = new BillSchemesDaoImpl(session).getSchemes(SCHEME_TYPE_REWARD);
+				if(CollectionUtils.isNotEmpty(rewardSchemes)) {
+					BillDBSchemes schemes = rewardSchemes.get(0);
+					if(validateScheme(schemes, invoice, session)) {
+						BillDBCustomerCoupons coupon = BillBusinessConverter.getCustomerCoupon(schemes, invoice.getSubscription(), invoice);
+						session.persist(coupon);
+						BillRuleEngine.redeemCoupon(session, coupon, executor);
+					}
+				}
+				
 			} else {
 				invoice.setStatus(INVOICE_STATUS_FAILED);
 			}
@@ -903,7 +918,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 
 			BillBusinessConverter.updatePaymentTransactionLog(session, invoice, currentInvoice);
 			sendEmails(currentInvoice, invoice, nullAwareBeanUtils);
-
+			
 			tx.commit();
 
 		} catch (Exception e) {
@@ -917,6 +932,25 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			}
 		}
 		return response;
+	}
+
+	private boolean validateScheme(BillDBSchemes schemes, BillDBInvoice invoice, Session session) {
+		if(schemes == null || schemes.getId() == null || invoice == null || invoice.getSubscription() == null || invoice.getSubscription().getId() == null) {
+			return false;
+		}
+		// Check if the scheme is already accepted by the same customer
+		BillDBCustomerCoupons existing = new BillSchemesDaoImpl(session).getAcceptedScheme(schemes.getId(), invoice.getSubscription().getId());
+		if (existing != null) {
+			return false;
+		}
+		// Check if any scheme is already accepted against this invoice
+		if (invoice != null && invoice.getId() != null) {
+			existing = new BillGenericDaoImpl(session).getEntityByKey(BillDBCustomerCoupons.class, "invoice.id", invoice.getId(), true);
+			if (existing != null) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private void updateInvoicePaymentStatus(BillInvoice currentInvoice, BillDBInvoice invoice) {
@@ -1088,55 +1122,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		Session session = null;
 		try {
 			session = this.sessionFactory.openSession();
-			List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerInvoiceSummary(request.getRequestedDate(), request.getBusiness().getId(),
-					CommonUtils.getCalendarValue(new Date(), Calendar.MONTH), CommonUtils.getCalendarValue(new Date(), Calendar.YEAR));
-			List<BillUser> users = new ArrayList<BillUser>();
-			if (CollectionUtils.isNotEmpty(result)) {
-				for (Object[] row : result) {
-					if (ArrayUtils.isEmpty(row)) {
-						continue;
-					}
-					BillDBSubscription subscription = (BillDBSubscription) row[1];
-					BillUser customer = new BillUser();
-					new NullAwareBeanUtils().copyProperties(customer, subscription);
-					if (userNotPresent(request.getUsers(), customer)) {
-						continue;
-					}
-					BigDecimal total = (BigDecimal) row[0];
-					if (StringUtils.equals(STATUS_DELETED, subscription.getStatus())) {
-						continue;
-					}
-					BillInvoice invoice = new BillInvoice();
-					invoice.setAmount(total);
-					if (row[2] != null) {
-						invoice.setPendingBalance((BigDecimal) row[2]);
-					}
-					if (row[3] != null) {
-						invoice.setServiceCharge((BigDecimal) row[3]);
-					}
-					if (row[4] != null) {
-						invoice.setCreditBalance((BigDecimal) row[4]);
-					}
-					BillRuleEngine.calculatePayable(invoice, null, null);
-
-					customer.setCurrentInvoice(invoice);
-					users.add(customer);
-					if (StringUtils.equals(REQUEST_TYPE_EMAIL, request.getRequestType()) && total != null && total.compareTo(BigDecimal.ZERO) > 0) {
-						BillDBInvoice lastUnpaid = new BillInvoiceDaoImpl(session).getLatestUnPaidInvoice(subscription.getId());
-						if (lastUnpaid != null) {
-							BillInvoice lastInvoice = BillDataConverter.getInvoice(new NullAwareBeanUtils(), lastUnpaid);
-							BillRuleEngine.calculatePayable(lastInvoice, lastUnpaid, session);
-							invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + lastUnpaid.getId());
-							BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
-							customer.setCurrentBusiness(BillDataConverter.getBusiness(subscription.getBusiness()));
-							mailUtil.setUser(customer);
-							mailUtil.setInvoice(lastInvoice);
-							executor.execute(mailUtil);
-							BillSMSUtil.sendSMS(customer, lastInvoice, MAIL_TYPE_INVOICE, null);
-						}
-					}
-				}
-			}
+			List<BillUser> users = prepareInvoiceSummary(request, session);
 			if (!StringUtils.equals(REQUEST_TYPE_EMAIL, request.getRequestType())) {
 				response.setUsers(users);
 			}
@@ -1147,6 +1133,71 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			CommonUtils.closeSession(session);
 		}
 		return response;
+	}
+
+	private List<BillUser> prepareInvoiceSummary(BillServiceRequest request, Session session) throws IllegalAccessException, InvocationTargetException {
+		Integer year = null, month = null;
+		if(request.getInvoice() != null) {
+			year = request.getInvoice().getYear();
+			month = request.getInvoice().getMonth();
+			if(month != null && year == null) {
+				year = CommonUtils.getCalendarValue(new Date(), Calendar.YEAR);
+				Date date = CommonUtils.getDate(month, year);
+				if(date != null && date.compareTo(new Date()) > 0) {
+					year = year - 1;
+				}
+			}
+		}
+		List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerInvoiceSummary(request.getRequestedDate(), request.getBusiness().getId(),
+				month, year);
+		List<BillUser> users = new ArrayList<BillUser>();
+		if (CollectionUtils.isNotEmpty(result)) {
+			for (Object[] row : result) {
+				if (ArrayUtils.isEmpty(row)) {
+					continue;
+				}
+				BillDBSubscription subscription = (BillDBSubscription) row[1];
+				BillUser customer = new BillUser();
+				new NullAwareBeanUtils().copyProperties(customer, subscription);
+				if (userNotPresent(request.getUsers(), customer)) {
+					continue;
+				}
+				BigDecimal total = (BigDecimal) row[0];
+				if (StringUtils.equals(STATUS_DELETED, subscription.getStatus())) {
+					continue;
+				}
+				BillInvoice invoice = new BillInvoice();
+				invoice.setAmount(total);
+				if (row[2] != null) {
+					invoice.setPendingBalance((BigDecimal) row[2]);
+				}
+				if (row[3] != null) {
+					invoice.setServiceCharge((BigDecimal) row[3]);
+				}
+				if (row[4] != null) {
+					invoice.setCreditBalance((BigDecimal) row[4]);
+				}
+				BillRuleEngine.calculatePayable(invoice, null, null);
+
+				customer.setCurrentInvoice(invoice);
+				users.add(customer);
+				if (StringUtils.equals(REQUEST_TYPE_EMAIL, request.getRequestType()) && total != null && total.compareTo(BigDecimal.ZERO) > 0) {
+					BillDBInvoice lastUnpaid = new BillInvoiceDaoImpl(session).getLatestUnPaidInvoice(subscription.getId());
+					if (lastUnpaid != null) {
+						BillInvoice lastInvoice = BillDataConverter.getInvoice(new NullAwareBeanUtils(), lastUnpaid);
+						BillRuleEngine.calculatePayable(lastInvoice, lastUnpaid, session);
+						invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + lastUnpaid.getId());
+						BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
+						customer.setCurrentBusiness(BillDataConverter.getBusiness(subscription.getBusiness()));
+						mailUtil.setUser(customer);
+						mailUtil.setInvoice(lastInvoice);
+						executor.execute(mailUtil);
+						BillSMSUtil.sendSMS(customer, lastInvoice, MAIL_TYPE_INVOICE, null);
+					}
+				}
+			}
+		}
+		return users;
 	}
 
 	private boolean userNotPresent(List<BillUser> users, BillUser searchUser) {
@@ -1275,6 +1326,66 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getCustomerBillsSummary(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if(request.getInvoice() == null || request.getInvoice().getMonth() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			
+			List<BillDBItemBusiness> items = new BillGenericDaoImpl(session).getEntitiesByKey(BillDBItemBusiness.class, "business.id", request.getBusiness().getId(), true, null, null);
+			response.setItems(BillDataConverter.getBusinessItems(items));
+			List<BillUser> users = new ArrayList<BillUser>();
+			
+			if(request.getItem() == null || request.getItem().getParentItemId() == null) {
+				//Get data for full invoices
+				users = prepareInvoiceSummary(request, session);
+				response.setUsers(users);
+				return response;
+			} 
+			
+			Integer year = null, month = null;
+			if(request.getInvoice() != null) {
+				year = request.getInvoice().getYear();
+				month = request.getInvoice().getMonth();
+				if(month != null && year == null) {
+					year = CommonUtils.getCalendarValue(new Date(), Calendar.YEAR);
+					Date date = CommonUtils.getDate(month, year);
+					if(date != null && date.compareTo(new Date()) > 0) {
+						year = year - 1;
+					}
+				}
+			}
+			
+			List<Object[]> rows = new BillVendorDaoImpl(session).getBillSummary(request.getBusiness().getId(), request.getItem().getParentItemId(), month, year);
+			for(Object[] row: rows) {
+				BillDBItemInvoice itemI = (BillDBItemInvoice) row[0];
+				BillDBInvoice invoice = (BillDBInvoice) row[1];
+				BillDBSubscription subscription = (BillDBSubscription) row[2];
+				NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
+				BillInvoice itemInvoice = BillDataConverter.getInvoice(beanUtils, invoice);
+				List<BillItem> invoiceItems = new ArrayList<BillItem>();
+				invoiceItems.add(BillDataConverter.getInvoiceItem(beanUtils, itemInvoice, itemI));
+				itemInvoice.setAmount(itemI.getPrice());
+				itemInvoice.setInvoiceItems(invoiceItems);
+				BillUser customer = BillDataConverter.getCustomerDetails(beanUtils, subscription);
+				if(customer != null) {
+					customer.setCurrentInvoice(itemInvoice);
+					users.add(customer);
+				}
+			}
+			
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {
 			CommonUtils.closeSession(session);
 		}

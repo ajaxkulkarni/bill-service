@@ -228,22 +228,28 @@ public class BillDataConverter implements BillConstants {
 		if(CollectionUtils.isNotEmpty(dbInvoice.getItems())) {
 			for(BillDBItemInvoice dbInvoiceItem: dbInvoice.getItems()) {
 				if(StringUtils.equalsIgnoreCase(STATUS_ACTIVE, dbInvoiceItem.getStatus())) {
-					BillItem invoiceItem = new BillItem();
-					beanUtils.copyProperties(invoiceItem, dbInvoiceItem);
-					BillItem parentItem = new BillItem();
-					if(dbInvoiceItem.getBusinessItem().getParent() != null) {
-						beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem().getParent());
-					} else {
-						beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem());
-					}
-					invoiceItem.setParentItem(parentItem);
-					invoiceItem.setParentItemId(dbInvoiceItem.getSubscribedItem().getId());
+					BillItem invoiceItem = getInvoiceItem(beanUtils, invoice, dbInvoiceItem);
 					invoice.getInvoiceItems().add(invoiceItem);
 				}
 			}
 			
 		}
 		return invoice;
+	}
+
+	public static BillItem getInvoiceItem(NullAwareBeanUtils beanUtils, BillInvoice invoice, BillDBItemInvoice dbInvoiceItem)
+			throws IllegalAccessException, InvocationTargetException {
+		BillItem invoiceItem = new BillItem();
+		beanUtils.copyProperties(invoiceItem, dbInvoiceItem);
+		BillItem parentItem = new BillItem();
+		if(dbInvoiceItem.getBusinessItem().getParent() != null) {
+			beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem().getParent());
+		} else {
+			beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem());
+		}
+		invoiceItem.setParentItem(parentItem);
+		invoiceItem.setParentItemId(dbInvoiceItem.getSubscribedItem().getId());
+		return invoiceItem;
 	}
 
 	public static List<BillItem> getOrderItems(Set<BillDBOrderItems> items) throws IllegalAccessException, InvocationTargetException {

@@ -3,6 +3,7 @@ package com.rns.web.billapp.service.util;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -20,12 +21,14 @@ import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
 import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
+import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
@@ -215,6 +218,46 @@ public class BillBusinessConverter {
 		}
 	}
 
+
+	public static BillDBCustomerCoupons getCustomerCoupon(BillDBSchemes schemes, BillDBSubscription subscription, BillDBInvoice invoice) {
+		BillDBCustomerCoupons coupons = new BillDBCustomerCoupons();
+		NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+		// nullAwareBeanUtils.copyProperties(coupons, request.getScheme());
+		coupons.setAcceptedDate(new Date());
+		coupons.setStatus(BillConstants.STATUS_ACTIVE);
+		if (StringUtils.equalsIgnoreCase(BillConstants.SCHEME_TYPE_LINK, schemes.getSchemeType())) {
+			coupons.setStatus(BillConstants.STATUS_PENDING);
+		}
+		coupons.setSubscription(subscription);
+		coupons.setScheme(schemes);
+		coupons.setInvoice(invoice);
+		if (subscription != null) {
+			coupons.setBusiness(subscription.getBusiness());
+		}
+		// Decide validity
+		if (coupons.getScheme() != null && coupons.getScheme().getBusiness() != null && coupons.getScheme().getBusiness().getSector() != null
+				&& StringUtils.equalsIgnoreCase("Newspaper", coupons.getScheme().getBusiness().getSector().getName())) {
+			// If newspaper scheme
+			int month = CommonUtils.getCalendarValue(new Date(), Calendar.MONTH);
+			Integer year = CommonUtils.getCalendarValue(new Date(), Calendar.YEAR);
+			Date date = CommonUtils.getMonthFirstDate(month + 1, year);
+			if (CommonUtils.noOfDays(date, new Date()) > BillConstants.NS_SCHEME_DAYS_LIMIT) {
+				month++;
+			} else {
+				month = month + 2;
+			}
+			coupons.setValidFrom(CommonUtils.getMonthFirstDate(month, year));
+			coupons.setValidTill(CommonUtils.addToDate(coupons.getValidFrom(), Calendar.MONTH, schemes.getDuration()));
+		} else {
+			coupons.setValidFrom(new Date());
+			if(schemes.getDuration() != null) {
+				coupons.setValidTill(CommonUtils.addToDate(coupons.getValidFrom(), Calendar.MONTH, schemes.getDuration()));
+			} else {
+				coupons.setValidTill(new Date());
+			}
+		}
+		return coupons;
+	}
 
 
 }

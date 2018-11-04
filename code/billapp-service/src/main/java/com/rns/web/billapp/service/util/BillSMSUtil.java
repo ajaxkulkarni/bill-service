@@ -159,6 +159,7 @@ public class BillSMSUtil implements BillConstants {
 			put(MAIL_TYPE_COUPON_ACCEPTED_BUSINESS, "Hi {name}! New customer {customerName} collected the offer for {schemeName}.\nCoupon code - {coupon}\nContact - {customerPhone} | {customerEmail}\nOffer valid till - {offerValidity}");
 			put(MAIL_TYPE_COUPON_REDEEMED, "Hello {name}! Your have redeemed the offer for {schemeName}.\nCoupon code - {coupon}\nContact vendor in case of any queries - {vendorContact} | {vendorEmail}");
 			put(MAIL_TYPE_COUPON_REDEEMED_BUSINESS, "Hi {name}! A customer {customerName} redeemed the offer for {schemeName}.\nCoupon code - {coupon}\nContact - {customerPhone} | {customerEmail}");
+			put(MAIL_TYPE_COUPON_REDEEMED_ADMIN, "Hi {name}! A customer {customerName} redeemed the offer for {schemeName}.\nCongratulations! You have won reward of Rs. {vendorCommission} !The reward amount will be settled into your back account within 1-2 days.");
 		}
 	});
 	

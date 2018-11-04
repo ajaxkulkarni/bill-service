@@ -33,5 +33,6 @@ public interface BillUserBo {
 	BillServiceResponse getCustomerActivity(BillServiceRequest request);
 	BillServiceResponse getFile(BillServiceRequest request);
 	BillServiceResponse getTransactions(BillServiceRequest request);
+	BillServiceResponse getCustomerBillsSummary(BillServiceRequest request);
 	
 }

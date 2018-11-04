@@ -1,8 +1,6 @@
 package com.rns.web.billapp.service.bo.impl;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -15,7 +13,6 @@ import org.hibernate.Transaction;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillCustomerBo;
-import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -23,15 +20,14 @@ import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
-import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillSchemesDaoImpl;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
+import com.rns.web.billapp.service.util.BillBusinessConverter;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
-import com.rns.web.billapp.service.util.BillMailUtil;
-import com.rns.web.billapp.service.util.BillSMSUtil;
+import com.rns.web.billapp.service.util.BillRuleEngine;
 import com.rns.web.billapp.service.util.CommonUtils;
 import com.rns.web.billapp.service.util.LoggingUtil;
 import com.rns.web.billapp.service.util.NullAwareBeanUtils;
@@ -86,8 +82,8 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 			}
 			// Check if any scheme is already accepted against this invoice
 			if (request.getInvoice() != null) {
-				existing = dao.getEntityByKey(BillDBCustomerCoupons.class, "invoice.id", request.getInvoice().getId(), true);
-				if (existing != null) {
+				List<BillDBCustomerCoupons> usedCoupons = dao.getEntitiesByKey(BillDBCustomerCoupons.class, "invoice.id", request.getInvoice().getId(), true, null, null);
+				if (couponNotUsable(usedCoupons)) {
 					response.setResponse(ERROR_CODE_GENERIC, ERROR_ACCEPTED_SCHEME);
 					return response;
 				}
@@ -130,45 +126,13 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 				return response;
 			}
 
-			BillDBCustomerCoupons coupons = new BillDBCustomerCoupons();
-			NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
-			// nullAwareBeanUtils.copyProperties(coupons, request.getScheme());
-
-			coupons.setAcceptedDate(new Date());
-			coupons.setStatus(STATUS_ACTIVE);
-			if (StringUtils.equalsIgnoreCase(SCHEME_TYPE_LINK, schemes.getSchemeType())) {
-				coupons.setStatus(STATUS_PENDING);
-			}
-			coupons.setSubscription(subscription);
-			coupons.setScheme(schemes);
-			coupons.setInvoice(invoice);
-			if (subscription != null) {
-				coupons.setBusiness(subscription.getBusiness());
-			}
-			// Decide validity
-			if (coupons.getScheme() != null && coupons.getScheme().getBusiness() != null && coupons.getScheme().getBusiness().getSector() != null
-					&& StringUtils.equalsIgnoreCase("Newspaper", coupons.getScheme().getBusiness().getSector().getName())) {
-				// If newspaper scheme
-				int month = CommonUtils.getCalendarValue(new Date(), Calendar.MONTH);
-				Integer year = CommonUtils.getCalendarValue(new Date(), Calendar.YEAR);
-				Date date = CommonUtils.getMonthFirstDate(month + 1, year);
-				if (CommonUtils.noOfDays(date, new Date()) > NS_SCHEME_DAYS_LIMIT) {
-					month++;
-				} else {
-					month = month + 2;
-				}
-				coupons.setValidFrom(CommonUtils.getMonthFirstDate(month, year));
-				coupons.setValidTill(CommonUtils.addToDate(coupons.getValidFrom(), Calendar.MONTH, schemes.getDuration()));
-			} else {
-				coupons.setValidFrom(new Date());
-				coupons.setValidTill(CommonUtils.addToDate(coupons.getValidFrom(), Calendar.MONTH, schemes.getDuration()));
-			}
+			BillDBCustomerCoupons coupons = BillBusinessConverter.getCustomerCoupon(schemes, subscription, invoice);
 			session.persist(coupons);
 			coupons.setCouponCode(CommonUtils.generateCouponCode(schemes, coupons));
 			if (StringUtils.isBlank(schemes.getPaymentType())) {
 				// Payment is not required for this scheme, so send mails to the
 				// customer/vendor and business
-				sendCouponMails(schemes, subscription, coupons, MAIL_TYPE_COUPON_ACCEPTED, MAIL_TYPE_COUPON_ACCEPTED_BUSINESS, MAIL_TYPE_COUPON_ACCEPTED_ADMIN);
+				BillRuleEngine.sendCouponMails(schemes, subscription, coupons, MAIL_TYPE_COUPON_ACCEPTED, MAIL_TYPE_COUPON_ACCEPTED_BUSINESS, MAIL_TYPE_COUPON_ACCEPTED_ADMIN, executor);
 			}
 			tx.commit();
 		} catch (Exception e) {
@@ -179,50 +143,7 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 		}
 		return response;
 	}
-
-	private void sendCouponMails(BillDBSchemes schemes, BillDBSubscription subscription, BillDBCustomerCoupons coupons, String mailTypeCustomer, String mailTypeCouponBusiness, String mailTypeCouponAdmin)
-			throws IllegalAccessException, InvocationTargetException {
-		if (subscription != null && subscription.getBusiness() != null && subscription.getBusiness().getUser() != null) {
-			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
-			BillUser customer = BillDataConverter.getCustomerDetails(beanUtils, subscription);
-			BillBusiness schemeBusiness = BillDataConverter.getBusiness(schemes.getBusiness());
-			BillUser vendor = new BillUser();
-			beanUtils.copyProperties(vendor, subscription.getBusiness().getUser());
-			BillUser schemeBusinessVendor = new BillUser();
-			beanUtils.copyProperties(schemeBusinessVendor, schemes.getBusiness().getUser());
-			BillScheme pickedScheme = BillDataConverter.getScheme(schemes, coupons, beanUtils);
-			// Send offer details to customer
-			customer.setCurrentBusiness(schemeBusiness);
-			//String mailTypeCustomer = MAIL_TYPE_COUPON_ACCEPTED;
-			BillMailUtil customerMail = new BillMailUtil(mailTypeCustomer, customer);
-			customerMail.setSelectedScheme(pickedScheme);
-			executor.execute(customerMail);
-			// Send SMS to customer
-			BillSMSUtil.sendSMS(customer, null, mailTypeCustomer, pickedScheme);
-			// Notify scheme business
-			schemeBusinessVendor.setCurrentBusiness(schemeBusiness);
-			//String mailTypeCouponBusiness = MAIL_TYPE_COUPON_ACCEPTED_BUSINESS;
-			BillMailUtil schemeBusinessMail = new BillMailUtil(mailTypeCouponBusiness, schemeBusinessVendor);
-			schemeBusinessMail.setCustomerInfo(customer);
-			schemeBusinessMail.setSelectedScheme(pickedScheme);
-			schemeBusinessMail.setCopyAdmins(true);
-			executor.execute(schemeBusinessMail);
-			BillSMSUtil smsUtil = new BillSMSUtil();
-			smsUtil.setCustomer(customer);
-			smsUtil.sendSms(schemeBusinessVendor, null, mailTypeCouponBusiness, pickedScheme);
-			// Notify vendor
-			vendor.setName(customer.getName());
-			vendor.setCurrentBusiness(schemeBusiness);
-			//String mailTypeCouponAdmin = MAIL_TYPE_COUPON_ACCEPTED_ADMIN;
-			if(schemes.getVendorCommission() != null) {
-				BillMailUtil vendorMail = new BillMailUtil(mailTypeCouponAdmin, vendor);
-				vendorMail.setSelectedScheme(pickedScheme);
-				vendorMail.setCopyAdmins(true);
-				executor.execute(vendorMail);
-			}
-		}
-	}
-
+	
 	public BillServiceResponse payScheme(BillServiceRequest request) {
 		// TODO Auto-generated method stub
 		return null;
@@ -251,13 +172,17 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 					return response;
 				}
 				// Request for invoice schemes
-				BillDBCustomerCoupons existing = dao.getEntityByKey(BillDBCustomerCoupons.class, "invoice.id", request.getInvoice().getId(), true);
-				if (existing != null) {
-					BillScheme scheme = BillDataConverter.getScheme(existing.getScheme(), existing, new NullAwareBeanUtils());
-					scheme.setSchemeBusiness(BillDataConverter.getBusiness(existing.getScheme().getBusiness()));
-					response.setScheme(scheme);
-					response.setResponse(ERROR_CODE_GENERIC, ERROR_ACCEPTED_SCHEME_INVOICE);
-					return response;
+				List<BillDBCustomerCoupons> usedCoupons = dao.getEntitiesByKey(BillDBCustomerCoupons.class, "invoice.id", request.getInvoice().getId(), false, null, null);
+				if (couponNotUsable(usedCoupons)) {
+					for(BillDBCustomerCoupons existing: usedCoupons) {
+						if(couponNotReUsable(existing)) {
+							BillScheme scheme = BillDataConverter.getScheme(existing.getScheme(), existing, new NullAwareBeanUtils());
+							scheme.setSchemeBusiness(BillDataConverter.getBusiness(existing.getScheme().getBusiness()));
+							response.setScheme(scheme);
+							response.setResponse(ERROR_CODE_GENERIC, ERROR_ACCEPTED_SCHEME_INVOICE);
+							return response;
+						}
+					}
 				}
 				List<BillDBSchemes> offers = new BillSchemesDaoImpl(session).getSchemes(SCHEME_TYPE_INVOICE);
 				if (CollectionUtils.isNotEmpty(offers)) {
@@ -279,6 +204,21 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 			CommonUtils.closeSession(session);
 		}
 		return response;
+	}
+
+	private boolean couponNotUsable(List<BillDBCustomerCoupons> existing) {
+		if(CollectionUtils.isEmpty(existing)) {
+			return false;
+		}
+		if(existing.size() > 1) {
+			return true;
+		}
+		BillDBCustomerCoupons coupons = existing.get(0);
+		return couponNotReUsable(coupons);
+	}
+
+	private boolean couponNotReUsable(BillDBCustomerCoupons coupons) {
+		return coupons != null && coupons.getScheme() != null && !StringUtils.equals(SCHEME_TYPE_REWARD, coupons.getScheme().getSchemeType());
 	}
 
 	public BillServiceResponse redeemScheme(BillServiceRequest request) {
@@ -315,29 +255,7 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 				response.setUser(BillDataConverter.getCustomerDetails(nullAwareBeanUtils, existing.getSubscription()));
 			} else if (StringUtils.equalsIgnoreCase("Redeem", request.getRequestType())) {
 				// Redeem coupon
-				existing.setStatus("R");
-				existing.setRedeemDate(new Date());
-				// If vendor commission, then add the commission as a
-				// transaction
-				if (existing.getScheme() != null && existing.getScheme().getVendorCommission() != null) {
-					BillDBTransactions transactions = new BillDBTransactions();
-					transactions.setAmount(existing.getScheme().getVendorCommission());
-					transactions.setCreatedDate(new Date());
-					transactions.setStatus(INVOICE_STATUS_PAID);
-					transactions.setMedium(PAYMENT_MEDIUM_CASHFREE);
-					transactions.setMode(PAYMENT_MODE_REWARD);
-					transactions.setReferenceNo(existing.getCouponCode());
-					transactions.setSubscription(existing.getSubscription());
-					if (existing.getSubscription() != null) {
-						transactions.setBusiness(existing.getSubscription().getBusiness());
-					}
-					transactions.setTransactionDate(CommonUtils.convertDate(new Date()));
-					transactions.setComments(existing.getScheme().getSchemeName());
-					session.persist(transactions);
-				}
-				if (existing.getScheme() != null && existing.getScheme().getBusiness() != null && existing.getSubscription() != null) {
-					sendCouponMails(existing.getScheme(), existing.getSubscription(), existing, MAIL_TYPE_COUPON_REDEEMED, MAIL_TYPE_COUPON_REDEEMED_BUSINESS, MAIL_TYPE_COUPON_REDEEMED_ADMIN);
-				}
+				BillRuleEngine.redeemCoupon(session, existing, executor);
 			}
 			tx.commit();
 		} catch (Exception e) {
