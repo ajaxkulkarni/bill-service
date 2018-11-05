@@ -74,6 +74,10 @@ public class BillMailUtil implements BillConstants, Runnable {
 	public BillMailUtil() {
 
 	}
+	
+	public void setMessageText(String messageText) {
+		this.messageText = messageText;
+	}
 
 	public BillMailUtil(String mailType, BillUser user2) {
 		this.type = mailType;
@@ -82,7 +86,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	public void sendMail() {
 
-		if (user == null || (!isAdminMail() && StringUtils.isBlank(user.getEmail()))) {
+		if (user == null || (!isAdminMail() && !genericMail() && StringUtils.isBlank(user.getEmail()))) {
 			return;
 		}
 
@@ -200,13 +204,10 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 			if (isAdminMail()) {
 				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(getEmails(Arrays.asList(ADMIN_MAILS))));
-			} /*
-				 * else if (CollectionUtils.isNotEmpty(users)) {
-				 * message.setRecipients(Message.RecipientType.TO,
-				 * InternetAddress.parse("talnoterns@gmail.com"));
-				 * message.setRecipients(Message.RecipientType.BCC,
-				 * InternetAddress.parse(getEmails(users))); }
-				 */ else {
+			} else if (genericMail()) {
+				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse("rssplsocial@gmail.com"));
+				message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(getUserEmails(users))); }
+			else {
 				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(user.getEmail()));
 			}
 
@@ -227,6 +228,10 @@ public class BillMailUtil implements BillConstants, Runnable {
 		}
 
 		return "";
+	}
+
+	private boolean genericMail() {
+		return CollectionUtils.isNotEmpty(users) && StringUtils.equals(MAIL_TYPE_GENERIC, type);
 	}
 
 	public static String prepareCustomerInfo(String result, BillUser customerInfo) {
@@ -369,6 +374,20 @@ public class BillMailUtil implements BillConstants, Runnable {
 		}
 		return StringUtils.removeEnd(builder.toString(), ",");
 	}
+	
+	private String getUserEmails(List<BillUser> users) {
+		if (CollectionUtils.isEmpty(users)) {
+			return "";
+		}
+		StringBuilder builder = new StringBuilder();
+		for (BillUser user : users) {
+			if (StringUtils.isEmpty(user.getEmail())) {
+				continue;
+			}
+			builder.append(user.getEmail()).append(",");
+		}
+		return StringUtils.removeEnd(builder.toString(), ",");
+	}
 
 	public void run() {
 		sendMail();
@@ -386,8 +405,12 @@ public class BillMailUtil implements BillConstants, Runnable {
 	private String readMailContent(Message message) throws FileNotFoundException, MessagingException {
 		String contentPath = "";
 		contentPath = "email/" + MAIL_TEMPLATES.get(type);
-		String subject = MAIL_SUBJECTS.get(type);
-		message.setSubject(subject);
+		if(StringUtils.isNotBlank(mailSubject)) {
+			message.setSubject(mailSubject);
+		} else {
+			String subject = MAIL_SUBJECTS.get(type);
+			message.setSubject(subject);
+		}
 		return CommonUtils.readFile(contentPath);
 	}
 
@@ -435,6 +458,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_COUPON_REDEEMED, "scheme_redeemed.html");
 			put(MAIL_TYPE_COUPON_REDEEMED_ADMIN, "scheme_redeemed_admin.html");
 			put(MAIL_TYPE_COUPON_REDEEMED_BUSINESS, "scheme_redeemed_business.html");
+			put(MAIL_TYPE_GENERIC, "generic.html");
 		}
 	});
 
@@ -458,7 +482,6 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_COUPON_REDEEMED, "You have redeemed the offer {schemeName}");
 			put(MAIL_TYPE_COUPON_REDEEMED_ADMIN, "Congrats! Your customer redeemed the offer for {schemeName}");
 			put(MAIL_TYPE_COUPON_REDEEMED_BUSINESS, "The customer redeemed your offer for {schemeName}");
-			
 		}
 	});
 

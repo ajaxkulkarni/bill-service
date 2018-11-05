@@ -333,4 +333,12 @@ public class BillAdminController {
 		return adminBo.updateLocations(request);
 	}
 	
+	@POST
+	@Path("/notify")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse notify(BillServiceRequest request) {
+		return adminBo.sendNotifications(request);
+	}
+	
 }

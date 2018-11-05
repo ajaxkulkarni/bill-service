@@ -12,6 +12,7 @@ import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
+import com.rns.web.billapp.service.bo.domain.BillNotification;
 import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -33,6 +34,7 @@ public class BillServiceRequest {
 	private BillScheme scheme;
 	private List<BillUser> users;
 	private BillLocation location;
+	private BillNotification notification;
 	
 	public BillUser getUser() {
 		return user;
@@ -128,6 +130,14 @@ public class BillServiceRequest {
 
 	public void setLocation(BillLocation location) {
 		this.location = location;
+	}
+
+	public BillNotification getNotification() {
+		return notification;
+	}
+
+	public void setNotification(BillNotification notification) {
+		this.notification = notification;
 	}
 
 }

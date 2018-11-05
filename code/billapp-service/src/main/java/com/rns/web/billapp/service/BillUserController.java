@@ -139,7 +139,7 @@ public class BillUserController {
 		return userBo.updateUserInfo(request);
 	}
 	
-	@POST
+	/*@POST
 	@Path("/updateBusinessLogo")
 	@Consumes(MediaType.APPLICATION_FORM_URLENCODED)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -157,6 +157,46 @@ public class BillUserController {
 					file.setFileData(new ByteArrayInputStream(byteArray));
 					//file.setFileData(logoFile);
 					file.setFilePath(logoFileDetails);
+					billUser.getCurrentBusiness().setLogo(file);
+				}
+				BillServiceRequest request = new BillServiceRequest();
+				request.setUser(billUser);
+				response = userBo.updateUserInfo(request);
+			} else {
+				response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+			}
+
+		} catch (JsonParseException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		} catch (JsonMappingException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		} catch (IOException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		}
+		LoggingUtil.logObject("Logo update response", response);
+		return response;
+	}*/
+	
+	@POST
+	@Path("/updateBusinessLogo")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateBusinessLogo(@FormDataParam("logo") InputStream logoFile,
+			@FormDataParam("logo") FormDataContentDisposition logoFileDetails,@FormDataParam("user") String user) {
+		LoggingUtil.logObject("Logo update request", user);
+		ObjectMapper mapper = new ObjectMapper();
+		BillServiceResponse response = new BillServiceResponse();
+		try {
+			BillUser billUser = mapper.readValue(user, BillUser.class);
+			if (billUser != null && billUser.getCurrentBusiness() != null) {
+				if (logoFile != null) {
+					BillFile file = new BillFile();
+					//file.setFileData(new ByteArrayInputStream(byteArray));
+					file.setFileData(logoFile);
+					file.setFilePath(logoFileDetails.getFileName());
 					billUser.getCurrentBusiness().setLogo(file);
 				}
 				BillServiceRequest request = new BillServiceRequest();
@@ -521,5 +561,13 @@ public class BillUserController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse getTransactions(BillServiceRequest request) {
 		return userBo.getTransactions(request);
+	}
+	
+	@POST
+	@Path("/getBillSummary")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getBillSummary(BillServiceRequest request) {
+		return userBo.getCustomerBillsSummary(request);
 	}
 }

@@ -27,18 +27,21 @@ import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
+import com.rns.web.billapp.service.bo.domain.BillNotification;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
+import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
+import com.rns.web.billapp.service.dao.impl.BillAdminDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillOrderDaoImpl;
@@ -600,7 +603,6 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
-			
 			if(request.getItem() != null) {
 				if(request.getItem().getParentItemId() != null) {
 					//Update all orders with this parent item
@@ -613,9 +615,10 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 							if(StringUtils.equalsIgnoreCase("UPDATESP", request.getRequestType()) && orderItem.getAmount() != null) {
 								BigDecimal newPrice = orderItem.getQuantity().multiply(request.getItem().getPrice());
 								BigDecimal difference = newPrice.subtract(orderItem.getAmount());
-								orderItem.getOrder().setAmount(orderItem.getOrder().getAmount().add(difference));
+								BillDBOrders order = new BillGenericDaoImpl(session).getEntityByKey(BillDBOrders.class, ID_ATTR, orderItem.getOrder().getId(), false);
+								order.setAmount(order.getAmount().add(difference));
 								orderItem.setAmount(newPrice);
-								LoggingUtil.logMessage("Changed value =>" + difference + " .. " + orderItem.getOrder().getId() + " amount =>" + orderItem.getOrder().getAmount());
+								LoggingUtil.logMessage("Changed value =>" + difference + " .. " + orderItem.getOrder().getId() + " amount =>" + order.getAmount());
 							} else if(request.getItem().getCostPrice() != null) {
 								orderItem.setCostPrice(orderItem.getQuantity().multiply(request.getItem().getCostPrice()));
 							}
@@ -623,7 +626,6 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					}
 				}
 			}
-			
 			tx.commit();
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -676,6 +678,57 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse sendNotifications(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		Session session = null;		
+		try {
+			session = this.sessionFactory.openSession();
+			BillNotification notification = request.getNotification();
+			List<BillUser> users = null;
+			if(StringUtils.isBlank(notification.getRecepients())) {
+				users = new ArrayList<BillUser>();
+				Integer sector = null;
+				if(request.getSector() != null) {
+					sector = request.getSector().getId();
+				}
+				List<BillDBUserBusiness> userBusinesses = new BillAdminDaoImpl(session).getBusinesses(sector);
+				if(CollectionUtils.isNotEmpty(userBusinesses)) {
+					for(BillDBUserBusiness userBusiness: userBusinesses) {
+						BillUser user = new BillUser();
+						NullAwareBeanUtils nullBeans = new NullAwareBeanUtils();
+						nullBeans.copyProperties(user, userBusiness.getUser());
+						users.add(user);
+					}
+				}
+			}
+			
+			if(StringUtils.equals(request.getRequestType(), "EMAIL")) {
+				BillUser user = new BillUser();
+				user.setEmail(notification.getRecepients());
+				BillMailUtil generic = new BillMailUtil(MAIL_TYPE_GENERIC, user);
+				generic.setMailSubject(notification.getSubject());
+				generic.setMessageText(notification.getText());
+				generic.setUsers(users);
+				executor.execute(generic);
+			} else {
+				BillUser user = new BillUser();
+				if(StringUtils.isNotBlank(notification.getRecepients())) {
+					user.setPhone(notification.getRecepients());
+				} else {
+					user.setPhone(BillSMSUtil.getPhones(users));
+				}
+				BillSMSUtil smsUtil = new BillSMSUtil();
+				smsUtil.setMessageText(notification.getText());
+				smsUtil.sendSms(user, null, MAIL_TYPE_GENERIC, null);
+			}
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {
 			CommonUtils.closeSession(session);
 		}

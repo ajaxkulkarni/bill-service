@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.collections.CollectionUtils;
@@ -28,6 +29,7 @@ public class BillSMSUtil implements BillConstants {
 	private static final String ADMIN_PHONES = "9923283604,9623736773";
 	
 	private BillUser customer;
+	private String messageText;
 	
 	public static String sendSMS(BillUser user, BillInvoice invoice, String type, BillScheme selectedScheme) {
 		String result = "";
@@ -127,6 +129,9 @@ public class BillSMSUtil implements BillConstants {
 			if(customer != null) {
 				result = BillMailUtil.prepareCustomerInfo(result, customer);
 			}
+			if(StringUtils.isNotBlank(messageText)) {
+				result = StringUtils.replace(result, "{message}", messageText);
+			}
 			sendSMSProcess(user, type, result);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -160,7 +165,30 @@ public class BillSMSUtil implements BillConstants {
 			put(MAIL_TYPE_COUPON_REDEEMED, "Hello {name}! Your have redeemed the offer for {schemeName}.\nCoupon code - {coupon}\nContact vendor in case of any queries - {vendorContact} | {vendorEmail}");
 			put(MAIL_TYPE_COUPON_REDEEMED_BUSINESS, "Hi {name}! A customer {customerName} redeemed the offer for {schemeName}.\nCoupon code - {coupon}\nContact - {customerPhone} | {customerEmail}");
 			put(MAIL_TYPE_COUPON_REDEEMED_ADMIN, "Hi {name}! A customer {customerName} redeemed the offer for {schemeName}.\nCongratulations! You have won reward of Rs. {vendorCommission} !The reward amount will be settled into your back account within 1-2 days.");
+			put(MAIL_TYPE_GENERIC, "{message}");
 		}
 	});
+
+	public static String getPhones(List<BillUser> users) {
+		if (CollectionUtils.isEmpty(users)) {
+			return "";
+		}
+		StringBuilder builder = new StringBuilder();
+		for (BillUser user : users) {
+			if (StringUtils.isEmpty(user.getPhone())) {
+				continue;
+			}
+			builder.append(user.getPhone()).append(",");
+		}
+		return StringUtils.removeEnd(builder.toString(), ",");
+	}
+
+	public String getMessageText() {
+		return messageText;
+	}
+
+	public void setMessageText(String messageText) {
+		this.messageText = messageText;
+	}
 	
 }
