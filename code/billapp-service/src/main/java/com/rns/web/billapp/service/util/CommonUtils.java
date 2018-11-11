@@ -12,14 +12,19 @@ import java.math.RoundingMode;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Scanner;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Session;
 
+import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 
@@ -335,6 +340,24 @@ public class CommonUtils {
 		cal.set(Calendar.MONTH, month - 1);
 		cal.set(Calendar.YEAR, year);
 		return cal.getTime();
+	}
+
+
+	public static void addIfNotPresent(BillUser customer, List<BillUser> users) {
+		if(customer == null) {
+			return;
+		}
+		if(CollectionUtils.isEmpty(users)) {
+			users = new ArrayList<BillUser>();
+			users.add(customer);
+			return;
+		}
+		for(BillUser user: users) {
+			if(user.getId().intValue() == customer.getId().intValue()) {
+				return;
+			}
+		}
+		users.add(customer);
 	}
 	
 	

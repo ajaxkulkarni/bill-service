@@ -122,7 +122,7 @@ public class BillVendorDaoImpl {
 	
 	public List<Object[]> getBillSummary(Integer businessId, Integer parentItemId, Integer month, Integer year) {
 		//Query query = session.createQuery("select sum(items.quantity),items.businessItem,items.order,sum(items.price),sum(items.amount) from BillDBItemInvoice items where items.invoice.month=:month AND items.order.business.id=:businessId group by items.businessItem");
-		String sqlQuery = "from BillDBItemInvoice itemInvoice join itemInvoice.invoice join itemInvoice.invoice.subscription where itemInvoice.invoice.subscription.business=:businessId AND itemInvoice.invoice.month=:month AND itemInvoice.invoice.year=:year ";
+		String sqlQuery = "from BillDBItemInvoice itemInvoice join itemInvoice.invoice join itemInvoice.invoice.subscription where itemInvoice.invoice.subscription.business.id=:businessId AND itemInvoice.invoice.month=:month AND itemInvoice.invoice.year=:year ";
 		if(parentItemId != null) {
 			sqlQuery = sqlQuery + " AND itemInvoice.businessItem.parent.id=:itemId";
 		}

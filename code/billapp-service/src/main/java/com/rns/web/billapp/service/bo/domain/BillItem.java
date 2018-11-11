@@ -42,6 +42,9 @@ public class BillItem implements Serializable {
 	private BigDecimal unitCostPrice;
 	private BigDecimal unitSellingPrice;
 	private String access;
+	private Date schemeStartDate;
+	private Date schemeEndDate;
+	private String paymentRef;
 	
 	public Integer getId() {
 		return id;
@@ -174,6 +177,24 @@ public class BillItem implements Serializable {
 	}
 	public void setAccess(String access) {
 		this.access = access;
+	}
+	public Date getSchemeStartDate() {
+		return schemeStartDate;
+	}
+	public void setSchemeStartDate(Date schemeStartDate) {
+		this.schemeStartDate = schemeStartDate;
+	}
+	public Date getSchemeEndDate() {
+		return schemeEndDate;
+	}
+	public void setSchemeEndDate(Date schemeEndDate) {
+		this.schemeEndDate = schemeEndDate;
+	}
+	public String getPaymentRef() {
+		return paymentRef;
+	}
+	public void setPaymentRef(String paymentRef) {
+		this.paymentRef = paymentRef;
 	}
 	
 }

@@ -31,6 +31,9 @@ public class BillDBItemSubscription {
 	private BillDBSubscription subscription;
 	private BillDBItemBusiness businessItem;
 	private String priceType;
+	private Date schemeStartDate;
+	private Date schemeEndDate;
+	private String paymentRef;
 	
 	
 	public BillDBItemSubscription(Integer subscribedItemId) {
@@ -141,6 +144,33 @@ public class BillDBItemSubscription {
 
 	public void setPriceType(String priceType) {
 		this.priceType = priceType;
+	}
+
+	@Column(name = "scheme_start_date")
+	public Date getSchemeStartDate() {
+		return schemeStartDate;
+	}
+
+	public void setSchemeStartDate(Date schemeStartDate) {
+		this.schemeStartDate = schemeStartDate;
+	}
+
+	@Column(name = "scheme_end_date")
+	public Date getSchemeEndDate() {
+		return schemeEndDate;
+	}
+
+	public void setSchemeEndDate(Date schemeEndDate) {
+		this.schemeEndDate = schemeEndDate;
+	}
+
+	@Column(name = "payment_ref")
+	public String getPaymentRef() {
+		return paymentRef;
+	}
+
+	public void setPaymentRef(String paymentRef) {
+		this.paymentRef = paymentRef;
 	}
 	
 }

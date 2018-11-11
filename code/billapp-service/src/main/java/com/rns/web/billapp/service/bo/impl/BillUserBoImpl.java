@@ -1122,7 +1122,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		Session session = null;
 		try {
 			session = this.sessionFactory.openSession();
-			List<BillUser> users = prepareInvoiceSummary(request, session);
+			List<BillUser> users = prepareInvoiceSummary(request, session, INVOICE_STATUS_PAID);
 			if (!StringUtils.equals(REQUEST_TYPE_EMAIL, request.getRequestType())) {
 				response.setUsers(users);
 			}
@@ -1135,7 +1135,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		return response;
 	}
 
-	private List<BillUser> prepareInvoiceSummary(BillServiceRequest request, Session session) throws IllegalAccessException, InvocationTargetException {
+	private List<BillUser> prepareInvoiceSummary(BillServiceRequest request, Session session, String status) throws IllegalAccessException, InvocationTargetException {
 		Integer year = null, month = null;
 		if(request.getInvoice() != null) {
 			year = request.getInvoice().getYear();
@@ -1149,7 +1149,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			}
 		}
 		List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerInvoiceSummary(request.getRequestedDate(), request.getBusiness().getId(),
-				month, year);
+				month, year, status);
 		List<BillUser> users = new ArrayList<BillUser>();
 		if (CollectionUtils.isNotEmpty(result)) {
 			for (Object[] row : result) {
@@ -1348,7 +1348,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			
 			if(request.getItem() == null || request.getItem().getParentItemId() == null) {
 				//Get data for full invoices
-				users = prepareInvoiceSummary(request, session);
+				users = prepareInvoiceSummary(request, session, null);
 				response.setUsers(users);
 				return response;
 			} 
@@ -1374,16 +1374,27 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
 				BillInvoice itemInvoice = BillDataConverter.getInvoice(beanUtils, invoice);
 				List<BillItem> invoiceItems = new ArrayList<BillItem>();
-				invoiceItems.add(BillDataConverter.getInvoiceItem(beanUtils, itemInvoice, itemI));
-				itemInvoice.setAmount(itemI.getPrice());
-				itemInvoice.setInvoiceItems(invoiceItems);
+				BillItem invoiceItem = BillDataConverter.getInvoiceItem(beanUtils, itemInvoice, itemI);
 				BillUser customer = BillDataConverter.getCustomerDetails(beanUtils, subscription);
 				if(customer != null) {
+					if(customer.getCurrentSubscription() != null && CollectionUtils.isNotEmpty(customer.getCurrentSubscription().getItems())) {
+						for(BillItem item: customer.getCurrentSubscription().getItems()) {
+							if(item.getParentItemId() != null && invoiceItem.getParentItem() != null && invoiceItem.getParentItem().getId() == item.getParentItemId() && item.getPrice() != null) {
+								invoiceItem.setSchemeStartDate(item.getSchemeStartDate());
+								invoiceItem.setSchemeEndDate(item.getSchemeEndDate());
+								invoiceItem.setPaymentRef(CommonUtils.getStringValue(item.getPaymentRef()));
+							}
+						}
+					}
+					invoiceItems.add(invoiceItem);
+					itemInvoice.setAmount(itemI.getPrice());
+					itemInvoice.setInvoiceItems(invoiceItems);
 					customer.setCurrentInvoice(itemInvoice);
 					users.add(customer);
+					//CommonUtils.addIfNotPresent(customer, users);
 				}
 			}
-			
+			response.setUsers(users);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {
