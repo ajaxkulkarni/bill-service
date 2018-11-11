@@ -1349,6 +1349,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			if(request.getItem() == null || request.getItem().getParentItemId() == null) {
 				//Get data for full invoices
 				users = prepareInvoiceSummary(request, session, null);
+				Collections.sort(users, new BillNameSorter());
 				response.setUsers(users);
 				return response;
 			} 
@@ -1394,6 +1395,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					//CommonUtils.addIfNotPresent(customer, users);
 				}
 			}
+			Collections.sort(users, new BillNameSorter());
 			response.setUsers(users);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
