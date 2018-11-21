@@ -32,7 +32,8 @@ public class BillVendorDaoImpl {
 	
 	public List<BillDBUserBusiness> getUserBusinesses(Integer userId) {
 		 Criteria criteria = session.createCriteria(BillDBUserBusiness.class)
-				 .add(Restrictions.eq("user.id", userId));
+				 .add(Restrictions.eq("user.id", userId))
+		 			.setFetchMode("sector", FetchMode.JOIN);
         return criteria.list();
 	}
 	

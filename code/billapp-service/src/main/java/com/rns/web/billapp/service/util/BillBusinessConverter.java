@@ -94,7 +94,7 @@ public class BillBusinessConverter {
 		BillBusiness currentBusiness = user.getCurrentBusiness();
 		notNullBean.copyProperties(billDBUserBusiness, currentBusiness);
 		billDBUserBusiness.setUser(dbUser);
-		if(currentBusiness.getBusinessSector() != null && currentBusiness.getBusinessSector().getId() != null) {
+		if(billDBUserBusiness.getSector() == null && currentBusiness.getBusinessSector() != null && currentBusiness.getBusinessSector().getId() != null) {
 			BillDBSector dbSector = new BillDBSector();
 			dbSector.setId(currentBusiness.getBusinessSector().getId());
 			billDBUserBusiness.setSector(dbSector);

@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service.bo.impl;
 
+import java.math.RoundingMode;
 import java.util.Date;
 import java.util.List;
 
@@ -171,6 +172,10 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 					response.setResponse(ERROR_CODE_GENERIC, ERROR_INVALID_PHONE_NUMBER);
 					return response;
 				}
+				if(phone != null && phone.length() > 12) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_INVALID_PHONE_NUMBER);
+					return response;
+				}
 				customer.setPhone(phone);
 				BillDBUserBusiness business = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), false);
 				if(business == null) {
@@ -256,7 +261,7 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 						//New item to be added to business items
 						BillDBItemBusiness businessItem = new BillDBItemBusiness();
 						businessItem.setName(item.getName());
-						businessItem.setPrice(CommonUtils.formatDecimal(item.getPrice().divide(item.getQuantity())));
+						businessItem.setPrice(CommonUtils.formatDecimal(item.getPrice().divide(item.getQuantity(), 2, RoundingMode.HALF_UP)));
 						businessItem.setBusiness(business);
 						businessItem.setCreatedDate(new Date());
 						businessItem.setStatus(STATUS_ACTIVE);

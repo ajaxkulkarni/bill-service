@@ -289,6 +289,16 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				dbSubscription.setCreatedDate(new Date());
 				dbSubscription.setStatus(STATUS_ACTIVE);
 			}
+			String phone = CommonUtils.trimPhoneNumber(user.getPhone());
+			if(phone != null && phone.length() < 10) {
+				response.setResponse(ERROR_CODE_GENERIC, ERROR_INVALID_PHONE_NUMBER);
+				return response;
+			}
+			if(phone != null && phone.length() > 12) {
+				response.setResponse(ERROR_CODE_GENERIC, ERROR_INVALID_PHONE_NUMBER);
+				return response;
+			}
+			user.setPhone(phone);
 			notNullBean.copyProperties(dbSubscription, user);
 			if (customer.getServiceCharge() != null) {
 				dbSubscription.setServiceCharge(customer.getServiceCharge());

@@ -265,7 +265,7 @@ public class BillDataConverter implements BillConstants {
 		BillItem invoiceItem = new BillItem();
 		beanUtils.copyProperties(invoiceItem, dbInvoiceItem);
 		BillItem parentItem = new BillItem();
-		if(dbInvoiceItem.getBusinessItem().getParent() != null) {
+		if(dbInvoiceItem.getBusinessItem() != null && dbInvoiceItem.getBusinessItem().getParent() != null) {
 			beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem().getParent());
 		} else {
 			beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem());
