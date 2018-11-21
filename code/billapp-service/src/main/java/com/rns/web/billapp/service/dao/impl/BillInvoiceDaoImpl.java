@@ -18,6 +18,7 @@ import org.hibernate.criterion.SimpleExpression;
 import org.hibernate.sql.JoinType;
 
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
@@ -59,6 +60,23 @@ public class BillInvoiceDaoImpl {
 		Criteria criteria = session.createCriteria(BillDBInvoice.class)
 				 .add(Restrictions.eq("subscription.id", subscriptionId))
 				 .add(invoiceNotDeleted());
+		if(StringUtils.isNotBlank(status)) {
+			criteria.add(Restrictions.eq("status", status));
+		}
+		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
+		return criteria.list();
+	}
+	
+	public List<BillDBInvoice> getAllBusinessInvoices(Integer businessId, String status, BillUserLog log) {
+		Criteria criteria = session.createCriteria(BillDBInvoice.class)
+				 .add(invoiceNotDeleted()).addOrder(Order.desc("id"));
+		if(log != null) {
+			if(log.getFromDate() != null && log.getToDate() != null) {
+				criteria.add(Restrictions.ge("invoiceDate", log.getFromDate())).add(Restrictions.le("invoiceDate", log.getToDate()));
+			}
+		}
+		criteria.createCriteria("subscription").add(Restrictions.eq("business.id", businessId));
 		if(StringUtils.isNotBlank(status)) {
 			criteria.add(Restrictions.eq("status", status));
 		}

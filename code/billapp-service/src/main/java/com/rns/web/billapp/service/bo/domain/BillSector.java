@@ -13,6 +13,7 @@ public class BillSector implements Serializable {
 	private String name;
 	private String description;
 	private Date createdDate;
+	private String framework;
 	
 	public BillSector() {
 		
@@ -45,6 +46,14 @@ public class BillSector implements Serializable {
 	}
 	public void setCreatedDate(Date createdDate) {
 		this.createdDate = createdDate;
+	}
+
+	public String getFramework() {
+		return framework;
+	}
+
+	public void setFramework(String framework) {
+		this.framework = framework;
 	}
 	
 }

@@ -32,6 +32,7 @@ public class BillDBItemBusiness {
 	private BillDBItemParent parent;
 	private BillDBUserBusiness business;
 	private String access;
+	private String imagePath;
 	
 	public BillDBItemBusiness(Integer businessItemId) {
 		this.id = businessItemId;
@@ -142,6 +143,15 @@ public class BillDBItemBusiness {
 
 	public void setAccess(String access) {
 		this.access = access;
+	}
+
+	@Column(name = "img_path")
+	public String getImagePath() {
+		return imagePath;
+	}
+
+	public void setImagePath(String imagePath) {
+		this.imagePath = imagePath;
 	}
 	
 }

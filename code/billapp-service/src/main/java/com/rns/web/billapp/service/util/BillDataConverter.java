@@ -32,6 +32,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
+import com.rns.web.billapp.service.dao.domain.BillDBSector;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
@@ -58,6 +59,7 @@ public class BillDataConverter implements BillConstants {
 			BillBusiness business = new BillBusiness();
 			BillDBUserBusiness dbBusiness = businesses.get(0);
 			business.setBusinessLocations(getLocations(new ArrayList<BillDBLocation>(dbBusiness.getLocations())));
+			business.setBusinessSector(getSector(dbBusiness.getSector()));
 			nullBeans.copyProperties(business, dbBusiness);
 			if(StringUtils.isNotBlank(dbBusiness.getLogoImg())) {
 				BillFile logo = new BillFile();
@@ -203,22 +205,43 @@ public class BillDataConverter implements BillConstants {
 			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
 			for(BillDBInvoice dbInvoice: invoices) {
 				BillInvoice invoice = getInvoice(beanUtils, dbInvoice);
-				BillRuleEngine.calculatePayable(invoice, null, null);
-				if(dbInvoice.getSubscription() != null && dbInvoice.getSubscription().getBusiness() != null) {
-					invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + invoice.getId());
-					BillUser customer = new BillUser();
-					customer.setCurrentBusiness(getBusiness(dbInvoice.getSubscription().getBusiness()));
-					beanUtils.copyProperties(customer, dbInvoice.getSubscription());
-					//This is done so that result message will get to see the total amount with outstanding balance
-					BillInvoice tempInvoice = new BillInvoice();
-					new NullAwareBeanUtils().copyProperties(tempInvoice, invoice);
-					BillRuleEngine.calculatePayable(tempInvoice, dbInvoice, session);
-					invoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customer, tempInvoice, BillConstants.MAIL_TYPE_INVOICE, null));
-				}
+				prepareInvoiceDetails(session, beanUtils, dbInvoice, invoice);
 				userInvoices.add(invoice);
 			}
 		}
 		return userInvoices;
+	}
+	
+	public static List<BillUser> getBusinessInvoices(List<BillDBInvoice> invoices, Session session) throws IllegalAccessException, InvocationTargetException {
+		List<BillUser> userInvoices = new ArrayList<BillUser>();
+		if(CollectionUtils.isNotEmpty(invoices)) {
+			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
+			for(BillDBInvoice dbInvoice: invoices) {
+				BillInvoice invoice = getInvoice(beanUtils, dbInvoice);
+				BillUser customer = prepareInvoiceDetails(session, beanUtils, dbInvoice, invoice);
+				customer.setCurrentInvoice(invoice);
+				userInvoices.add(customer);
+			}
+		}
+		return userInvoices;
+	}
+
+	private static BillUser prepareInvoiceDetails(Session session, NullAwareBeanUtils beanUtils, BillDBInvoice dbInvoice, BillInvoice invoice)
+			throws IllegalAccessException, InvocationTargetException {
+		BillRuleEngine.calculatePayable(invoice, null, null);
+		if(dbInvoice.getSubscription() != null && dbInvoice.getSubscription().getBusiness() != null) {
+			invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + invoice.getId());
+			BillUser customer = new BillUser();
+			customer.setCurrentBusiness(getBusiness(dbInvoice.getSubscription().getBusiness()));
+			beanUtils.copyProperties(customer, dbInvoice.getSubscription());
+			//This is done so that result message will get to see the total amount with outstanding balance
+			BillInvoice tempInvoice = new BillInvoice();
+			new NullAwareBeanUtils().copyProperties(tempInvoice, invoice);
+			BillRuleEngine.calculatePayable(tempInvoice, dbInvoice, session);
+			invoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customer, tempInvoice, BillConstants.MAIL_TYPE_INVOICE, null));
+			return customer;
+		}
+		return null;
 	}
 
 	public static BillInvoice getInvoice(NullAwareBeanUtils beanUtils, BillDBInvoice dbInvoice) throws IllegalAccessException, InvocationTargetException {
@@ -248,7 +271,9 @@ public class BillDataConverter implements BillConstants {
 			beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem());
 		}
 		invoiceItem.setParentItem(parentItem);
-		invoiceItem.setParentItemId(dbInvoiceItem.getSubscribedItem().getId());
+		if(dbInvoiceItem.getSubscribedItem() != null) {
+			invoiceItem.setParentItemId(dbInvoiceItem.getSubscribedItem().getId());
+		}
 		return invoiceItem;
 	}
 
@@ -409,6 +434,23 @@ public class BillDataConverter implements BillConstants {
 		pickedScheme.setValidTill(coupons.getValidTill());
 		pickedScheme.setStatus(coupons.getStatus());
 		return pickedScheme;
+	}
+	
+	public static List<BillSector> getSectors(List<BillDBSector> dbSectors) throws IllegalAccessException, InvocationTargetException {
+		List<BillSector> sectors = new ArrayList<BillSector>();
+		if(CollectionUtils.isNotEmpty(dbSectors)) {
+			for(BillDBSector dbSec: dbSectors) {
+				BillSector sector = getSector(dbSec);
+				sectors.add(sector);
+			}
+		}
+		return sectors;
+	}
+
+	private static BillSector getSector(BillDBSector dbSec) throws IllegalAccessException, InvocationTargetException {
+		BillSector sector = new BillSector();
+		new NullAwareBeanUtils().copyProperties(sector, dbSec);
+		return sector;
 	}
 	
 }

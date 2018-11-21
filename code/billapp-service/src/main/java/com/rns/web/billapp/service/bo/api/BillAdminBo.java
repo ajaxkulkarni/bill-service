@@ -11,7 +11,7 @@ public interface BillAdminBo {
 	BillServiceResponse login(BillServiceRequest request);
 	BillServiceResponse updateUserStatus(BillServiceRequest request);
 	BillServiceResponse updateItem(BillServiceRequest request);
-	InputStream getImage(BillItem item);
+	InputStream getImage(BillItem item, String type);
 	BillServiceResponse getAllparentItems(BillServiceRequest request);
 	BillServiceResponse uploadVendorData(BillServiceRequest request);
 	BillServiceResponse generateBills(BillServiceRequest request);

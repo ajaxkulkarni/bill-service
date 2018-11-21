@@ -134,7 +134,31 @@ public class BillAdminController {
 			
 			BillItem item = new BillItem();
 			item.setId(itemId);
-			InputStream is = adminBo.getImage(item);
+			InputStream is = adminBo.getImage(item, "ParentItem");
+			ResponseBuilder response = Response.ok(is);
+			if(item.getImage() != null) {
+				response.header("Content-Disposition", "filename=" + item.getImage().getFileName());
+			} else {
+				response.header("Content-Disposition", "filename=" + "image.png");
+			}
+			return response.build();
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	@GET
+	@Path("/getBusinessItemImage/{itemId}")
+	@Produces(MediaType.MULTIPART_FORM_DATA)
+	public Response getBusinessItemImage(@PathParam("itemId") Integer itemId) {
+		//LoggingUtil.logObject("Image request:", userId);
+		try {
+			
+			BillItem item = new BillItem();
+			item.setId(itemId);
+			InputStream is = adminBo.getImage(item, "BusinessItem");
 			ResponseBuilder response = Response.ok(is);
 			if(item.getImage() != null) {
 				response.header("Content-Disposition", "filename=" + item.getImage().getFileName());

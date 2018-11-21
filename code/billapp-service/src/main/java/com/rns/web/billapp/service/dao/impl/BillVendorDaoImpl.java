@@ -5,10 +5,12 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Criteria;
 import org.hibernate.FetchMode;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.hibernate.criterion.MatchMode;
 import org.hibernate.criterion.Order;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.sql.JoinType;
@@ -134,6 +136,17 @@ public class BillVendorDaoImpl {
 			query.setInteger("itemId", parentItemId);
 		}
 		return query.list();
+	}
+	
+	public BillDBSubscription getCustomerByPhone(Integer businessId, String phone) {
+		Criteria criteria = session.createCriteria(BillDBSubscription.class);
+		criteria.add(Restrictions.eq("business.id", businessId));
+		criteria.add(Restrictions.like("phone", phone, MatchMode.ANYWHERE));
+		List<BillDBSubscription> list = criteria.list();
+		if(CollectionUtils.isNotEmpty(list)) {
+			return list.get(0);
+		}
+		return null;
 	}
 	
 }

@@ -30,6 +30,7 @@ import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillNotification;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
+import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
@@ -50,6 +51,7 @@ import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
+import com.rns.web.billapp.service.util.BillBusinessConverter;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillExcelUtil;
@@ -111,7 +113,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 				sector.setId(item.getItemSector().getId());
 				dbItem.setSector(sector);
 			}
-			updateItemImage(item, dbItem);
+			BillBusinessConverter.updateItemImage(item, dbItem);
 			BillUserLogUtil.updateBillItemParentLog(dbItem, item, session);
 			tx.commit();
 		} catch (Exception e) {
@@ -123,21 +125,8 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		return response;
 	}
 
-	private void updateItemImage(BillItem item, BillDBItemParent dbItem) throws IOException {
-		String folderPath = ROOT_FOLDER_LOCATION + "Items/" + dbItem.getId() + "/";
-		File folderLocation = new File(folderPath);
-		if (!folderLocation.exists()) {
-			folderLocation.mkdirs();
-		}
-		if (item.getImage() != null) {
-			String imgPath = folderPath + item.getImage().getFilePath();
-			CommonUtils.writeToFile(item.getImage().getFileData(), imgPath);
-			dbItem.setImagePath(imgPath);
-		}
 
-	}
-
-	public InputStream getImage(BillItem item) {
+	public InputStream getImage(BillItem item, String type) {
 		if (item == null) {
 			return null;
 		}
@@ -146,12 +135,22 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			BillDBItemParent dbItem = dao.getEntityByKey(BillDBItemParent.class, ID_ATTR, item.getId(), true);
-			if (dbItem != null && StringUtils.isNotBlank(dbItem.getImagePath())) {
-				is = new FileInputStream(dbItem.getImagePath());
-				BillFile image = new BillFile();
-				image.setFileName(CommonUtils.getFileName(dbItem.getImagePath()));
-				item.setImage(image);
+			if(StringUtils.equals("BusinessItem", type)) {
+				BillDBItemBusiness dbItem = dao.getEntityByKey(BillDBItemBusiness.class, ID_ATTR, item.getId(), true);
+				if (dbItem != null && StringUtils.isNotBlank(dbItem.getImagePath())) {
+					is = new FileInputStream(dbItem.getImagePath());
+					BillFile image = new BillFile();
+					image.setFileName(CommonUtils.getFileName(dbItem.getImagePath()));
+					item.setImage(image);
+				}
+			} else {
+				BillDBItemParent dbItem = dao.getEntityByKey(BillDBItemParent.class, ID_ATTR, item.getId(), true);
+				if (dbItem != null && StringUtils.isNotBlank(dbItem.getImagePath())) {
+					is = new FileInputStream(dbItem.getImagePath());
+					BillFile image = new BillFile();
+					image.setFileName(CommonUtils.getFileName(dbItem.getImagePath()));
+					item.setImage(image);
+				}
 			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));

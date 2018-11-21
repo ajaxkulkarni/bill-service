@@ -14,6 +14,7 @@ import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
 import com.rns.web.billapp.service.bo.domain.BillOrder;
 import com.rns.web.billapp.service.bo.domain.BillScheme;
+import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.util.BillConstants;
@@ -40,6 +41,7 @@ public class BillServiceResponse {
 	private BillFile file;
 	private List<BillScheme> schemes;
 	private BillScheme scheme;
+	private List<BillSector> sectors;
 	
 	public BillServiceResponse() {
 		setStatus(BillConstants.STATUS_OK);
@@ -182,6 +184,14 @@ public class BillServiceResponse {
 
 	public void setScheme(BillScheme scheme) {
 		this.scheme = scheme;
+	}
+
+	public List<BillSector> getSectors() {
+		return sectors;
+	}
+
+	public void setSectors(List<BillSector> sectors) {
+		this.sectors = sectors;
 	}
 	
 }

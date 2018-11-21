@@ -102,7 +102,7 @@ public class BillBusinessConverter {
 		
 	}
 	
-	public static void updateBusinessItem(BillItem item, Session session, BillBusiness business) throws IllegalAccessException, InvocationTargetException {
+	public static void updateBusinessItem(BillItem item, Session session, BillBusiness business) throws IllegalAccessException, InvocationTargetException, IOException {
 		BeanUtilsBean notNullBean = new NullAwareBeanUtils();
 		BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
 		BillDBItemBusiness dbItem = dao.getEntityByKey(BillDBItemBusiness.class, BillConstants.ID_ATTR, item.getId(), true);
@@ -125,27 +125,38 @@ public class BillBusinessConverter {
 			dbItem.setCreatedDate(new Date());
 			session.persist(dbItem);
 		}
+		if(item.getImage() != null) {
+			updateItemImage(item, dbItem);
+		}
 	}
 	
-	public static void setInvoiceItems(BillInvoice invoice, Session session, BillDBInvoice dbInvoice) {
+	public static void setInvoiceItems(BillInvoice invoice, Session session, BillDBInvoice dbInvoice, boolean hasSubscribedItem) {
 		if(CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
 			for(BillItem item: invoice.getInvoiceItems()) {
 				BillDBItemInvoice invoiceItem = null;
-				if(dbInvoice.getId() != null) {
+				if(dbInvoice.getId() != null && hasSubscribedItem) {
 					invoiceItem = new BillInvoiceDaoImpl(session).getInvoiceItem(dbInvoice.getId(), item.getId());
+				} else {
+					invoiceItem = new BillGenericDaoImpl(session).getEntityByKey(BillDBItemInvoice.class, BillConstants.ID_ATTR, item.getId(), true);
 				}
 				if(invoiceItem == null) {
 					invoiceItem = new BillDBItemInvoice();
 					invoiceItem.setCreatedDate(new Date());
 					invoiceItem.setStatus(BillConstants.STATUS_ACTIVE);
-					invoiceItem.setSubscribedItem(new BillDBItemSubscription(item.getId()));
+					if(item.getId() != null) {
+						invoiceItem.setSubscribedItem(new BillDBItemSubscription(item.getId()));
+					}
 					if(item.getParentItem() != null) {
-						invoiceItem.setBusinessItem(new BillDBItemBusiness(item.getParentItem().getId()));
+						BillDBItemBusiness itemBusiness = new BillGenericDaoImpl(session).getEntityByKey(BillDBItemBusiness.class, BillConstants.ID_ATTR, item.getParentItem().getId(), false);
+						invoiceItem.setBusinessItem(itemBusiness);
 					}
 					invoiceItem.setInvoice(dbInvoice);
 				}
 				invoiceItem.setPrice(item.getPrice());
 				invoiceItem.setQuantity(item.getQuantity());
+				if(!hasSubscribedItem && StringUtils.isNotBlank(item.getStatus())) {
+					invoiceItem.setStatus(item.getStatus()); //Delete invoice item
+				}
 				if(invoiceItem.getId() == null) {
 					session.persist(invoiceItem);
 				}
@@ -257,6 +268,52 @@ public class BillBusinessConverter {
 			}
 		}
 		return coupons;
+	}
+	
+	public static void updatePaymentStatusAsPaid(BillInvoice invoice, BillDBInvoice dbInvoice) {
+		BillRuleEngine.calculatePayable(invoice, null, null);
+		dbInvoice.setPaidAmount(invoice.getPayable());
+		if(invoice.getPaidDate() == null) {
+			dbInvoice.setPaidDate(new Date());
+		}
+		dbInvoice.setPaymentType(BillConstants.PAYMENT_OFFLINE);
+		dbInvoice.setStatus(invoice.getStatus());
+		dbInvoice.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_CASH);
+		dbInvoice.setPaymentMode(BillConstants.PAYMENT_OFFLINE);
+		dbInvoice.setSettlementStatus(BillConstants.INVOICE_STATUS_PAID);
+		dbInvoice.setSettlementDate(new Date());
+	}
+
+	
+	public static void updateItemImage(BillItem item, BillDBItemParent dbItem) throws IOException {
+		String folderPath = BillConstants.ROOT_FOLDER_LOCATION + "Items/" + dbItem.getId() + "/";
+		String imgPath = saveItemImage(item, folderPath);
+		dbItem.setImagePath(imgPath);
+
+	}
+	
+	public static void updateItemImage(BillItem item, BillDBItemBusiness dbItem) throws IOException {
+		if(dbItem.getBusiness() == null) {
+			return;
+		}
+		String folderPath = BillConstants.ROOT_FOLDER_LOCATION + "Items/Business-" + dbItem.getBusiness().getId() + "/" + dbItem.getId() + "/";
+		String imgPath = saveItemImage(item, folderPath);
+		dbItem.setImagePath(imgPath);
+
+	}
+
+	private static String saveItemImage(BillItem item, String folderPath) throws IOException {
+		if (item.getImage() != null) {
+			File folderLocation = new File(folderPath);
+			if (!folderLocation.exists()) {
+				folderLocation.mkdirs();
+			}
+			String imgPath = null;
+			imgPath = folderPath + item.getImage().getFilePath();
+			CommonUtils.writeToFile(item.getImage().getFileData(), imgPath);
+			return imgPath;
+		}
+		return null;
 	}
 
 

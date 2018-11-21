@@ -7,7 +7,9 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -37,6 +39,7 @@ import com.ccavenue.security.AesCryptUtil;
 import com.rns.web.billapp.service.bo.api.BillUserBo;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
+import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
@@ -129,6 +132,14 @@ public class BillUserController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse getAreas(BillServiceRequest request) {
 		return userBo.getAllAreas();
+	}
+	
+	@POST
+	@Path("/getAllSectors")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getAllSectors(BillServiceRequest request) {
+		return userBo.getAllSectors();
 	}
 
 	@POST
@@ -569,5 +580,54 @@ public class BillUserController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse getBillSummary(BillServiceRequest request) {
 		return userBo.getCustomerBillsSummary(request);
+	}
+	
+	@POST
+	@Path("/updateBusinessItemImage")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateBusinessItemImage(
+		@FormDataParam("image") InputStream image, @FormDataParam("image") FormDataContentDisposition imageFileDetails,
+		@FormDataParam("item") String item, @FormDataParam("businessId") Integer businessId) {
+		LoggingUtil.logObject("Business Item update request", item);
+		ObjectMapper mapper = new ObjectMapper();
+		BillServiceResponse response = new BillServiceResponse();
+		try {
+			BillItem billItem = mapper.readValue(item, BillItem.class);
+			if(billItem != null) {
+				if(image != null) {
+					BillFile file = new BillFile();
+					file.setFileData(image);
+					file.setFileSize(new BigDecimal((imageFileDetails.getSize())));
+					file.setFileType(imageFileDetails.getType());
+					file.setFilePath(imageFileDetails.getFileName());
+					billItem.setImage(file);
+				}
+				BillServiceRequest request = new BillServiceRequest();
+				List<BillItem> items = new ArrayList<BillItem>();
+				items.add(billItem);
+				request.setItems(items);
+				if(businessId != null) {
+					BillBusiness business = new BillBusiness();
+					business.setId(businessId);
+					request.setBusiness(business);
+				}
+				response = userBo.updateBusinessItem(request);
+			} else {
+				response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+			}
+			
+		} catch (JsonParseException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		} catch (JsonMappingException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		} catch (IOException e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(BillConstants.ERROR_CODE_GENERIC, BillConstants.ERROR_IN_PROCESSING);
+		}
+		LoggingUtil.logObject("Parent Item update response", response);
+		return response;
 	}
 }

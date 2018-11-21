@@ -50,6 +50,7 @@ public class BillInvoice {
 	private BigDecimal outstandingBalance;
 	private String paymentResponse;
 	private String txTime;
+	private Date invoiceDate;
 	
 	public Integer getId() {
 		return id;
@@ -260,6 +261,12 @@ public class BillInvoice {
 	}
 	public void setTxTime(String txTime) {
 		this.txTime = txTime;
+	}
+	public Date getInvoiceDate() {
+		return invoiceDate;
+	}
+	public void setInvoiceDate(Date invoiceDate) {
+		this.invoiceDate = invoiceDate;
 	}
 	
 }

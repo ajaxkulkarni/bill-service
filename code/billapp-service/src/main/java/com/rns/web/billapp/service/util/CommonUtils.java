@@ -255,11 +255,14 @@ public class CommonUtils {
 
 
 	public static String convertDate(Date date, String dateFormat) {
+		if(date == null) {
+			return "";
+		}
 		try {
 			return new SimpleDateFormat(dateFormat).format(date);
 		} catch (Exception e) {
 		}
-		return null;
+		return "";
 	}
 
 
@@ -300,12 +303,6 @@ public class CommonUtils {
 		Long randomValue = Math.round(Math.random()*100);
 		couponId = StringUtils.replaceOnce(couponId, "00", randomValue.toString());
 		return schemes.getSchemeCode() + couponId;
-	}
-	
-	public static void main(String[] args) {
-		String str = "12345";
-		str = StringUtils.reverse(str);
-		System.out.println(StringUtils.substring(str, 0, 6));
 	}
 	
 	public static BigDecimal getAmount(Object value) {
@@ -359,6 +356,16 @@ public class CommonUtils {
 		}
 		users.add(customer);
 	}
-	
+
+
+	public static String trimPhoneNumber(String phone) {
+		if(StringUtils.isBlank(phone)) {
+			return phone;
+		}
+		phone = StringUtils.replacePattern(phone, "\\s+", "");
+		phone = StringUtils.trimToEmpty(phone);
+		phone = StringUtils.substring(phone, phone.length() - 10, phone.length());
+		return phone;
+	}
 	
 }

@@ -37,4 +37,20 @@ public class BillBusinessController {
 	public BillServiceResponse updateScheme(BillServiceRequest request) {
 		return businessBo.updateScheme(request);
 	}
+	
+	@POST
+	@Path("/updateBill")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateBill(BillServiceRequest request) {
+		return businessBo.updateCustomerBill(request);
+	}
+	
+	@POST
+	@Path("/getAllInvoices")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getAllInvoices(BillServiceRequest request) {
+		return businessBo.getAllInvoices(request);
+	}
 }

@@ -1,7 +1,9 @@
 package com.rns.web.billapp.service.bo.impl;
 
 import java.util.Date;
+import java.util.List;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.hibernate.Session;
@@ -10,17 +12,28 @@ import org.hibernate.Transaction;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillBusinessBo;
+import com.rns.web.billapp.service.bo.domain.BillInvoice;
+import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillScheme;
+import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
+import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
+import com.rns.web.billapp.service.util.BillBusinessConverter;
 import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.BillDataConverter;
+import com.rns.web.billapp.service.util.BillRuleEngine;
+import com.rns.web.billapp.service.util.BillSMSUtil;
 import com.rns.web.billapp.service.util.CommonUtils;
 import com.rns.web.billapp.service.util.LoggingUtil;
 import com.rns.web.billapp.service.util.NullAwareBeanUtils;
@@ -130,6 +143,156 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 	public BillServiceResponse getAllVendors(BillServiceRequest request) {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	public BillServiceResponse updateCustomerBill(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if(request.getInvoice() == null || request.getInvoice().getAmount() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		boolean invoicePaid = false;
+		BillDBInvoice dbInvoice = null;
+		BillDBSubscription subscription = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			BillInvoice invoice = request.getInvoice();
+			NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+			if(invoice.getId() == null) {
+				BillUser customer = request.getUser();
+				if(StringUtils.isBlank(customer.getPhone())) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_NO_CUSTOMER);
+					return response;
+				}
+				String phone = CommonUtils.trimPhoneNumber(customer.getPhone());
+				if(phone != null && phone.length() < 10) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_INVALID_PHONE_NUMBER);
+					return response;
+				}
+				customer.setPhone(phone);
+				BillDBUserBusiness business = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), false);
+				if(business == null) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_ACCESS_DENIED);
+					return response;
+				}
+				subscription = new BillVendorDaoImpl(session).getCustomerByPhone(request.getBusiness().getId(), phone);
+				if(subscription == null) {
+					subscription = new BillDBSubscription();
+					subscription.setCreatedDate(new Date());
+					subscription.setStatus(STATUS_ACTIVE);
+					subscription.setBusiness(business);
+					nullAwareBeanUtils.copyProperties(subscription, customer);
+					session.persist(subscription);
+				} else {
+					nullAwareBeanUtils.copyProperties(subscription, customer);
+				}
+				dbInvoice = new BillDBInvoice();
+				nullAwareBeanUtils.copyProperties(dbInvoice, invoice);
+				dbInvoice.setSubscription(subscription);
+				dbInvoice.setCreatedDate(new Date());
+				if(invoice.getInvoiceDate() == null) {
+					dbInvoice.setInvoiceDate(new Date());
+				}
+				if(StringUtils.isBlank(dbInvoice.getStatus())) {
+					dbInvoice.setStatus(INVOICE_STATUS_PENDING);
+				} else if (StringUtils.equals(INVOICE_STATUS_PAID, dbInvoice.getStatus())) {
+					BillBusinessConverter.updatePaymentStatusAsPaid(invoice, dbInvoice);
+					BillBusinessConverter.updatePaymentTransactionLog(session, dbInvoice, invoice);
+					invoicePaid = true;
+				}
+				session.persist(dbInvoice);
+				
+				updateInvoiceItems(session, invoice, business);
+				
+				BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice, false);
+			} else {
+				dbInvoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, ID_ATTR, invoice.getId(), false);
+				if(dbInvoice == null) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_INVOICE_NOT_FOUND);
+					return response;
+				}
+				if (!StringUtils.equals(invoice.getStatus(), dbInvoice.getStatus())) {
+					if (StringUtils.equals(INVOICE_STATUS_PAID, invoice.getStatus())) {
+						BillBusinessConverter.updatePaymentStatusAsPaid(invoice, dbInvoice);
+						BillBusinessConverter.updatePaymentTransactionLog(session, dbInvoice, invoice);
+						invoicePaid = true;
+					} else {
+						dbInvoice.setStatus(invoice.getStatus());
+						BillBusinessConverter.updatePaymentTransactionLog(session, dbInvoice, invoice);
+					}
+				}
+				nullAwareBeanUtils.copyProperties(dbInvoice, invoice);
+				
+				updateInvoiceItems(session, invoice, dbInvoice.getSubscription().getBusiness());
+				BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice, false);
+			}
+			tx.commit();
+			if(invoicePaid) {
+				BillRuleEngine.sendEmails(invoice, dbInvoice, nullAwareBeanUtils, executor);
+			}
+			if(dbInvoice != null) {
+				BillInvoice currrInvoice = BillDataConverter.getInvoice(nullAwareBeanUtils, dbInvoice);
+				BillRuleEngine.calculatePayable(currrInvoice, dbInvoice, session);
+				currrInvoice.setPaymentMessage(BillSMSUtil.generateResultMessage(BillDataConverter.getCustomerDetails(nullAwareBeanUtils, dbInvoice.getSubscription()), currrInvoice, BillConstants.MAIL_TYPE_INVOICE, null));
+				response.setInvoice(currrInvoice);
+			}
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	private void updateInvoiceItems(Session session, BillInvoice invoice, BillDBUserBusiness business) {
+		if(CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
+			for(BillItem item: invoice.getInvoiceItems()) {
+				if(item.getId() == null) {
+					//New invoice item
+					if(item.getParentItem() == null && item.getPrice() != null && item.getQuantity() != null && StringUtils.isNotBlank(item.getName())) {
+						//New item to be added to business items
+						BillDBItemBusiness businessItem = new BillDBItemBusiness();
+						businessItem.setName(item.getName());
+						businessItem.setPrice(CommonUtils.formatDecimal(item.getPrice().divide(item.getQuantity())));
+						businessItem.setBusiness(business);
+						businessItem.setCreatedDate(new Date());
+						businessItem.setStatus(STATUS_ACTIVE);
+						session.persist(businessItem);
+						BillItem parentItem = new BillItem();
+						parentItem.setId(businessItem.getId());
+						item.setParentItem(parentItem);
+					}
+				}
+			}
+		}
+	}
+
+	public BillServiceResponse getAllInvoices(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if (request.getBusiness() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			BillInvoiceDaoImpl dao = new BillInvoiceDaoImpl(session);
+			BillUserLog userLog = null;
+			if(request.getItem() != null && request.getItem().getChangeLog() != null) {
+				userLog = request.getItem().getChangeLog();
+			}
+			List<BillDBInvoice> invoices = dao.getAllBusinessInvoices(request.getBusiness().getId(), null, userLog);
+			List<BillUser> userInvoices = BillDataConverter.getBusinessInvoices(invoices, session);
+			response.setUsers(userInvoices);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
 	}
 
 }

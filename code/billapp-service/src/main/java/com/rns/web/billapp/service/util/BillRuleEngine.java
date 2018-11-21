@@ -77,6 +77,9 @@ public class BillRuleEngine {
 
 
 	public static void calculatePayable(BillInvoice invoice, BillDBInvoice dbInvoice, Session session) {
+		if(invoice.getAmount() == null) {
+			return;
+		}
 		MathContext mc = new MathContext(2, RoundingMode.HALF_UP);
 		invoice.setPayable(invoice.getAmount());
 		if(invoice.getPendingBalance() != null) {
@@ -96,7 +99,7 @@ public class BillRuleEngine {
 		invoice.setPayable(invoice.getPayable().add(invoice.getInternetFees()));
 		
 		//TODO Later
-		if(dbInvoice != null && dbInvoice.getSubscription() != null) {
+		if(dbInvoice != null && dbInvoice.getSubscription() != null && dbInvoice.getMonth() != null && dbInvoice.getYear() != null) {
 			BigDecimal outstanding = BigDecimal.ZERO;
 			//Outstanding amount is the total amount of the bills excluding this bill month / year
 			List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerOutstanding(dbInvoice.getMonth(), dbInvoice.getYear(), dbInvoice.getSubscription().getId());
@@ -198,6 +201,34 @@ public class BillRuleEngine {
 			}
 		}
 	}
+	
+	public static void sendEmails(BillInvoice currentInvoice, BillDBInvoice invoice, NullAwareBeanUtils nullAwareBeanUtils, ThreadPoolTaskExecutor executor)
+			throws IllegalAccessException, InvocationTargetException {
+		BillUser customer = new BillUser();
+		nullAwareBeanUtils.copyProperties(customer, invoice.getSubscription());
+		BillUser vendor = new BillUser();
+		nullAwareBeanUtils.copyProperties(vendor, invoice.getSubscription().getBusiness().getUser());
+		vendor.setName(customer.getName());
+		BillBusiness business = new BillBusiness();
+		nullAwareBeanUtils.copyProperties(business, invoice.getSubscription().getBusiness());
+		customer.setCurrentBusiness(business);
+		BillMailUtil customerMail = new BillMailUtil(BillConstants.MAIL_TYPE_PAYMENT_RESULT);
+		customerMail.setUser(customer);
+		currentInvoice.setPayable(invoice.getPaidAmount());
+		customerMail.setInvoice(currentInvoice);
+		BillMailUtil vendorMail = new BillMailUtil(BillConstants.MAIL_TYPE_PAYMENT_RESULT_VENDOR);
+		vendorMail.setUser(vendor);
+		vendorMail.setInvoice(currentInvoice);
+		if (StringUtils.isNotBlank(customer.getEmail())) {
+			executor.execute(customerMail);
+		}
+		if (StringUtils.isNotBlank(vendor.getEmail())) {
+			executor.execute(vendorMail);
+		}
+		BillSMSUtil.sendSMS(customer, currentInvoice, BillConstants.MAIL_TYPE_PAYMENT_RESULT, null);
+		BillSMSUtil.sendSMS(vendor, currentInvoice, BillConstants.MAIL_TYPE_PAYMENT_RESULT_VENDOR, null);
+	}
+
 
 	
 }

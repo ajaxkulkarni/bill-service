@@ -155,6 +155,8 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 				if (invoice.getMonth() != null) {
 					subject = StringUtils.replace(subject, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
+				} else {
+					subject = StringUtils.replace(subject, "{month}", CommonUtils.convertDate(invoice.getCreatedDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
 				}
 				subject = StringUtils.replace(subject, "{year}", CommonUtils.getStringValue(invoice.getYear()));
 				subject = StringUtils.replace(subject, "{amount}", CommonUtils.getStringValue(invoice.getPayable(), false));
@@ -290,6 +292,8 @@ public class BillMailUtil implements BillConstants, Runnable {
 		}
 		if (StringUtils.equals(PAYMENT_MODE_REWARD, invoice.getPaymentMode())) {
 			result = StringUtils.replace(result, "{month}", invoice.getComments());
+		} else if (invoice.getMonth() == null) {
+			result = StringUtils.replace(result, "{month}", CommonUtils.convertDate(invoice.getCreatedDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
 		}
 		result = StringUtils.replace(result, "{year}", CommonUtils.getStringValue(invoice.getYear()));
 		result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(invoice.getAmount(), false));

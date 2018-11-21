@@ -9,5 +9,7 @@ public interface BillBusinessBo {
 	BillServiceResponse applyCoupon(BillServiceRequest request);
 	BillServiceResponse getAllSchemes(BillServiceRequest request);
 	BillServiceResponse getAllVendors(BillServiceRequest request);
+	BillServiceResponse updateCustomerBill(BillServiceRequest request);
+	BillServiceResponse getAllInvoices(BillServiceRequest request);
 
 }

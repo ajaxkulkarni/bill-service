@@ -22,6 +22,7 @@ public interface BillUserBo {
 	
 	BillServiceResponse loadProfile(BillServiceRequest request); //also login
 	BillServiceResponse getAllAreas();
+	BillServiceResponse getAllSectors();
 	BillServiceResponse getSectorItems(BillServiceRequest request);
 	BillServiceResponse getBusinessItems(BillServiceRequest request);
 	BillServiceResponse getAllBusinessCustomers(BillServiceRequest request);

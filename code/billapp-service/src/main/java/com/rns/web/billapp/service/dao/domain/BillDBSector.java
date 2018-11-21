@@ -19,6 +19,7 @@ public class BillDBSector {
 	private String description;
 	private Date createdDate;
 	private String status;
+	private String framework;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -60,6 +61,14 @@ public class BillDBSector {
 	}
 	public void setStatus(String status) {
 		this.status = status;
+	}
+	
+	@Column(name = "framework")
+	public String getFramework() {
+		return framework;
+	}
+	public void setFramework(String framework) {
+		this.framework = framework;
 	}
 	
 }
