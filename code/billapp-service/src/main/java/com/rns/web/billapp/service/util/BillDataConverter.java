@@ -264,13 +264,15 @@ public class BillDataConverter implements BillConstants {
 			throws IllegalAccessException, InvocationTargetException {
 		BillItem invoiceItem = new BillItem();
 		beanUtils.copyProperties(invoiceItem, dbInvoiceItem);
-		BillItem parentItem = new BillItem();
-		if(dbInvoiceItem.getBusinessItem() != null && dbInvoiceItem.getBusinessItem().getParent() != null) {
-			beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem().getParent());
-		} else {
-			beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem());
+		if(dbInvoiceItem.getBusinessItem() != null) {
+			BillItem parentItem = new BillItem();
+			if(dbInvoiceItem.getBusinessItem() != null && dbInvoiceItem.getBusinessItem().getParent() != null) {
+				beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem().getParent());
+			} else {
+				beanUtils.copyProperties(parentItem, dbInvoiceItem.getBusinessItem());
+			}
+			invoiceItem.setParentItem(parentItem);
 		}
-		invoiceItem.setParentItem(parentItem);
 		if(dbInvoiceItem.getSubscribedItem() != null) {
 			invoiceItem.setParentItemId(dbInvoiceItem.getSubscribedItem().getId());
 		}
