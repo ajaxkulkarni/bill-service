@@ -234,12 +234,22 @@ public class CommonUtils {
 	}
 
 
-	private static void setZero(Calendar cal) {
+	public static void setZero(Calendar cal) {
 		cal.set(Calendar.MINUTE, 0);
-		cal.set(Calendar.HOUR_OF_DAY, 0);
 		cal.set(Calendar.HOUR, 0);
+		cal.set(Calendar.HOUR_OF_DAY, 0);
 		cal.set(Calendar.SECOND, 0);
 		cal.set(Calendar.MILLISECOND, 0);
+	}
+	
+	public static Date setZero(Date date) {
+		if(date == null) {
+			return null;
+		}
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		setZero(cal);
+		return cal.getTime();
 	}
 	
 	public static Date endDate(Date date) {
