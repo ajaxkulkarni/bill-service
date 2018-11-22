@@ -242,6 +242,7 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 			if(dbInvoice != null) {
 				if(invoice.getId() == null) {
 					dbInvoice = new BillInvoiceDaoImpl(session).getBusinessInvoice(dbInvoice.getId());
+					session.refresh(dbInvoice); //To refresh state of invoice and read the invoice items
 				}
 				BillInvoice currrInvoice = BillDataConverter.getInvoice(nullAwareBeanUtils, dbInvoice);
 				BillRuleEngine.calculatePayable(currrInvoice, dbInvoice, session);

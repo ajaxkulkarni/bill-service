@@ -11,13 +11,11 @@ import org.hibernate.FetchMode;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.criterion.Order;
-import org.hibernate.criterion.Projection;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.SimpleExpression;
 import org.hibernate.sql.JoinType;
 
-import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
@@ -216,7 +214,7 @@ public class BillInvoiceDaoImpl {
 	}
 	
 	public BillDBInvoice getBusinessInvoice(Integer invoiceId) {
-		Criteria criteria = session.createCriteria(BillDBInvoice.class)
+		Criteria criteria = session.createCriteria(BillDBInvoice.class).add(Restrictions.eq("id", invoiceId))
 				 .add(invoiceNotDeleted());
 		criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN);
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
