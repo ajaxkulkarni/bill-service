@@ -202,12 +202,14 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 				}
 				if(StringUtils.isBlank(dbInvoice.getStatus())) {
 					dbInvoice.setStatus(INVOICE_STATUS_PENDING);
-				} else if (StringUtils.equals(INVOICE_STATUS_PAID, dbInvoice.getStatus())) {
+				}
+				session.persist(dbInvoice);
+				
+				if (StringUtils.equals(INVOICE_STATUS_PAID, dbInvoice.getStatus())) {
 					BillBusinessConverter.updatePaymentStatusAsPaid(invoice, dbInvoice);
 					BillBusinessConverter.updatePaymentTransactionLog(session, dbInvoice, invoice);
 					invoicePaid = true;
 				}
-				session.persist(dbInvoice);
 				
 				updateInvoiceItems(session, invoice, business);
 				
@@ -238,6 +240,9 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 				BillRuleEngine.sendEmails(invoice, dbInvoice, nullAwareBeanUtils, executor);
 			}
 			if(dbInvoice != null) {
+				if(invoice.getId() == null) {
+					dbInvoice = new BillInvoiceDaoImpl(session).getBusinessInvoice(dbInvoice.getId());
+				}
 				BillInvoice currrInvoice = BillDataConverter.getInvoice(nullAwareBeanUtils, dbInvoice);
 				BillRuleEngine.calculatePayable(currrInvoice, dbInvoice, session);
 				currrInvoice.setPaymentMessage(BillSMSUtil.generateResultMessage(BillDataConverter.getCustomerDetails(nullAwareBeanUtils, dbInvoice.getSubscription()), currrInvoice, BillConstants.MAIL_TYPE_INVOICE, null));

@@ -215,6 +215,19 @@ public class BillInvoiceDaoImpl {
 		return query.list();
 	}
 	
+	public BillDBInvoice getBusinessInvoice(Integer invoiceId) {
+		Criteria criteria = session.createCriteria(BillDBInvoice.class)
+				 .add(invoiceNotDeleted());
+		criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN);
+		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
+		List<BillDBInvoice> list = criteria.list();
+		if(CollectionUtils.isEmpty(list)) {
+			return null;
+		}
+		return list.get(0);
+	}
+	
 	/*public int updateSettlement(Integer businessId, String status, String oldStatus) {
 		Query query = session.createQuery("update BillDBTransactions set status=:status where status=:oldStatus AND business.id=:business");
 		query.setString("status", status);
