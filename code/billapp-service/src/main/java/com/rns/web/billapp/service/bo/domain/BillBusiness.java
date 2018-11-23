@@ -1,6 +1,7 @@
 package com.rns.web.billapp.service.bo.domain;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -34,7 +35,9 @@ public class BillBusiness implements Serializable {
 	private String mapLocation;
 	private String type;
 	private String showBillDetails;
-
+	private BigDecimal transactionCharges;
+	
+	
 	public Integer getId() {
 		return id;
 	}
@@ -118,6 +121,12 @@ public class BillBusiness implements Serializable {
 	}
 	public void setShowBillDetails(String showBillDetails) {
 		this.showBillDetails = showBillDetails;
+	}
+	public BigDecimal getTransactionCharges() {
+		return transactionCharges;
+	}
+	public void setTransactionCharges(BigDecimal transactionCharges) {
+		this.transactionCharges = transactionCharges;
 	}
 	
 }
