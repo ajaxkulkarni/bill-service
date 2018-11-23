@@ -3,7 +3,8 @@ package com.rns.web.billapp.service.util;
 public interface BillConstants {
 
 	String ROOT_FOLDER_LOCATION = "/home/service/BillData/";
-
+	String BITLY_ACCESS_TOKEN = "584511ca68bb373581f5ede42fa52acfe8851517";
+	
 	String DATE_FORMAT = "yyyy-MM-dd";
 	String DATE_FORMAT_DISPLAY_NO_YEAR = "MMM dd";
 	Integer STATUS_OK = 200;
