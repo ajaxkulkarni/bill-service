@@ -35,6 +35,7 @@ public class BillDBTransactions {
 	private String transactionDate;
 	private Date settlementDate;
 	private String settlementRef;
+	private BigDecimal transactionCharges;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -167,6 +168,14 @@ public class BillDBTransactions {
 	}
 	public void setSettlementRef(String settlementRef) {
 		this.settlementRef = settlementRef;
+	}
+	
+	@Column(name = "transaction_charges")
+	public BigDecimal getTransactionCharges() {
+		return transactionCharges;
+	}
+	public void setTransactionCharges(BigDecimal transactionCharges) {
+		this.transactionCharges = transactionCharges;
 	}
 	
 

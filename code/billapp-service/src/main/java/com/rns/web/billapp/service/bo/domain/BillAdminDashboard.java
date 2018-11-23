@@ -21,6 +21,7 @@ public class BillAdminDashboard {
 	private Long totalCustomers;
 	private Long totalBusinesses;
 	private Long pendingApprovals;
+	private BigDecimal pendingSettlements;
 	
 	public BigDecimal getTotalPaid() {
 		return totalPaid;

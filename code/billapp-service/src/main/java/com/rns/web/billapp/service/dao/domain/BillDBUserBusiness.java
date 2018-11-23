@@ -2,6 +2,7 @@ package com.rns.web.billapp.service.dao.domain;
 
 import static javax.persistence.GenerationType.IDENTITY;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,6 +37,7 @@ public class BillDBUserBusiness {
 	private String logoImg;
 	private String type;
 	private String showBillDetails;
+	private BigDecimal transactionCharges;
 	
 	
 	@Id
@@ -153,6 +155,14 @@ public class BillDBUserBusiness {
 	}
 	public void setShowBillDetails(String showBillDetails) {
 		this.showBillDetails = showBillDetails;
+	}
+	
+	@Column(name = "transaction_charges")
+	public BigDecimal getTransactionCharges() {
+		return transactionCharges;
+	}
+	public void setTransactionCharges(BigDecimal transactionCharges) {
+		this.transactionCharges = transactionCharges;
 	}
 	
 

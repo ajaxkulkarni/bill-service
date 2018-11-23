@@ -1,8 +1,11 @@
 package com.rns.web.billapp.service.bo.impl;
 
+import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -13,6 +16,7 @@ import org.hibernate.Transaction;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillBusinessBo;
+import com.rns.web.billapp.service.bo.domain.BillAdminDashboard;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillScheme;
@@ -24,6 +28,8 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
+import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
@@ -300,6 +306,40 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 			List<BillDBInvoice> invoices = dao.getAllBusinessInvoices(request.getBusiness().getId(), null, userLog);
 			List<BillUser> userInvoices = BillDataConverter.getBusinessInvoices(invoices, session);
 			response.setUsers(userInvoices);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getBusinessSummary(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if (request.getBusiness() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Date startDate = null, endDate = null;
+			if(request.getItem() != null && request.getItem().getChangeLog() != null) {
+				startDate = CommonUtils.setZero(request.getItem().getChangeLog().getFromDate());
+				endDate = CommonUtils.setZero(request.getItem().getChangeLog().getToDate());
+			}
+			
+			BillAdminDashboard dashboard = new BillAdminDashboard();
+			Map<String, Object> restrictions = new HashMap<String, Object>();
+			restrictions.put("business", request.getBusiness().getId());
+			restrictions.put("status", BillConstants.INVOICE_STATUS_PAID);
+			BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
+			dashboard.setTotalPaid((BigDecimal) billGenericDaoImpl.getSum(BillDBTransactions.class, "amount", restrictions, startDate, endDate, "sum"));
+			dashboard.setTotalInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count"));
+			dashboard.setTotalCustomers((Long) billGenericDaoImpl.getSum(BillDBSubscription.class, "id", restrictions, startDate, endDate, "count"));
+			restrictions.put("status", BillConstants.INVOICE_SETTLEMENT_STATUS_SETTLED);
+			
+			response.setDashboard(dashboard);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {

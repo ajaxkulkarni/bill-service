@@ -24,6 +24,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
+import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 
 public class BillRuleEngine {
@@ -229,6 +230,23 @@ public class BillRuleEngine {
 		BillSMSUtil.sendSMS(vendor, currentInvoice, BillConstants.MAIL_TYPE_PAYMENT_RESULT_VENDOR, null);
 	}
 
+	public static BigDecimal calculateTransactionCharges(BigDecimal amount, BigDecimal txCharges) {
+		if(amount == null || txCharges == null) {
+			return null;
+		}
+		MathContext mc = new MathContext(2, RoundingMode.HALF_UP);
+		BigDecimal deduction = amount.multiply(txCharges.divide(new BigDecimal(100), mc), mc);
+		//Add 18% GST
+		deduction = deduction.add(deduction.multiply(new BigDecimal(0.18), mc));
+		return deduction;
+	}
+	
+	public static BigDecimal calculateSettlementAmount(BigDecimal amount, BigDecimal txCharges) {
+		if(txCharges == null || amount == null) {
+			return amount;
+		}
+		return amount.subtract(txCharges);
+	}
 
 	
 }

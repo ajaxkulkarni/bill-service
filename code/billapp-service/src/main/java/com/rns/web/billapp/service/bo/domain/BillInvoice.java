@@ -51,6 +51,8 @@ public class BillInvoice {
 	private String paymentResponse;
 	private String txTime;
 	private Date invoiceDate;
+	private BigDecimal transactionCharges;
+	
 	
 	public Integer getId() {
 		return id;
@@ -267,6 +269,12 @@ public class BillInvoice {
 	}
 	public void setInvoiceDate(Date invoiceDate) {
 		this.invoiceDate = invoiceDate;
+	}
+	public BigDecimal getTransactionCharges() {
+		return transactionCharges;
+	}
+	public void setTransactionCharges(BigDecimal transactionCharges) {
+		this.transactionCharges = transactionCharges;
 	}
 	
 }

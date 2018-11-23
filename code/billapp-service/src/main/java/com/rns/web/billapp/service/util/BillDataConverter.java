@@ -415,7 +415,9 @@ public class BillDataConverter implements BillConstants {
 				}
 				BillInvoice invoice = new BillInvoice();
 				if(txn.getInvoice() != null) {
-					beanutils.copyProperties(invoice, txn.getInvoice());
+					invoice.setMonth(txn.getInvoice().getMonth());
+					invoice.setYear(txn.getInvoice().getYear());
+					invoice.setInvoiceDate(txn.getInvoice().getInvoiceDate());
 				}
 				beanutils.copyProperties(invoice, txn);
 				user.setCurrentInvoice(invoice);

@@ -532,7 +532,14 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						boolean found = false;
 						for(BillBusiness existing: businesses) {
 							if(existing.getId().intValue() == dbBusiness.getId().intValue()) {
-								existing.getOwner().getCurrentInvoice().setAmount(existing.getOwner().getCurrentInvoice().getAmount().add(txn.getAmount()));
+								BillInvoice currentInvoice = existing.getOwner().getCurrentInvoice();
+								currentInvoice.setAmount(currentInvoice.getAmount().add(BillRuleEngine.calculateSettlementAmount(txn.getAmount(), txn.getTransactionCharges())));
+								if(txn.getTransactionCharges() != null) {
+									if(currentInvoice.getTransactionCharges() == null) {
+										currentInvoice.setTransactionCharges(BigDecimal.ZERO);
+									}
+									currentInvoice.setTransactionCharges(currentInvoice.getTransactionCharges().add(txn.getTransactionCharges()));
+								}
 								found = true;
 								break;
 							}
@@ -541,7 +548,8 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 							continue;
 						}
 						BillInvoice invoice = new BillInvoice();
-						invoice.setAmount(amount);
+						invoice.setAmount(BillRuleEngine.calculateSettlementAmount(amount, txn.getTransactionCharges()));
+						invoice.setTransactionCharges(txn.getTransactionCharges());
 						BillBusiness business = BillDataConverter.getBusiness(dbBusiness);
 						BillUser vendor = business.getOwner();
 						BillDBUserFinancialDetails dbFinancials = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserFinancialDetails.class, "user.id", vendor.getId() ,true);

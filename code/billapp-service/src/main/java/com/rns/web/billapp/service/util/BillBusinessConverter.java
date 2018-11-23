@@ -3,6 +3,7 @@ package com.rns.web.billapp.service.util;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.math.BigDecimal;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
@@ -190,6 +191,9 @@ public class BillBusinessConverter {
 		transactions.setSubscription(dbInvoice.getSubscription());
 		if(dbInvoice.getSubscription() != null) {
 			transactions.setBusiness(dbInvoice.getSubscription().getBusiness());
+			if(dbInvoice.getSubscription().getBusiness() != null) {
+				transactions.setTransactionCharges(BillRuleEngine.calculateTransactionCharges(transactions.getAmount(), dbInvoice.getSubscription().getBusiness().getTransactionCharges()));
+			}
 		}
 		if(invoice != null) {
 			transactions.setResponse(invoice.getPaymentResponse());

@@ -11,5 +11,6 @@ public interface BillBusinessBo {
 	BillServiceResponse getAllVendors(BillServiceRequest request);
 	BillServiceResponse updateCustomerBill(BillServiceRequest request);
 	BillServiceResponse getAllInvoices(BillServiceRequest request);
+	BillServiceResponse getBusinessSummary(BillServiceRequest request);
 
 }

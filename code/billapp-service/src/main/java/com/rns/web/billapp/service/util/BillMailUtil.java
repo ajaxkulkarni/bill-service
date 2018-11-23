@@ -311,6 +311,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{settlementId}", CommonUtils.getStringValue(invoice.getPaymentId()));
 		result = StringUtils.replace(result, "{settlementAmount}", CommonUtils.getStringValue(invoice.getPayable(), false));
 		result = StringUtils.replace(result, "{date}", CommonUtils.convertDate(invoice.getPaidDate()));
+		result = StringUtils.replace(result, "{transactionCharges}", CommonUtils.getStringValue(invoice.getTransactionCharges(), false));
 		return result;
 	}
 
