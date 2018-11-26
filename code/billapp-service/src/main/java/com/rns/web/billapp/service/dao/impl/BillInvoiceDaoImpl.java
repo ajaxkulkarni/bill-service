@@ -199,7 +199,7 @@ public class BillInvoiceDaoImpl {
 	}*/
 	
 	public List<BillDBTransactions> getInvoiceSettlements(String settlementType, Integer businessId) {
-		String queryString = "from BillDBTransactions tx where tx.status=:status AND (tx.medium=:cashfreePayment OR tx.medium=:atom OR tx.medium=:paytm)";
+		String queryString = "from BillDBTransactions tx where tx.status=:status AND (tx.paymentMedium=:cashfreePayment OR tx.paymentMedium=:atom OR tx.paymentMedium=:paytm)";
 		if(businessId != null) {
 			queryString = queryString + " AND business.id=:businessId";
 		}
