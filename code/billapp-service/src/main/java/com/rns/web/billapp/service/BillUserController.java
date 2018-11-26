@@ -557,6 +557,9 @@ public class BillUserController {
 			invoice.setAmount(new BigDecimal(formParams.getFirst("TXNAMOUNT")));
 			invoice.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_PAYTM);
 			invoice.setPaymentMode(formParams.getFirst("PAYMENTMODE"));
+			if(StringUtils.equalsIgnoreCase("PPI", invoice.getPaymentMode())) {
+				invoice.setPaymentMode("Wallet");
+			}
 			invoice.setComments(formParams.getFirst("RESPMSG"));
 			invoice.setPaymentRequestId(formParams.getFirst("BANKTXNID"));
 			invoice.setPaymentResponse(formParams.toString());
