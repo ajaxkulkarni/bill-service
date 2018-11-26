@@ -249,6 +249,12 @@
 			<artifactId>ccavutil</artifactId>
 			<version>1.0.0</version>
 		</dependency>
+		
+		<dependency>
+			<groupId>com.paytm</groupId>
+			<artifactId>checksum</artifactId>
+			<version>2.0.0</version>
+		</dependency>
 
 	</dependencies>
 

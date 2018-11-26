@@ -52,6 +52,12 @@ public class BillInvoice {
 	private String txTime;
 	private Date invoiceDate;
 	private BigDecimal transactionCharges;
+	private String paytmRedirectUrl;
+	private String paytmChecksum;
+	private String paytmMid;
+	private String paytmWebsite;
+	private String paytmChannel;
+	private String paytmUrl;
 	
 	
 	public Integer getId() {
@@ -275,6 +281,42 @@ public class BillInvoice {
 	}
 	public void setTransactionCharges(BigDecimal transactionCharges) {
 		this.transactionCharges = transactionCharges;
+	}
+	public String getPaytmRedirectUrl() {
+		return paytmRedirectUrl;
+	}
+	public void setPaytmRedirectUrl(String paytmRedirectUrl) {
+		this.paytmRedirectUrl = paytmRedirectUrl;
+	}
+	public String getPaytmChecksum() {
+		return paytmChecksum;
+	}
+	public void setPaytmChecksum(String paytmChecksum) {
+		this.paytmChecksum = paytmChecksum;
+	}
+	public String getPaytmMid() {
+		return paytmMid;
+	}
+	public void setPaytmMid(String paytmMid) {
+		this.paytmMid = paytmMid;
+	}
+	public String getPaytmWebsite() {
+		return paytmWebsite;
+	}
+	public void setPaytmWebsite(String paytmWebsite) {
+		this.paytmWebsite = paytmWebsite;
+	}
+	public String getPaytmChannel() {
+		return paytmChannel;
+	}
+	public void setPaytmChannel(String paytmChannel) {
+		this.paytmChannel = paytmChannel;
+	}
+	public String getPaytmUrl() {
+		return paytmUrl;
+	}
+	public void setPaytmUrl(String paytmUrl) {
+		this.paytmUrl = paytmUrl;
 	}
 	
 }

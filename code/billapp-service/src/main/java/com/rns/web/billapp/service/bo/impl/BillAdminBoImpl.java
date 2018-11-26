@@ -513,7 +513,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 									customer.setCurrentInvoice(currentInvoice);
 									paidInvoiceMap.get(dbBusiness.getId()).add(customer);
 								}
-							} else if (StringUtils.equals(PAYMENT_MODE_REWARD, txn.getMode())) {
+							} else if (StringUtils.equals(PAYMENT_MODE_REWARD, txn.getPaymentMode())) {
 								//Reward
 								BillInvoice reward = new BillInvoice();
 								reward.setAmount(txn.getAmount());

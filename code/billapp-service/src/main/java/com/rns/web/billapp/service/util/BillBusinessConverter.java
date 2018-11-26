@@ -184,8 +184,8 @@ public class BillBusinessConverter {
 		transactions.setAmount(dbInvoice.getPaidAmount());
 		transactions.setCreatedDate(new Date());
 		transactions.setStatus(dbInvoice.getStatus());
-		transactions.setMedium(dbInvoice.getPaymentMedium());
-		transactions.setMode(dbInvoice.getPaymentMode());
+		transactions.setPaymentMedium(dbInvoice.getPaymentMedium());
+		transactions.setPaymentMode(dbInvoice.getPaymentMode());
 		transactions.setReferenceNo(dbInvoice.getPaymentRequestId());
 		transactions.setPaymentId(dbInvoice.getPaymentId());
 		transactions.setSubscription(dbInvoice.getSubscription());

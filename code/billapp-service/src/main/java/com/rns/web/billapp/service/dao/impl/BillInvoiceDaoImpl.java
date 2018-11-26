@@ -199,7 +199,7 @@ public class BillInvoiceDaoImpl {
 	}*/
 	
 	public List<BillDBTransactions> getInvoiceSettlements(String settlementType, Integer businessId) {
-		String queryString = "from BillDBTransactions tx where tx.status=:status AND (tx.medium=:cashfreePayment OR tx.medium=:atom)";
+		String queryString = "from BillDBTransactions tx where tx.status=:status AND (tx.medium=:cashfreePayment OR tx.medium=:atom OR tx.medium=:paytm)";
 		if(businessId != null) {
 			queryString = queryString + " AND business.id=:businessId";
 		}
@@ -207,6 +207,7 @@ public class BillInvoiceDaoImpl {
 		query.setString("status", settlementType);
 		query.setString("cashfreePayment", BillConstants.PAYMENT_MEDIUM_CASHFREE);
 		query.setString("atom", BillConstants.PAYMENT_MEDIUM_ATOM);
+		query.setString("paytm", BillConstants.PAYMENT_MEDIUM_PAYTM);
 		if(businessId != null) {
 			query.setInteger("businessId", businessId);
 		}

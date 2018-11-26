@@ -34,7 +34,9 @@ public interface BillConstants {
 	String PAYMENT_MEDIUM_CASHFREE = "CASHFREE";
 	String PAYMENT_MEDIUM_CASH = "CASH";
 	String PAYMENT_MODE_REWARD = "REWARD";
+	String PAYMENT_MEDIUM_PAYTM = "PAYTM";
 
+	
 	String WARNING_NO_BUSINESS = "No business information found. Please complete your business details.";
 	String WARNING_NO_FINANCIALS = "No financial/ bank information found. Please complete your bank details to enable payment.";
 
@@ -115,5 +117,4 @@ public interface BillConstants {
 	String MAIL_TYPE_GENERIC = "GenericEmail";
 
 	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
-
 }

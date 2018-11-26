@@ -49,6 +49,14 @@ public class BillPropertyUtil {
 	public static final String ADMIN_TOKEN = "admin.token";
 
 	public static final String LOGO_URL = "logo.url";
+
+	public static final String PAYTM_RETURN_URL = "paytm.return.url";
+	public static final String PAYTM_WEBSITE = "paytm.website";
+	public static final String PAYTM_MID = "paytm.mid";
+	public static final String PAYTM_CHANNEL = "paytm.channel.id";
+	public static final String PAYTM_SECRET = "paytm.secret";
+	public static final String PAYTM_URL = "paytm.url";
+	
 	
 	public static String getProperty(String name) {
 		try {

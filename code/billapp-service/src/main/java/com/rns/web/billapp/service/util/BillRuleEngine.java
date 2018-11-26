@@ -137,8 +137,8 @@ public class BillRuleEngine {
 			transactions.setAmount(existing.getScheme().getVendorCommission());
 			transactions.setCreatedDate(new Date());
 			transactions.setStatus(BillConstants.INVOICE_STATUS_PAID);
-			transactions.setMedium(BillConstants.PAYMENT_MEDIUM_CASHFREE);
-			transactions.setMode(BillConstants.PAYMENT_MODE_REWARD);
+			transactions.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_CASHFREE);
+			transactions.setPaymentMode(BillConstants.PAYMENT_MODE_REWARD);
 			transactions.setReferenceNo(existing.getCouponCode());
 			transactions.setSubscription(existing.getSubscription());
 			if (existing.getSubscription() != null) {

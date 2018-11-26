@@ -534,6 +534,51 @@ public class BillUserController {
 		return Response.temporaryRedirect(url).build();
 	}
 	
+	@POST
+	@Path("/paytm/paymentResult")
+	// @Produces(MediaType.APPLICATION_JSON)
+	public Response paytmPaymentResult(MultivaluedMap<String, String> formParams) {
+		URI url = null;
+		try {
+			
+			LoggingUtil.logMessage("PayTm Payment result -- " + formParams);
+			
+			BillInvoice invoice = new BillInvoice();
+			String orderId = formParams.getFirst("ORDERID");
+			//invoice.setId(new Integer(orderId));
+			String[] split = StringUtils.split(orderId, BillPaymentUtil.TXID_SEPARATOR);
+			invoice.setId(new Integer(split[0]));
+			invoice.setTxTime(formParams.getFirst("TXNDATE"));
+			invoice.setPaymentId(formParams.getFirst("TXNID"));
+			invoice.setStatus(formParams.getFirst("STATUS"));
+			if(StringUtils.equals("TXN_SUCCESS", invoice.getStatus())) {
+				invoice.setStatus("Success");
+			}
+			invoice.setAmount(new BigDecimal(formParams.getFirst("TXNAMOUNT")));
+			invoice.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_PAYTM);
+			invoice.setPaymentMode(formParams.getFirst("PAYMENTMODE"));
+			invoice.setComments(formParams.getFirst("RESPMSG"));
+			invoice.setPaymentRequestId(formParams.getFirst("BANKTXNID"));
+			invoice.setPaymentResponse(formParams.toString());
+			if(!BillPaymentUtil.matchPayTmChecksum(formParams)) {
+				invoice.setStatus(BillConstants.INVOICE_STATUS_FAILED);
+				invoice.setComments("Signature not matched");
+				LoggingUtil.logMessage("Signature not matched for " + orderId);
+			}
+			BillServiceRequest request = new BillServiceRequest();
+			request.setInvoice(invoice);
+			BillServiceResponse response = userBo.completePayment(request);
+			if(response.getInvoice() != null) {
+				LoggingUtil.logMessage("Redirect after payment to --" + response.getInvoice().getPaymentUrl());
+				url = new URI(response.getInvoice().getPaymentUrl());
+			}
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+
+		return Response.temporaryRedirect(url).build();
+	}
+	
 	@GET
 	@Path("/getImage/{type}/{id}")
 	@Produces(MediaType.MULTIPART_FORM_DATA)

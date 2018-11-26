@@ -23,8 +23,10 @@ public class BillDBTransactions {
 	private String paymentId;
 	private String referenceNo;
 	private String status;
-	private String mode;
-	private String medium;
+	/*private String mode;
+	private String medium;*/
+	private String paymentMedium;
+	private String paymentMode;
 	private Date createdDate;
 	private BigDecimal amount;
 	private BillDBInvoice invoice;
@@ -71,7 +73,7 @@ public class BillDBTransactions {
 		this.status = status;
 	}
 	
-	@Column(name = "mode")
+	/*@Column(name = "mode")
 	public String getMode() {
 		return mode;
 	}
@@ -85,7 +87,7 @@ public class BillDBTransactions {
 	}
 	public void setMedium(String medium) {
 		this.medium = medium;
-	}
+	}*/
 	
 	@Column(name = "created_date")
 	public Date getCreatedDate() {
@@ -176,6 +178,22 @@ public class BillDBTransactions {
 	}
 	public void setTransactionCharges(BigDecimal transactionCharges) {
 		this.transactionCharges = transactionCharges;
+	}
+	
+	@Column(name = "medium")
+	public String getPaymentMedium() {
+		return paymentMedium;
+	}
+	public void setPaymentMedium(String paymentMedium) {
+		this.paymentMedium = paymentMedium;
+	}
+	
+	@Column(name = "mode")
+	public String getPaymentMode() {
+		return paymentMode;
+	}
+	public void setPaymentMode(String paymentMode) {
+		this.paymentMode = paymentMode;
 	}
 	
 

@@ -8,9 +8,12 @@ import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import javax.crypto.Mac;
@@ -18,6 +21,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.codehaus.jackson.JsonNode;
@@ -26,6 +30,7 @@ import org.codehaus.jackson.map.JsonMappingException;
 import org.codehaus.jackson.map.ObjectMapper;
 
 import com.ccavenue.security.AesCryptUtil;
+import com.paytm.pg.merchant.CheckSumServiceHelper;
 import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillPaymentCredentials;
@@ -373,7 +378,7 @@ public class BillPaymentUtil {
 		Map<String, String> postData = new HashMap<String, String>();
 		String appId = BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_APP_ID);
 		postData.put("appId", appId);
-		String orderId = CommonUtils.getStringValue(invoice.getId()) + TXID_SEPARATOR + CommonUtils.getStringValue(paymentAttempt);
+		String orderId = getOrderId(invoice, paymentAttempt);
 		postData.put("orderId", orderId);
 		postData.put("orderAmount", CommonUtils.getStringValue(invoice.getPayable(), true));
 		postData.put("orderCurrency", "INR");
@@ -403,6 +408,10 @@ public class BillPaymentUtil {
 		invoice.setCashFreePaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.CASHFREE_PAYMENT_URL));
 		invoice.setComments(invoicePurpose);
 		invoice.setCashFreeTxId(orderId);
+	}
+
+	private static String getOrderId(BillInvoice invoice, Integer paymentAttempt) {
+		return CommonUtils.getStringValue(invoice.getId()) + TXID_SEPARATOR + CommonUtils.getStringValue(paymentAttempt);
 	}
 
 	public static boolean verifyCashfreeSignature(BillInvoice invoice, String orderId) {
@@ -437,6 +446,62 @@ public class BillPaymentUtil {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		}
 		return false;
+	}
+
+	public static void preparePayTmRequest(BillInvoice invoice, BillUser customer, Integer paymentAttempt) {
+		try {
+			if(invoice == null || customer == null || invoice.getId() == null || customer.getId() == null) {
+				return;
+			}
+			String returnUrl = BillPropertyUtil.getProperty(BillPropertyUtil.PAYTM_RETURN_URL);
+			invoice.setPaytmRedirectUrl(returnUrl);
+			invoice.setPaytmChannel(BillPropertyUtil.getProperty(BillPropertyUtil.PAYTM_CHANNEL));
+			invoice.setPaytmMid(BillPropertyUtil.getProperty(BillPropertyUtil.PAYTM_MID));
+			invoice.setPaytmWebsite(BillPropertyUtil.getProperty(BillPropertyUtil.PAYTM_WEBSITE));
+			invoice.setPaytmUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYTM_URL));
+
+			TreeMap<String, String> paytmParams = new TreeMap<String, String>();
+			paytmParams.put("MID", invoice.getPaytmMid());
+			paytmParams.put("ORDER_ID", getOrderId(invoice, paymentAttempt));
+			paytmParams.put("CHANNEL_ID", invoice.getPaytmChannel());
+			paytmParams.put("CUST_ID", customer.getId().toString());
+			paytmParams.put("MOBILE_NO", customer.getPhone());
+			paytmParams.put("EMAIL", customer.getEmail());
+			paytmParams.put("TXN_AMOUNT", CommonUtils.getStringValue(invoice.getPayable(), true));
+			paytmParams.put("WEBSITE", invoice.getPaytmWebsite());
+			paytmParams.put("INDUSTRY_TYPE_ID", "Retail");
+			paytmParams.put("CALLBACK_URL", invoice.getPaytmRedirectUrl());
+			String paytmChecksum = CheckSumServiceHelper.getCheckSumServiceHelper().genrateCheckSum(BillPropertyUtil.getProperty(BillPropertyUtil.PAYTM_SECRET), paytmParams);
+			invoice.setPaytmChecksum(paytmChecksum);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+
+	}
+	
+	public static boolean matchPayTmChecksum(MultivaluedMap<String, String> formParams) {
+		boolean isValidChecksum = false;
+		try {
+			TreeMap<String, String> paytmParams = new TreeMap<String, String>();
+			String paytmChecksum = "";
+			// Request is HttpServletRequest
+			for (Entry<String, List<String>> e : formParams.entrySet()) {
+				if(CollectionUtils.isEmpty(e.getValue())) {
+					continue;
+				}
+			    if ("CHECKSUMHASH".equalsIgnoreCase(e.getKey())){
+			        paytmChecksum = e.getValue().get(0);
+			    } else {
+			        paytmParams.put(e.getKey(), e.getValue().get(0));
+			    }
+			}
+			// Call the method for verification
+			isValidChecksum = CheckSumServiceHelper.getCheckSumServiceHelper().verifycheckSum(BillPropertyUtil.getProperty(BillPropertyUtil.PAYTM_SECRET), paytmParams, paytmChecksum);
+		} catch (Exception e1) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e1));
+		}
+		// If isValidChecksum is false, then checksum is not valid
+		return isValidChecksum;
 	}
 
 }
