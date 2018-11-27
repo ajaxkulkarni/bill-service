@@ -67,9 +67,9 @@ public class BillVendorDaoImpl {
 				 //.add(Restrictions.le("orderDate", CommonUtils.endDate(date)));
 		
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
-		Criteria itemCriteria = criteria.setFetchMode("orderItems", FetchMode.JOIN);
-		Criteria businessItemCriteria = itemCriteria.setFetchMode("businessItem", FetchMode.JOIN);
-		businessItemCriteria.setFetchMode("parent", FetchMode.JOIN);
+		Criteria itemCriteria = criteria.createCriteria("orderItems", JoinType.LEFT_OUTER_JOIN);
+		Criteria businessItemCriteria = itemCriteria.createCriteria("businessItem", JoinType.LEFT_OUTER_JOIN);
+		businessItemCriteria.createCriteria("parent", JoinType.LEFT_OUTER_JOIN);
 		//Criteria businessCriteria = 
 		if(businessId != null) {
 			criteria.createAlias("business", "b").add(Restrictions.eq("b.id", businessId));
