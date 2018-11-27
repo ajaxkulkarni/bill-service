@@ -326,8 +326,9 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 	private BigDecimal calculatePrice(BillDBItemSubscription itemSub, Calendar cal, BigDecimal previousAmount, BillDBOrderItems item) {
 		if(itemSub.getPrice() != null) {
 			if(StringUtils.equals(itemSub.getPriceType(), FREQ_MONTHLY)) {
-				//Only deduct ONCE each month
-				if(previousAmount == null || previousAmount.compareTo(BigDecimal.ZERO) == 0) {
+				//Only deduct FIRST DAY of each month
+				Integer day = cal.get(Calendar.DAY_OF_MONTH);
+				if(day == 1) {
 					return itemSub.getPrice();
 				} else {
 					return BigDecimal.ZERO;
