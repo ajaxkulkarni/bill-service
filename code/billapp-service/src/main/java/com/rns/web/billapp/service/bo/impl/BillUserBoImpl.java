@@ -44,6 +44,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
+import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
@@ -56,6 +57,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBUserLog;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
+import com.rns.web.billapp.service.dao.impl.BillOrderDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillSchemesDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillSubscriptionDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillTransactionsDaoImpl;
@@ -327,6 +329,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				BillSMSUtil.sendSMS(user, null, MAIL_TYPE_NEW_CUSTOMER, null);
 			}
 			tx.commit();
+			if(user.getId() == null) {
+				user.setId(dbSubscription.getId());
+				response.setUser(user);
+			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
@@ -1122,13 +1128,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		if(request.getInvoice() != null) {
 			year = request.getInvoice().getYear();
 			month = request.getInvoice().getMonth();
-			if(month != null && year == null) {
-				year = CommonUtils.getCalendarValue(new Date(), Calendar.YEAR);
-				Date date = CommonUtils.getDate(month, year);
-				if(date != null && date.compareTo(new Date()) > 0) {
-					year = year - 1;
-				}
-			}
+			year = getYear(year, month);
 		}
 		List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerInvoiceSummary(request.getRequestedDate(), request.getBusiness().getId(),
 				month, year, status);
@@ -1344,13 +1344,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			if(request.getInvoice() != null) {
 				year = request.getInvoice().getYear();
 				month = request.getInvoice().getMonth();
-				if(month != null && year == null) {
-					year = CommonUtils.getCalendarValue(new Date(), Calendar.YEAR);
-					Date date = CommonUtils.getDate(month, year);
-					if(date != null && date.compareTo(new Date()) > 0) {
-						year = year - 1;
-					}
-				}
+				year = getYear(year, month);
 			}
 			
 			List<Object[]> rows = new BillVendorDaoImpl(session).getBillSummary(request.getBusiness().getId(), request.getItem().getParentItemId(), month, year);
@@ -1391,6 +1385,17 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		return response;
 	}
 
+	private Integer getYear(Integer year, Integer month) {
+		if(month != null && year == null) {
+			year = CommonUtils.getCalendarValue(new Date(), Calendar.YEAR);
+			Date date = CommonUtils.getDate(month, year);
+			if(date != null && date.compareTo(new Date()) > 0) {
+				year = year - 1;
+			}
+		}
+		return year;
+	}
+
 	public BillServiceResponse getAllSectors() {
 		BillServiceResponse response = new BillServiceResponse();
 		Session session = null;
@@ -1402,6 +1407,44 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			response.setSectors(sectors);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse updateInvoiceItems(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if(request.getInvoice() == null || request.getItem() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			if(request.getItem() != null) {
+				if(request.getItem().getParentItemId() != null && request.getItem().getPrice() != null) {
+					//Update all invoice items for this business item, useful for bulk bill correction
+					Integer year = getYear(request.getInvoice().getYear(), request.getInvoice().getMonth());
+					List<BillDBItemInvoice> invoiceItems = new BillInvoiceDaoImpl(session).getInvoiceItems(request.getInvoice().getMonth(), year, request.getItem().getParentItemId(), request.getItem().getPriceType());
+					if(CollectionUtils.isNotEmpty(invoiceItems)) {
+						for(BillDBItemInvoice invoiceItem: invoiceItems) {
+							if(invoiceItem.getQuantity() == null) {
+								continue;
+							}
+							BigDecimal oldVal = invoiceItem.getPrice();
+							BigDecimal difference = request.getItem().getPrice().subtract(oldVal);
+							invoiceItem.getInvoice().setAmount(invoiceItem.getInvoice().getAmount().add(difference));
+							invoiceItem.setPrice(request.getItem().getPrice());
+						}
+					}
+				}
+			}
+			tx.commit();
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
 		} finally {
 			CommonUtils.closeSession(session);
 		}

@@ -182,6 +182,14 @@ public class BillDataConverter implements BillConstants {
 			if(!StringUtils.equals(STATUS_ACTIVE, subscribed.getStatus())) {
 				continue;
 			}
+			if(subscribed.getBusinessItem() != null) {
+				if(!StringUtils.equals(STATUS_ACTIVE, subscribed.getBusinessItem().getStatus())) {
+					continue;
+				}
+				if(subscribed.getBusinessItem().getParent() != null && !StringUtils.equals(STATUS_ACTIVE, subscribed.getBusinessItem().getParent().getStatus())) {
+					continue;
+				}
+			}
 			BillItem parentItem = new BillItem();
 			BillItem item = new BillItem();
 			beanUtils.copyProperties(item, subscribed);

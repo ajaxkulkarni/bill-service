@@ -319,6 +319,14 @@ public class BillUserController {
 	public BillServiceResponse updateCustomerInvoice(BillServiceRequest request) {
 		return userBo.updateCustomerInvoice(request);
 	}
+	
+	@POST
+	@Path("/updateInvoiceItems")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateInvoiceItems(BillServiceRequest request) {
+		return userBo.updateInvoiceItems(request);
+	}
 
 	@POST
 	@Path("/sendInvoice")

@@ -76,7 +76,9 @@ public class BillSubscriptionDAOImpl {
 				 .add(activeCriteria());
 		criteria.setFetchMode("location", FetchMode.JOIN);
 		criteria.setFetchMode("business", FetchMode.JOIN);
-		criteria.createCriteria("subscriptions", JoinType.LEFT_OUTER_JOIN)/*.add(activeCriteria())*/;
+		Criteria subscriptions = criteria.createCriteria("subscriptions", JoinType.LEFT_OUTER_JOIN)/*.add(activeCriteria())*/;
+		Criteria businessItem = subscriptions.createCriteria("businessItem", JoinType.LEFT_OUTER_JOIN);
+		businessItem.createCriteria("parent", JoinType.LEFT_OUTER_JOIN);
 		return (BillDBSubscription) criteria.uniqueResult();
 		
 	}

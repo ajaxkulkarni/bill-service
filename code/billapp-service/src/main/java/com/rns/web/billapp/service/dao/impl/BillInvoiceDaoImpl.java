@@ -19,6 +19,7 @@ import org.hibernate.sql.JoinType;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
+import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.CommonUtils;
@@ -225,6 +226,23 @@ public class BillInvoiceDaoImpl {
 			return null;
 		}
 		return list.get(0);
+	}
+
+	public List<BillDBItemInvoice> getInvoiceItems(Integer month, Integer year, Integer parentItemId, String priceType) {
+		String queryString = "from BillDBItemInvoice where status=:active AND invoice.status=:pending AND invoice.month=:month AND invoice.year=:year AND quantity > 0 AND businessItem.id=:parentId";
+		if(StringUtils.isNotBlank(priceType)) {
+			queryString = queryString + " AND subscribedItem.price IS NOT NULL AND subscribedItem.priceType=:priceType";
+		}
+		Query query = session.createQuery(queryString);
+		query.setInteger("month", month);
+		query.setInteger("year", year);
+		query.setInteger("parentId", parentItemId);
+		query.setString("active", BillConstants.STATUS_ACTIVE);
+		if(StringUtils.isNotBlank(priceType)) {
+			query.setString("priceType", priceType);
+		}
+		query.setString("pending", BillConstants.INVOICE_STATUS_PENDING);
+		return query.list();
 	}
 	
 	/*public int updateSettlement(Integer businessId, String status, String oldStatus) {

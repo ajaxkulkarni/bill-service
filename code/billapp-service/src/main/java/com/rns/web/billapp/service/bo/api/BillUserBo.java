@@ -17,6 +17,7 @@ public interface BillUserBo {
 	BillServiceResponse sendCustomerInvoice(BillServiceRequest request);
 	BillServiceResponse updatePaymentCredentials(BillServiceRequest request);
 	BillServiceResponse completePayment(BillServiceRequest request);
+	BillServiceResponse updateInvoiceItems(BillServiceRequest request);
 	
 	/*Read APIs*/
 	
