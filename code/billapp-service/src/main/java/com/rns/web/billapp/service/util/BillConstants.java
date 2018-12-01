@@ -103,6 +103,7 @@ public interface BillConstants {
 	String MAIL_TYPE_REGISTRATION_ADMIN = "RegistrationSuccessAdmin";
 	String MAIL_TYPE_APPROVAL = "ProfileApproved";
 	String MAIL_TYPE_NEW_CUSTOMER = "CustomerAdded";
+	String MAIL_TYPE_NEW_CUSTOMER_VENDOR = "CustomerAddedVendor";
 	String MAIL_TYPE_PAUSE_CUSTOMER = "PauseDeliveryCustomer";
 	String MAIL_TYPE_PAUSE_BUSINESS = "PauseDeliveryBusiness";
 	String MAIL_TYPE_HOLIDAY = "PauseDeliveryHoliday";

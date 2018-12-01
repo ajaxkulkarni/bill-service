@@ -240,6 +240,10 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{customerName}", CommonUtils.getStringValue(customerInfo.getName()));
 		result = StringUtils.replace(result, "{customerEmail}", CommonUtils.getStringValue(customerInfo.getEmail()));
 		result = StringUtils.replace(result, "{customerPhone}", CommonUtils.getStringValue(customerInfo.getPhone()));
+		result = StringUtils.replace(result, "{customerAddress}", CommonUtils.getStringValue(customerInfo.getAddress()));
+		if(customerInfo.getCurrentSubscription() != null && customerInfo.getCurrentSubscription().getArea() != null) {
+			result = StringUtils.replace(result, "{customerLocation}", CommonUtils.getStringValue(customerInfo.getCurrentSubscription().getArea().getName()));
+		}
 		return result;
 	}
 
@@ -451,6 +455,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_REGISTRATION, "registration.html");
 			put(MAIL_TYPE_APPROVAL, "profile_approved.html");
 			put(MAIL_TYPE_NEW_CUSTOMER, "customer_added.html");
+			put(MAIL_TYPE_NEW_CUSTOMER_VENDOR, "customer_added_vendor.html");
 			put(MAIL_TYPE_PAUSE_CUSTOMER, "customer_pause_delivery.html");
 			put(MAIL_TYPE_PAUSE_BUSINESS, "business_pause_delivery.html");
 			put(MAIL_TYPE_HOLIDAY, "customer_holiday.html");
@@ -475,6 +480,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_REGISTRATION, "Welcome to Pay Per Bill family!");
 			put(MAIL_TYPE_APPROVAL, "Congratulations! Your account has been verified and approved!");
 			put(MAIL_TYPE_NEW_CUSTOMER, "{businessName} has added you as a customer to their Pay Per Bill account");
+			put(MAIL_TYPE_NEW_CUSTOMER_VENDOR, "New customer registered to your PayPerBill account");
 			put(MAIL_TYPE_PAUSE_CUSTOMER, "{businessName} has paused your delivery");
 			put(MAIL_TYPE_PAUSE_BUSINESS, "{businessName} has paused the service");
 			put(MAIL_TYPE_HOLIDAY, "Public holiday alert");

@@ -280,18 +280,22 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			Transaction tx = session.beginTransaction();
+			String phone = CommonUtils.trimPhoneNumber(user.getPhone());
 			BeanUtilsBean notNullBean = new NullAwareBeanUtils();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
+			BillDBUserBusiness dbBusiness = null;
 			BillDBSubscription dbSubscription = dao.getEntityByKey(BillDBSubscription.class, ID_ATTR, customer.getId(), false);
 			if (dbSubscription == null) {
-				dbSubscription = new BillSubscriptionDAOImpl(session).getActiveSubscription(user.getPhone(), request.getBusiness().getId());
+				dbSubscription = new BillSubscriptionDAOImpl(session).getActiveSubscription(phone, request.getBusiness().getId());
 				if (dbSubscription == null) {
 					dbSubscription = new BillDBSubscription();
+				} else if (StringUtils.equals("CUSTOMER", request.getRequestType())) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_MOBILE_PRESENT);
+					return response;
 				}
 				dbSubscription.setCreatedDate(new Date());
 				dbSubscription.setStatus(STATUS_ACTIVE);
 			}
-			String phone = CommonUtils.trimPhoneNumber(user.getPhone());
 			if(phone != null && phone.length() < 10) {
 				response.setResponse(ERROR_CODE_GENERIC, ERROR_INVALID_PHONE_NUMBER);
 				return response;
@@ -311,7 +315,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				dbSubscription.setLocation(location);
 			}
 			if (dbSubscription.getBusiness() == null && business != null) {
-				BillDBUserBusiness dbBusiness = dao.getEntityByKey(BillDBUserBusiness.class, ID_ATTR, business.getId(), true);
+				dbBusiness = dao.getEntityByKey(BillDBUserBusiness.class, ID_ATTR, business.getId(), true);
 				if (dbBusiness == null) {
 					response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
 					return response;
@@ -332,6 +336,18 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			if(user.getId() == null) {
 				user.setId(dbSubscription.getId());
 				response.setUser(user);
+			}
+			if(StringUtils.equals("CUSTOMER", request.getRequestType()) && dbBusiness != null) {
+				//Notify vendor that customer is added
+				BillUser vendor = new BillUser();
+				new NullAwareBeanUtils().copyProperties(vendor, dbBusiness.getUser());
+				vendor.setCurrentBusiness(business);
+				BillMailUtil vendorMailer = new BillMailUtil(MAIL_TYPE_NEW_CUSTOMER_VENDOR, vendor);
+				vendorMailer.setCustomerInfo(user);
+				executor.execute(vendorMailer);
+				BillSMSUtil smsUtil = new BillSMSUtil();
+				smsUtil.setCustomer(user);
+				smsUtil.sendSms(vendor, null, MAIL_TYPE_NEW_CUSTOMER_VENDOR, null);
 			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));

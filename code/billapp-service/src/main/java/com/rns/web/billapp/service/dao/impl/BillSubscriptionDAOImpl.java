@@ -34,9 +34,9 @@ public class BillSubscriptionDAOImpl {
 		 Criteria criteria = session.createCriteria(BillDBSubscription.class)
 				 .add(Restrictions.eq("phone", phone))
 				 .add(Restrictions.eq("business.id", businessItemId));
-        Object result = criteria.uniqueResult();
-        if(result != null) {
-       	 return (BillDBSubscription) result;
+        List<BillDBSubscription> result = criteria.list();
+        if(CollectionUtils.isNotEmpty(result)) {
+       	 return result.get(0);
         }
         return null;
 	}
