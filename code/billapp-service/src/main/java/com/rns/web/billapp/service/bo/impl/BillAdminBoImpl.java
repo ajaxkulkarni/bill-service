@@ -612,8 +612,12 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			Transaction tx = session.beginTransaction();
 			if(request.getItem() != null) {
 				if(request.getItem().getParentItemId() != null) {
+					Date toDate = null;
+					if(request.getItem().getChangeLog() != null) {
+						toDate = request.getItem().getChangeLog().getToDate();
+					}
 					//Update all orders with this parent item
-					List<BillDBOrderItems> orderItems = new BillOrderDaoImpl(session).getOrderItems(request.getRequestedDate(), request.getItem().getParentItemId());
+					List<BillDBOrderItems> orderItems = new BillOrderDaoImpl(session).getOrderItems(request.getRequestedDate(), toDate, request.getItem().getParentItemId(), request.getItem().getPriceType());
 					if(CollectionUtils.isNotEmpty(orderItems)) {
 						for(BillDBOrderItems orderItem: orderItems) {
 							if(orderItem.getQuantity() == null) {
