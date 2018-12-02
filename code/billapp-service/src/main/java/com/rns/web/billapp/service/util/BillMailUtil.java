@@ -93,17 +93,28 @@ public class BillMailUtil implements BillConstants, Runnable {
 		Session session = prepareMailSession();
 
 		try {
-			LoggingUtil.logMessage("Sending mail to .." + user.getEmail());
-			Message message = new MimeMessage(session);
-			message.setFrom(new InternetAddress(MAIL_ID, "Pay Per Bill"));
-			prepareMailContent(message);
-			Transport.send(message);
-			LoggingUtil.logMessage("Mail sent to .." + user.getEmail());
+			if(CollectionUtils.isNotEmpty(users)) {
+				for(BillUser recipient: users) {
+					sendMail(session, recipient);
+				}
+			} else {
+				sendMail(session, user);
+			}
+			
 		} catch (MessagingException e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} catch (UnsupportedEncodingException e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		}
+	}
+
+	private void sendMail(Session session, BillUser receipient) throws MessagingException, UnsupportedEncodingException {
+		LoggingUtil.logMessage("Sending mail to .." + receipient.getEmail());
+		Message message = new MimeMessage(session);
+		message.setFrom(new InternetAddress(MAIL_ID, "Pay Per Bill"));
+		prepareMailContent(message, receipient);
+		Transport.send(message);
+		LoggingUtil.logMessage("Mail sent to .." + receipient.getEmail());
 	}
 
 	private static Session prepareMailSession() {
@@ -126,7 +137,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		return session;
 	}
 
-	private String prepareMailContent(Message message) throws UnsupportedEncodingException {
+	private String prepareMailContent(Message message, BillUser receipient) throws UnsupportedEncodingException {
 
 		try {
 			// boolean attachCv = false;
@@ -206,11 +217,11 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 			if (isAdminMail()) {
 				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(getEmails(Arrays.asList(ADMIN_MAILS))));
-			} else if (genericMail()) {
+			} /*else if (genericMail()) {
 				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse("rssplsocial@gmail.com"));
-				message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(getUserEmails(users))); }
+				message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(getUserEmails(users))); }*/
 			else {
-				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(user.getEmail()));
+				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(receipient.getEmail()));
 			}
 
 			if (copyAdmins) {
