@@ -39,9 +39,10 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	private static final String READ_RECEIPT_MAIL = "talnoterns@gmail.com";
 
-	private static final String MAIL_HOST = "smtpout.asia.secureserver.net";// "smtp.gmail.com";
-	private static final String MAIL_ID = "help@payperbill.in";// "visionlaturpattern@gmail.com";
-	private static final String MAIL_PASSWORD = "WickedSmile2@"; // "Vision2018!";
+	private static final String MAIL_HOST = "smtp.gmail.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";
+	private static final String MAIL_ID = "visionlaturpattern@gmail.com";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
+	//private static final String MAIL_ID = "noreply@payperbill.in";
+	private static final String MAIL_PASSWORD = "Vision2018!";// "WickedSmile2@"; // "Vision2018!";
 
 	private static final String MAIL_AUTH = "true";
 	private static final String MAIL_PORT = "25";// "587";
