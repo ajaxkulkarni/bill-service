@@ -245,7 +245,10 @@ public class BillDataConverter implements BillConstants {
 			//This is done so that result message will get to see the total amount with outstanding balance
 			BillInvoice tempInvoice = new BillInvoice();
 			new NullAwareBeanUtils().copyProperties(tempInvoice, invoice);
-			BillRuleEngine.calculatePayable(tempInvoice, dbInvoice, session);
+			if(StringUtils.equals(INVOICE_STATUS_PENDING, invoice.getStatus())) {
+				//Only useful for pending invoices
+				BillRuleEngine.calculatePayable(tempInvoice, dbInvoice, session);
+			}
 			invoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customer, tempInvoice, BillConstants.MAIL_TYPE_INVOICE, null));
 			return customer;
 		}

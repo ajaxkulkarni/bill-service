@@ -63,7 +63,14 @@ public class BillInvoiceDaoImpl {
 			criteria.add(Restrictions.eq("status", status));
 		}
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
-		criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
+		Criteria subscriptionCriteria = criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN);
+		Criteria businessCriteria = subscriptionCriteria.createCriteria("business", JoinType.LEFT_OUTER_JOIN);
+		Criteria sector = businessCriteria.createCriteria("sector", JoinType.LEFT_OUTER_JOIN);
+		Criteria locations = businessCriteria.createCriteria("locations", JoinType.LEFT_OUTER_JOIN);
+		Criteria invoiceItems = criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
+		Criteria businessItem = invoiceItems.createCriteria("businessItem", JoinType.LEFT_OUTER_JOIN);
+		invoiceItems.createCriteria("subscribedItem", JoinType.LEFT_OUTER_JOIN);
+		businessItem.createCriteria("parent", JoinType.LEFT_OUTER_JOIN);
 		return criteria.list();
 	}
 	

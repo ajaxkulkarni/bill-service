@@ -58,7 +58,7 @@ public class BillInvoice {
 	private String paytmWebsite;
 	private String paytmChannel;
 	private String paytmUrl;
-	
+	private String shortUrl;
 	
 	public Integer getId() {
 		return id;
@@ -317,6 +317,12 @@ public class BillInvoice {
 	}
 	public void setPaytmUrl(String paytmUrl) {
 		this.paytmUrl = paytmUrl;
+	}
+	public String getShortUrl() {
+		return shortUrl;
+	}
+	public void setShortUrl(String shortUrl) {
+		this.shortUrl = shortUrl;
 	}
 	
 }

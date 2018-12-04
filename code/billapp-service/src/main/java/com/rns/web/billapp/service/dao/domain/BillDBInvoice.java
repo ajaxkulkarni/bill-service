@@ -18,8 +18,11 @@ import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
+import org.hibernate.annotations.DynamicUpdate;
+
 @Entity
 @Table(name = "invoices")
+@DynamicUpdate
 public class BillDBInvoice {
 	
 	private Integer id;
@@ -48,6 +51,7 @@ public class BillDBInvoice {
 	private Date settlementDate;
 	private String settlementRef;
 	private Date invoiceDate;
+	private String shortUrl;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -258,6 +262,14 @@ public class BillDBInvoice {
 	}
 	public void setInvoiceDate(Date invoiceDate) {
 		this.invoiceDate = invoiceDate;
+	}
+	
+	@Column(name = "short_url")
+	public String getShortUrl() {
+		return shortUrl;
+	}
+	public void setShortUrl(String shortUrl) {
+		this.shortUrl = shortUrl;
 	}
 	
 

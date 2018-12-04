@@ -187,7 +187,10 @@ public class BillSMSUtil implements BillConstants {
 		return StringUtils.removeEnd(builder.toString(), ",");
 	}
 	
-	public static String shortenUrl(String url) {
+	public static String shortenUrl(String shortUrl, String url) {
+		if(StringUtils.isNotBlank(shortUrl)) {
+			return shortUrl;
+		}
 		if(StringUtils.isBlank(url)) {
 			return url;
 		}

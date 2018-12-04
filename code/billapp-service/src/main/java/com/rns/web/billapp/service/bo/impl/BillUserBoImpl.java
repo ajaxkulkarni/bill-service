@@ -44,7 +44,6 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
-import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
@@ -57,7 +56,6 @@ import com.rns.web.billapp.service.dao.domain.BillDBUserLog;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
-import com.rns.web.billapp.service.dao.impl.BillOrderDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillSchemesDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillSubscriptionDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillTransactionsDaoImpl;
@@ -565,6 +563,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				// Update payment URL
 				BillBusinessConverter.updatePaymentURL(invoice, dbInvoice, customerSubscription, session);
 			}
+			if(StringUtils.isBlank(dbInvoice.getShortUrl())) {
+				dbInvoice.setShortUrl(BillSMSUtil.shortenUrl(null, BillRuleEngine.preparePaymentUrl(dbInvoice.getId())));
+			}
 			tx.commit();
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -767,6 +768,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			BillInvoiceDaoImpl dao = new BillInvoiceDaoImpl(session);
 			List<BillDBInvoice> invoices = dao.getAllInvoices(request.getUser().getId(), null);
+			System.out.println("Done ..............");
 			List<BillInvoice> userInvoices = BillDataConverter.getInvoices(invoices, session);
 			response.setInvoices(userInvoices);
 		} catch (Exception e) {
@@ -829,7 +831,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						response.setResponse(BillSMSUtil.sendSMS(customer, invoice, MAIL_TYPE_INVOICE, null));
 					}
 				} else {
-					invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + invoice.getId());
+					invoice.setPaymentUrl(BillRuleEngine.preparePaymentUrl(invoice.getId()));
+					if(StringUtils.isBlank(dbInvoice.getShortUrl())) {
+						dbInvoice.setShortUrl(BillSMSUtil.shortenUrl(null, invoice.getPaymentUrl()));
+					}
+					invoice.setShortUrl(dbInvoice.getShortUrl());
 					BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
 					mailUtil.setUser(customer);
 					mailUtil.setInvoice(invoice);
@@ -1184,7 +1190,13 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					if (lastUnpaid != null) {
 						BillInvoice lastInvoice = BillDataConverter.getInvoice(new NullAwareBeanUtils(), lastUnpaid);
 						BillRuleEngine.calculatePayable(lastInvoice, lastUnpaid, session);
-						invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + lastUnpaid.getId());
+						invoice.setPaymentUrl(BillRuleEngine.preparePaymentUrl(lastUnpaid.getId()));
+						if(StringUtils.isBlank(lastUnpaid.getShortUrl())) {
+							Transaction tx = session.beginTransaction();
+							lastUnpaid.setShortUrl(BillSMSUtil.shortenUrl(null, invoice.getPaymentUrl()));
+							tx.commit();
+						}
+						invoice.setShortUrl(lastUnpaid.getShortUrl());
 						BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
 						customer.setCurrentBusiness(BillDataConverter.getBusiness(subscription.getBusiness()));
 						mailUtil.setUser(customer);

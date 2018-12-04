@@ -248,5 +248,10 @@ public class BillRuleEngine {
 		return amount.subtract(txCharges);
 	}
 
+
+	public static String preparePaymentUrl(Integer id) {
+		return BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + id;
+	}
+
 	
 }

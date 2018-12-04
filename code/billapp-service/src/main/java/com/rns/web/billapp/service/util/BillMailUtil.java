@@ -39,13 +39,13 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	private static final String READ_RECEIPT_MAIL = "talnoterns@gmail.com";
 
-	private static final String MAIL_HOST = "smtp.gmail.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";
-	private static final String MAIL_ID = "visionlaturpattern@gmail.com";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
+	private static final String MAIL_HOST = "smtp.zoho.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";
+	private static final String MAIL_ID = "donotreply@payperbill.in";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
 	//private static final String MAIL_ID = "noreply@payperbill.in";
-	private static final String MAIL_PASSWORD = "Vision2018!";// "WickedSmile2@"; // "Vision2018!";
+	private static final String MAIL_PASSWORD = "Success2018!";// "WickedSmile2@"; // "Vision2018!";
 
 	private static final String MAIL_AUTH = "true";
-	private static final String MAIL_PORT = "25";// "587";
+	private static final String MAIL_PORT = "465";// "587";
 
 	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, help@payperbill.in, rssplsocial@gmail.com" };
 
@@ -320,7 +320,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{payable}", CommonUtils.getStringValue(invoice.getPayable(), false));
 		result = StringUtils.replace(result, "{outstanding}", CommonUtils.getStringValue(invoice.getOutstandingBalance(), false));
 		result = StringUtils.replace(result, "{createdDate}", CommonUtils.convertDate(invoice.getCreatedDate()));
-		result = StringUtils.replace(result, "{paymentUrl}", CommonUtils.getStringValue(BillSMSUtil.shortenUrl(invoice.getPaymentUrl())));
+		result = StringUtils.replace(result, "{paymentUrl}", CommonUtils.getStringValue(BillSMSUtil.shortenUrl(invoice.getShortUrl(), invoice.getPaymentUrl())));
 		result = StringUtils.replace(result, "{paidAmount}", CommonUtils.getStringValue(invoice.getPaidAmount(), false));
 		result = StringUtils.replace(result, "{paymentId}", CommonUtils.getStringValue(invoice.getPaymentId()));
 		result = StringUtils.replace(result, "{paymentMode}", CommonUtils.getStringValue(invoice.getPaymentMode()));

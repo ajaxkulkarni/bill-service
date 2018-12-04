@@ -241,6 +241,9 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 				updateInvoiceItems(session, invoice, dbInvoice.getSubscription().getBusiness());
 				BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice, false);
 			}
+			if(dbInvoice != null && StringUtils.isBlank(dbInvoice.getShortUrl())) {
+				dbInvoice.setShortUrl(BillSMSUtil.shortenUrl(null, BillRuleEngine.preparePaymentUrl(dbInvoice.getId())));
+			}
 			tx.commit();
 			if(invoicePaid) {
 				BillRuleEngine.sendEmails(invoice, dbInvoice, nullAwareBeanUtils, executor);
