@@ -238,7 +238,7 @@ public class BillDataConverter implements BillConstants {
 			throws IllegalAccessException, InvocationTargetException {
 		BillRuleEngine.calculatePayable(invoice, null, null);
 		if(dbInvoice.getSubscription() != null && dbInvoice.getSubscription().getBusiness() != null) {
-			invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + invoice.getId());
+			invoice.setPaymentUrl(BillRuleEngine.preparePaymentUrl(invoice.getId()));
 			BillUser customer = new BillUser();
 			customer.setCurrentBusiness(getBusiness(dbInvoice.getSubscription().getBusiness()));
 			beanUtils.copyProperties(customer, dbInvoice.getSubscription());
