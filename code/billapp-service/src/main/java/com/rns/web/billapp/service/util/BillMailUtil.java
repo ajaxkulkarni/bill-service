@@ -39,13 +39,13 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	private static final String READ_RECEIPT_MAIL = "talnoterns@gmail.com";
 
-	private static final String MAIL_HOST = "smtp.zoho.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";
-	private static final String MAIL_ID = "donotreply@payperbill.in";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
+	private static final String MAIL_HOST = "smtp.gmail.com";// "smtp.zoho.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";
+	private static final String MAIL_ID = "visionlaturpattern@gmail.com";// "donotreply@payperbill.in";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
 	//private static final String MAIL_ID = "noreply@payperbill.in";
-	private static final String MAIL_PASSWORD = "Success2018!";// "WickedSmile2@"; // "Vision2018!";
+	private static final String MAIL_PASSWORD = "Vision2018!";//"Success2018!";// "WickedSmile2@"; // "Vision2018!";
 
 	private static final String MAIL_AUTH = "true";
-	private static final String MAIL_PORT = "587";//"465";// "587";
+	private static final String MAIL_PORT = "25";//"587";//"465";// "587";
 
 	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, help@payperbill.in, rssplsocial@gmail.com" };
 
