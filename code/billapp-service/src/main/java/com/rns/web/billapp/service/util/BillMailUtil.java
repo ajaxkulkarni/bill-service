@@ -39,13 +39,13 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	private static final String READ_RECEIPT_MAIL = "talnoterns@gmail.com";
 
-	private static final String MAIL_HOST = "smtp.gmail.com";// "smtp.zoho.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";
-	private static final String MAIL_ID = "visionlaturpattern@gmail.com";// "donotreply@payperbill.in";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
+	private static final String MAIL_HOST = "smtp.zoho.com";// "smtp.zoho.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";
+	private static final String MAIL_ID = "mailer@payperbill.in";// "donotreply@payperbill.in";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
 	//private static final String MAIL_ID = "noreply@payperbill.in";
-	private static final String MAIL_PASSWORD = "Vision2018!";//"Success2018!";// "WickedSmile2@"; // "Vision2018!";
+	private static final String MAIL_PASSWORD = "mzyQYUhXc2b3";//"Success2018!";// "WickedSmile2@"; // "Vision2018!";//
 
 	private static final String MAIL_AUTH = "true";
-	private static final String MAIL_PORT = "25";//"587";//"465";// "587";
+	private static final String MAIL_PORT = "465";//"587";//"465";// "587";
 
 	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, help@payperbill.in, rssplsocial@gmail.com" };
 
@@ -124,7 +124,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		props.put("mail.smtp.auth", MAIL_AUTH);
 		props.put("mail.smtp.socketFactory.port", "465"); // PROD
 		props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory"); // PROD
-		props.put("mail.smtp.starttls.enable", "true");
+		//props.put("mail.smtp.starttls.enable", "true");
 		props.put("mail.smtp.host", MAIL_HOST);
 		props.put("mail.smtp.port", MAIL_PORT);
 
