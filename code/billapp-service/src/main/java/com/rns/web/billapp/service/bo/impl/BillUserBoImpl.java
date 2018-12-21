@@ -741,12 +741,20 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			// Additional info for profile
 			BillSubscription currentSubscription = customerDetails.getCurrentSubscription();
 			if (currentSubscription != null) {
+				//Get all pending invoices
 				BillInvoiceDaoImpl billInvoiceDaoImpl = new BillInvoiceDaoImpl(session);
-				currentSubscription.setBillsDue(billInvoiceDaoImpl.getInvoiceCountByStatus(currentSubscription.getId(), INVOICE_STATUS_PENDING));
-				BillDBInvoice latestPaid = billInvoiceDaoImpl.getLatestPaidInvoice(currentSubscription.getId());
-				if (latestPaid != null) {
-					currentSubscription.setLastBillPaid(latestPaid.getPaidDate());
+				List<BillDBInvoice> pendingInvoices = billInvoiceDaoImpl.getAllInvoices(currentSubscription.getId(), INVOICE_STATUS_PENDING);
+				if(CollectionUtils.isNotEmpty(pendingInvoices)) {
+					currentSubscription.setBillsDue(pendingInvoices.size());
+					response.setInvoices(BillDataConverter.getInvoices(pendingInvoices, session));
+					BillDBInvoice latestPaid = billInvoiceDaoImpl.getLatestPaidInvoice(currentSubscription.getId());
+					if (latestPaid != null) {
+						currentSubscription.setLastBillPaid(latestPaid.getPaidDate());
+					}
+				} else {
+					currentSubscription.setBillsDue(0);
 				}
+				
 			}
 			response.setUser(customerDetails);
 		} catch (Exception e) {
@@ -897,9 +905,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			LoggingUtil.logMessage("Locked .. " + currentInvoice.getId() + " -- " + invoicesInProgress);
 			BillDBTransactions existingTransction = new BillGenericDaoImpl(session).getEntityByKey(BillDBTransactions.class, "paymentId",
 					currentInvoice.getPaymentId(), false);
-			if (existingTransction != null) {
+			if (existingTransction != null && StringUtils.equals(INVOICE_STATUS_PAID, existingTransction.getStatus())) {
+				//To avoid multiple hits from the server. In case of pending payment, multiple hits are allowed
 				LoggingUtil.logMessage("Already transacted with this invoice .." + currentInvoice.getId() + " PID " + currentInvoice.getPaymentId() + " txn "
-						+ existingTransction.getId());
+						+ existingTransction.getId() + " status " + existingTransction.getStatus());
 				return response;
 			}
 			Transaction tx = session.beginTransaction();
@@ -931,6 +940,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					}
 				}
 				
+				//Check for any reward scheme
 				List<BillDBSchemes> rewardSchemes = new BillSchemesDaoImpl(session).getSchemes(SCHEME_TYPE_REWARD);
 				if(CollectionUtils.isNotEmpty(rewardSchemes)) {
 					BillDBSchemes schemes = rewardSchemes.get(0);
@@ -938,6 +948,23 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						BillDBCustomerCoupons coupon = BillBusinessConverter.getCustomerCoupon(schemes, invoice.getSubscription(), invoice);
 						session.persist(coupon);
 						BillRuleEngine.redeemCoupon(session, coupon, executor);
+					}
+				}
+				if(invoice.getSubscription() != null && invoice.getSubscription().getBusiness() != null && invoice.getSubscription().getBusiness().getTransactionCharges() != null) {
+					//Check for referrals
+					List<BillDBCustomerCoupons> referrals = new BillSchemesDaoImpl(session).getReferrals(invoice.getSubscription().getBusiness().getId());
+					if(CollectionUtils.isNotEmpty(referrals)) {
+						for(BillDBCustomerCoupons coupons: referrals) {
+							if(coupons.getScheme() != null && coupons.getScheme().getBusiness() != null && coupons.getScheme().getVendorCommission() != null) {
+								BigDecimal commission = null;
+								if(StringUtils.equals(COMMISSION_PAID_PERCENT, coupons.getScheme().getCommissionPaidType())) {
+									 commission = invoice.getPaidAmount().multiply(coupons.getScheme().getVendorCommission()).divide(new BigDecimal(100), 4, RoundingMode.HALF_DOWN);
+									 
+								}
+								//Transaction added for business which has given the referral code
+								BillRuleEngine.addCouponTransaction(session, coupons, coupons.getScheme().getBusiness(), commission);
+							}
+						}
 					}
 				}
 				

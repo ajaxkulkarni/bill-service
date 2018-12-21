@@ -24,6 +24,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
+import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 
@@ -132,75 +133,107 @@ public class BillRuleEngine {
 		existing.setRedeemDate(new Date());
 		// If vendor commission, then add the commission as a
 		// transaction
+		addCouponTransaction(session, existing, null, null);
+		if (existing.getScheme() != null && existing.getScheme().getBusiness() != null && existing.getSubscription() != null) {
+			sendCouponMails(existing.getScheme(), existing.getSubscription(), existing, BillConstants.MAIL_TYPE_COUPON_REDEEMED, BillConstants.MAIL_TYPE_COUPON_REDEEMED_BUSINESS, BillConstants.MAIL_TYPE_COUPON_REDEEMED_ADMIN, executor, null);
+		}
+	}
+
+
+	public static void addCouponTransaction(Session session, BillDBCustomerCoupons existing, BillDBUserBusiness businessToPay, BigDecimal commission) {
 		if (existing.getScheme() != null && existing.getScheme().getVendorCommission() != null) {
 			BillDBTransactions transactions = new BillDBTransactions();
-			transactions.setAmount(existing.getScheme().getVendorCommission());
+			if(commission != null) {
+				transactions.setAmount(commission);
+			} else {
+				transactions.setAmount(existing.getScheme().getVendorCommission());
+			}
 			transactions.setCreatedDate(new Date());
 			transactions.setStatus(BillConstants.INVOICE_STATUS_PAID);
 			transactions.setPaymentMedium(BillConstants.PAYMENT_MEDIUM_CASHFREE);
 			transactions.setPaymentMode(BillConstants.PAYMENT_MODE_REWARD);
 			transactions.setReferenceNo(existing.getCouponCode());
 			transactions.setSubscription(existing.getSubscription());
-			if (existing.getSubscription() != null) {
+			if(businessToPay != null) {
+				transactions.setBusiness(businessToPay);
+			} else if (existing.getSubscription() != null) {
 				transactions.setBusiness(existing.getSubscription().getBusiness());
 			}
 			transactions.setTransactionDate(CommonUtils.convertDate(new Date()));
 			transactions.setComments(existing.getScheme().getSchemeName());
 			session.persist(transactions);
 		}
-		if (existing.getScheme() != null && existing.getScheme().getBusiness() != null && existing.getSubscription() != null) {
-			sendCouponMails(existing.getScheme(), existing.getSubscription(), existing, BillConstants.MAIL_TYPE_COUPON_REDEEMED, BillConstants.MAIL_TYPE_COUPON_REDEEMED_BUSINESS, BillConstants.MAIL_TYPE_COUPON_REDEEMED_ADMIN, executor);
-		}
 	}
 
 	
-	public static void sendCouponMails(BillDBSchemes schemes, BillDBSubscription subscription, BillDBCustomerCoupons coupons, String mailTypeCustomer, String mailTypeCouponBusiness, String mailTypeCouponAdmin, ThreadPoolTaskExecutor executor)
+	public static void sendCouponMails(BillDBSchemes schemes, BillDBSubscription subscription, BillDBCustomerCoupons coupons, String mailTypeCustomer, String mailTypeCouponBusiness, String mailTypeCouponAdmin, ThreadPoolTaskExecutor executor, BillDBUser acceptedUser)
 			throws IllegalAccessException, InvocationTargetException {
+		BillUser customer = null;
+		BillUser vendor = null;
+		BillUser schemeBusinessVendor = null;
+		BillBusiness schemeBusiness = null;
+		BillScheme pickedScheme = null;
+		NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
 		if (subscription != null && subscription.getBusiness() != null && subscription.getBusiness().getUser() != null) {
-			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
-			BillUser customer = BillDataConverter.getCustomerDetails(beanUtils, subscription);
-			BillBusiness schemeBusiness = BillDataConverter.getBusiness(schemes.getBusiness());
-			BillUser vendor = new BillUser();
+			customer = BillDataConverter.getCustomerDetails(beanUtils, subscription);
+			vendor = new BillUser();
 			beanUtils.copyProperties(vendor, subscription.getBusiness().getUser());
-			BillUser schemeBusinessVendor = new BillUser();
+		} else if (acceptedUser != null) {
+			//In case of offer picked up by vendor
+			customer = new BillUser();
+			beanUtils.copyProperties(customer, acceptedUser);
+		}
+		if (schemes != null && schemes.getBusiness() != null && schemes.getBusiness().getUser() != null) {
+			schemeBusinessVendor = new BillUser();
 			beanUtils.copyProperties(schemeBusinessVendor, schemes.getBusiness().getUser());
-			BillScheme pickedScheme = BillDataConverter.getScheme(schemes, coupons, beanUtils);
-			// Send offer details to customer
-			customer.setCurrentBusiness(schemeBusiness);
-			//String mailTypeCustomer = MAIL_TYPE_COUPON_ACCEPTED;
-			if(!StringUtils.equals(BillConstants.SCHEME_TYPE_REWARD, pickedScheme.getSchemeType())) {
-				//Send email to customer
-				BillMailUtil customerMail = new BillMailUtil(mailTypeCustomer, customer);
-				customerMail.setSelectedScheme(pickedScheme);
-				executor.execute(customerMail);
-				// Send SMS to customer
-				BillSMSUtil.sendSMS(customer, null, mailTypeCustomer, pickedScheme);
+			pickedScheme = BillDataConverter.getScheme(schemes, coupons, beanUtils);
+			schemeBusiness = BillDataConverter.getBusiness(schemes.getBusiness());
+		}
+
+		if(pickedScheme != null && schemeBusiness != null) {
+			if(customer != null && StringUtils.isNotBlank(mailTypeCustomer)) {
+				// Send offer details to customer
+				customer.setCurrentBusiness(schemeBusiness);
+				// String mailTypeCustomer = MAIL_TYPE_COUPON_ACCEPTED;
+				if (!StringUtils.equals(BillConstants.SCHEME_TYPE_REWARD, pickedScheme.getSchemeType())) {
+					// Send email to customer
+					BillMailUtil customerMail = new BillMailUtil(mailTypeCustomer, customer);
+					customerMail.setSelectedScheme(pickedScheme);
+					executor.execute(customerMail);
+					// Send SMS to customer
+					BillSMSUtil.sendSMS(customer, null, mailTypeCustomer, pickedScheme);
+				}
 			}
-			// Notify scheme business
-			schemeBusinessVendor.setCurrentBusiness(schemeBusiness);
-			//String mailTypeCouponBusiness = MAIL_TYPE_COUPON_ACCEPTED_BUSINESS;
-			BillMailUtil schemeBusinessMail = new BillMailUtil(mailTypeCouponBusiness, schemeBusinessVendor);
-			schemeBusinessMail.setCustomerInfo(customer);
-			schemeBusinessMail.setSelectedScheme(pickedScheme);
-			schemeBusinessMail.setCopyAdmins(true);
-			executor.execute(schemeBusinessMail);
-			BillSMSUtil smsUtil = new BillSMSUtil();
-			smsUtil.setCustomer(customer);
-			smsUtil.sendSms(schemeBusinessVendor, null, mailTypeCouponBusiness, pickedScheme);
-			// Notify vendor
-			vendor.setName(customer.getName());
-			vendor.setCurrentBusiness(schemeBusiness);
-			//String mailTypeCouponAdmin = MAIL_TYPE_COUPON_ACCEPTED_ADMIN;
-			if(schemes.getVendorCommission() != null) {
-				BillMailUtil vendorMail = new BillMailUtil(mailTypeCouponAdmin, vendor);
-				vendorMail.setSelectedScheme(pickedScheme);
-				vendorMail.setCopyAdmins(true);
-				executor.execute(vendorMail);
-				BillSMSUtil vendorSms = new BillSMSUtil();
-				vendorSms.setCustomer(customer);
-				vendorSms.sendSms(vendor, null, mailTypeCouponBusiness, pickedScheme);
+			if(schemeBusinessVendor != null && StringUtils.isNotBlank(mailTypeCouponBusiness)) {
+				// Notify scheme business
+				schemeBusinessVendor.setCurrentBusiness(schemeBusiness);
+				// String mailTypeCouponBusiness = MAIL_TYPE_COUPON_ACCEPTED_BUSINESS;
+				BillMailUtil schemeBusinessMail = new BillMailUtil(mailTypeCouponBusiness, schemeBusinessVendor);
+				schemeBusinessMail.setCustomerInfo(customer);
+				schemeBusinessMail.setSelectedScheme(pickedScheme);
+				schemeBusinessMail.setCopyAdmins(true);
+				executor.execute(schemeBusinessMail);
+				BillSMSUtil smsUtil = new BillSMSUtil();
+				smsUtil.setCustomer(customer);
+				smsUtil.sendSms(schemeBusinessVendor, null, mailTypeCouponBusiness, pickedScheme);
+			}
+			if(vendor != null && StringUtils.isNotBlank(mailTypeCouponAdmin)) {
+				// Notify vendor
+				vendor.setName(customer.getName());
+				vendor.setCurrentBusiness(schemeBusiness);
+				// String mailTypeCouponAdmin = MAIL_TYPE_COUPON_ACCEPTED_ADMIN;
+				if (schemes.getVendorCommission() != null) {
+					BillMailUtil vendorMail = new BillMailUtil(mailTypeCouponAdmin, vendor);
+					vendorMail.setSelectedScheme(pickedScheme);
+					vendorMail.setCopyAdmins(true);
+					executor.execute(vendorMail);
+					BillSMSUtil vendorSms = new BillSMSUtil();
+					vendorSms.setCustomer(customer);
+					vendorSms.sendSms(vendor, null, mailTypeCouponAdmin, pickedScheme);
+				}
 			}
 		}
+		
 	}
 	
 	public static void sendEmails(BillInvoice currentInvoice, BillDBInvoice invoice, NullAwareBeanUtils nullAwareBeanUtils, ThreadPoolTaskExecutor executor)

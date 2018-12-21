@@ -35,7 +35,7 @@ public interface BillConstants {
 	String PAYMENT_MEDIUM_CASH = "CASH";
 	String PAYMENT_MODE_REWARD = "REWARD";
 	String PAYMENT_MEDIUM_PAYTM = "PAYTM";
-
+	String COMMISSION_PAID_PERCENT = "PERCENT";
 	
 	String WARNING_NO_BUSINESS = "No business information found. Please complete your business details.";
 	String WARNING_NO_FINANCIALS = "No financial/ bank information found. Please complete your bank details to enable payment.";
@@ -75,6 +75,7 @@ public interface BillConstants {
 	String SCHEME_TYPE_INVOICE = "INVOICE"; //Only after invoice is paid
 	String SCHEME_TYPE_GENERAL = "GENERAL";
 	String SCHEME_TYPE_REWARD = "REWARD"; //Direct reward to vendors
+	String SCHEME_TYPE_REFERRAL = "REFERRAL"; //Vendor referrals B2B
 	int NS_SCHEME_DAYS_LIMIT = 5;
 	String NO = "N";
 	

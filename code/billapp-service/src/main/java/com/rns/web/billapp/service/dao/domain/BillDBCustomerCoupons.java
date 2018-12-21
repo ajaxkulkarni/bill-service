@@ -38,6 +38,7 @@ public class BillDBCustomerCoupons {
 	private String status;
 	private BillDBInvoice invoice;
 	private Date redeemDate;
+	private BillDBUserBusiness acceptedBy; //When a business takes a coupon/referral code
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -195,6 +196,15 @@ public class BillDBCustomerCoupons {
 	}
 	public void setRedeemDate(Date redeemDate) {
 		this.redeemDate = redeemDate;
+	}
+	
+	@ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
+	@JoinColumn(name = "business")
+	public BillDBUserBusiness getAcceptedBy() {
+		return acceptedBy;
+	}
+	public void setAcceptedBy(BillDBUserBusiness acceptedBy) {
+		this.acceptedBy = acceptedBy;
 	}
 	
 	

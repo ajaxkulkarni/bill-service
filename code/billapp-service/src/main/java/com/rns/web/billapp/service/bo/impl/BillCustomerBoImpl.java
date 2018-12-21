@@ -132,7 +132,7 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 			if (StringUtils.isBlank(schemes.getPaymentType())) {
 				// Payment is not required for this scheme, so send mails to the
 				// customer/vendor and business
-				BillRuleEngine.sendCouponMails(schemes, subscription, coupons, MAIL_TYPE_COUPON_ACCEPTED, MAIL_TYPE_COUPON_ACCEPTED_BUSINESS, MAIL_TYPE_COUPON_ACCEPTED_ADMIN, executor);
+				BillRuleEngine.sendCouponMails(schemes, subscription, coupons, MAIL_TYPE_COUPON_ACCEPTED, MAIL_TYPE_COUPON_ACCEPTED_BUSINESS, MAIL_TYPE_COUPON_ACCEPTED_ADMIN, executor, null);
 			}
 			tx.commit();
 		} catch (Exception e) {

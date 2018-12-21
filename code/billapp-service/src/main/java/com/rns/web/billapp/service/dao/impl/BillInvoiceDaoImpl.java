@@ -65,6 +65,7 @@ public class BillInvoiceDaoImpl {
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		Criteria subscriptionCriteria = criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN);
 		Criteria businessCriteria = subscriptionCriteria.createCriteria("business", JoinType.LEFT_OUTER_JOIN);
+		businessCriteria.createCriteria("user", JoinType.LEFT_OUTER_JOIN);
 		Criteria sector = businessCriteria.createCriteria("sector", JoinType.LEFT_OUTER_JOIN);
 		Criteria locations = businessCriteria.createCriteria("locations", JoinType.LEFT_OUTER_JOIN);
 		Criteria invoiceItems = criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);

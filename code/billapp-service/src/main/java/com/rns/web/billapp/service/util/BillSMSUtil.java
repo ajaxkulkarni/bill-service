@@ -198,6 +198,12 @@ public class BillSMSUtil implements BillConstants {
 		net.swisstech.bitly.model.Response<ShortenResponse> resp = client.shorten()
 		                          .setLongUrl(url)
 		                          .call();
+		if(resp == null || resp.data == null) {
+			if(resp != null) {
+				System.out.println(resp.status_txt);
+			}
+			return null;
+		}
 		return resp.data.url;
 	}
 

@@ -369,6 +369,9 @@ public class BillDataConverter implements BillConstants {
 	}
 
 	public static BillBusiness getBusinessBasic(BillDBUserBusiness billDBUserBusiness) throws IllegalAccessException, InvocationTargetException {
+		if(billDBUserBusiness == null) {
+			return null;
+		}
 		BillBusiness business = new BillBusiness();
 		NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
 		nullAwareBeanUtils.copyProperties(business, billDBUserBusiness);

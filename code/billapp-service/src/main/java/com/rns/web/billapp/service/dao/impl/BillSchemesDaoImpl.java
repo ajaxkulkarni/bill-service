@@ -16,6 +16,9 @@ import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
+import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
+import com.rns.web.billapp.service.util.BillConstants;
+import com.rns.web.billapp.service.util.CommonUtils;
 
 public class BillSchemesDaoImpl {
 
@@ -44,6 +47,21 @@ public class BillSchemesDaoImpl {
 		businessCriteria.setFetchMode("user", FetchMode.JOIN);
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		criteria.addOrder(Order.desc("createdDate"));
+		return criteria.list();
+	}
+
+	public List<BillDBCustomerCoupons> getReferrals(Integer businessId) {
+		Criteria criteria = session.createCriteria(BillDBCustomerCoupons.class);
+		criteria.add(BillGenericDaoImpl.activeCriteria());
+		Date currentDate = CommonUtils.setZero(new Date());
+		criteria.add(Restrictions.le("validFrom", currentDate));
+		criteria.add(Restrictions.ge("validTill", currentDate));
+		criteria.add(Restrictions.eq("acceptedBy.id", businessId));
+		Criteria schemeCriteria = criteria.createCriteria("scheme", JoinType.LEFT_OUTER_JOIN);
+		schemeCriteria.add(Restrictions.eq("schemeType", BillConstants.SCHEME_TYPE_REFERRAL));
+		schemeCriteria.add(Restrictions.le("validFrom", currentDate));
+		schemeCriteria.add(Restrictions.ge("validTill", currentDate));
+		schemeCriteria.add(BillGenericDaoImpl.activeCriteria());
 		return criteria.list();
 	}
 	

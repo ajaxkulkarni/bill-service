@@ -167,6 +167,7 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 			Transaction tx = session.beginTransaction();
 			BillInvoice invoice = request.getInvoice();
 			NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+			BillDBUserBusiness business = null;
 			if(invoice.getId() == null) {
 				BillUser customer = request.getUser();
 				if(StringUtils.isBlank(customer.getPhone())) {
@@ -183,7 +184,7 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 					return response;
 				}
 				customer.setPhone(phone);
-				BillDBUserBusiness business = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), false);
+				business = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), false);
 				if(business == null) {
 					response.setResponse(ERROR_CODE_GENERIC, ERROR_ACCESS_DENIED);
 					return response;
@@ -255,7 +256,9 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 				}
 				BillInvoice currrInvoice = BillDataConverter.getInvoice(nullAwareBeanUtils, dbInvoice);
 				BillRuleEngine.calculatePayable(currrInvoice, dbInvoice, session);
-				currrInvoice.setPaymentMessage(BillSMSUtil.generateResultMessage(BillDataConverter.getCustomerDetails(nullAwareBeanUtils, dbInvoice.getSubscription()), currrInvoice, BillConstants.MAIL_TYPE_INVOICE, null));
+				BillUser customerDetails = BillDataConverter.getCustomerDetails(nullAwareBeanUtils, dbInvoice.getSubscription());
+				customerDetails.setCurrentBusiness(BillDataConverter.getBusinessBasic(business));
+				currrInvoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customerDetails, currrInvoice, BillConstants.MAIL_TYPE_INVOICE, null));
 				response.setInvoice(currrInvoice);
 			}
 		} catch (Exception e) {
