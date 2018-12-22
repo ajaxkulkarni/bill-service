@@ -567,6 +567,18 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				dbInvoice.setShortUrl(BillSMSUtil.shortenUrl(null, BillRuleEngine.preparePaymentUrl(dbInvoice.getId())));
 			}
 			tx.commit();
+			
+			//if(invoice.getId() == null) {
+				BillInvoice currrInvoice = BillDataConverter.getInvoice(new NullAwareBeanUtils(), dbInvoice);
+				BillRuleEngine.calculatePayable(currrInvoice, dbInvoice, session);
+				BillUser customerDetails = BillDataConverter.getCustomerDetails(new NullAwareBeanUtils(), dbInvoice.getSubscription());
+				if(dbInvoice.getSubscription() != null) {
+					customerDetails.setCurrentBusiness(BillDataConverter.getBusinessBasic(dbInvoice.getSubscription().getBusiness()));
+				}
+				currrInvoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customerDetails, currrInvoice, BillConstants.MAIL_TYPE_INVOICE, null));
+				response.setInvoice(currrInvoice);
+			//}
+			
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
