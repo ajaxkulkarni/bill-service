@@ -25,6 +25,7 @@ import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
+import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
@@ -33,6 +34,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillSubscriptionDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
@@ -200,6 +202,15 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 				} else {
 					nullAwareBeanUtils.copyProperties(subscription, customer);
 				}
+				
+				if(invoice.getMonth() != null && invoice.getYear() != null) {
+					BillDBInvoice existing = new BillInvoiceDaoImpl(session).getActiveInvoiceForMonth(subscription.getId(), invoice.getMonth(), invoice.getYear());
+					if(existing != null) {
+						response.setResponse(ERROR_CODE_GENERIC, "Invoice already exists for selected month and year!");
+						return response;
+					}
+				}
+				
 				dbInvoice = new BillDBInvoice();
 				nullAwareBeanUtils.copyProperties(dbInvoice, invoice);
 				dbInvoice.setSubscription(subscription);
@@ -218,9 +229,16 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 					invoicePaid = true;
 				}
 				
-				updateInvoiceItems(session, invoice, business);
-				
-				BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice, false);
+				boolean hasSubscribedItems = false;
+				if(invoice.getMonth() != null && invoice.getYear() != null) {
+					hasSubscribedItems = true;
+					//Invoice is for RECURRING type.. so add customer subscriptions also
+					updateSubscribedItems(session, subscription, invoice);
+				} else {
+					updateInvoiceItems(session, invoice, business);
+				}
+						
+				BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice, hasSubscribedItems);
 			} else {
 				dbInvoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, ID_ATTR, invoice.getId(), false);
 				if(dbInvoice == null) {
@@ -239,8 +257,15 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 				}
 				nullAwareBeanUtils.copyProperties(dbInvoice, invoice);
 				
-				updateInvoiceItems(session, invoice, dbInvoice.getSubscription().getBusiness());
-				BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice, false);
+				boolean hasSubscribedItems = false;
+				if(invoice.getMonth() != null && invoice.getYear() != null) {
+					hasSubscribedItems = true;
+					//Invoice is for RECURRING type.. so add customer subscriptions also
+					updateSubscribedItems(session, dbInvoice.getSubscription(), invoice);
+				} else {
+					updateInvoiceItems(session, invoice, dbInvoice.getSubscription().getBusiness());
+				}
+				BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice, hasSubscribedItems);
 			}
 			if(dbInvoice != null && StringUtils.isBlank(dbInvoice.getShortUrl())) {
 				dbInvoice.setShortUrl(BillSMSUtil.shortenUrl(null, BillRuleEngine.preparePaymentUrl(dbInvoice.getId())));
@@ -268,6 +293,39 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 			CommonUtils.closeSession(session);
 		}
 		return response;
+	}
+
+	private void updateSubscribedItems(Session session, BillDBSubscription subscription, BillInvoice invoice) {
+		if(CollectionUtils.isEmpty(invoice.getInvoiceItems())) {
+			return;
+		}
+		for(BillItem item: invoice.getInvoiceItems()) {
+			//Check if this customer already has the subscription
+			if (item.getParentItem() != null && subscription.getId() != null) {
+				BillDBItemSubscription dbSubscribedItem = null;
+				if(item.getParentItemId() != null && invoice.getMonth() != null) {
+					//for Recurring
+					dbSubscribedItem = new BillGenericDaoImpl(session).getEntityByKey(BillDBItemSubscription.class, ID_ATTR, item.getParentItemId(), true);
+				} else {
+					//for generic
+					dbSubscribedItem = new BillSubscriptionDAOImpl(session).getActiveItemSubscription(subscription.getId(), item.getParentItem().getId());
+				}
+				
+				if (dbSubscribedItem == null) {
+					dbSubscribedItem = new BillDBItemSubscription();
+					dbSubscribedItem.setCreatedDate(new Date());
+					dbSubscribedItem.setStatus(STATUS_ACTIVE);
+					dbSubscribedItem.setQuantity(new BigDecimal(1));
+					dbSubscribedItem.setSubscription(subscription);
+					BillDBItemBusiness itemBusiness = new BillGenericDaoImpl(session).getEntityByKey(BillDBItemBusiness.class, ID_ATTR, item.getParentItem().getId(), true);
+					if(itemBusiness != null) {
+						dbSubscribedItem.setBusinessItem(itemBusiness);
+						session.persist(dbSubscribedItem);
+					}
+				}
+				item.setId(dbSubscribedItem.getId());
+			}
+		}
 	}
 
 	private void updateInvoiceItems(Session session, BillInvoice invoice, BillDBUserBusiness business) {

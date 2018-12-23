@@ -85,7 +85,7 @@ public class BillSMSUtil implements BillConstants {
 				result = StringUtils.replace(result, "{status}", "Failed");	
 			}
 			
-			if(CollectionUtils.isNotEmpty(invoice.getInvoiceItems())) {
+			if(CollectionUtils.isNotEmpty(invoice.getInvoiceItems()) && BillRuleEngine.showBillDetails(user)) {
 				StringBuilder builder = new StringBuilder();
 				builder.append(SMS_COSMETIC_SEPARATOR).append("\n");
 				if(BillRuleEngine.showBillDetails(user)) {

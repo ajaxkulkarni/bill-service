@@ -39,13 +39,13 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	private static final String READ_RECEIPT_MAIL = "talnoterns@gmail.com";
 
-	private static final String MAIL_HOST = "smtp.zoho.com";// "smtp.zoho.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";
-	private static final String MAIL_ID = "mailer@payperbill.in";// "donotreply@payperbill.in";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
+	private static final String MAIL_HOST = "smtp-relay.sendinblue.com";// "smtp.zoho.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";//smtp-relay.sendinblue.com
+	private static final String MAIL_ID = "help@payperbill.in";// "donotreply@payperbill.in";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
 	//private static final String MAIL_ID = "noreply@payperbill.in";
-	private static final String MAIL_PASSWORD = "mzyQYUhXc2b3";//"Success2018!";// "WickedSmile2@"; // "Vision2018!";//
-
+	private static final String MAIL_PASSWORD = "";//"Success2018!";// "WickedSmile2@"; // "Vision2018!";//G5Xw3rFxsQ0DOK7S//mzyQYUhXc2b3//G5Xw3rFxsQ0DOK7S
+	
 	private static final String MAIL_AUTH = "true";
-	private static final String MAIL_PORT = "465";//"587";//"465";// "587";
+	private static final String MAIL_PORT = "587";//"587";//"465";// "587";
 
 	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, help@payperbill.in, rssplsocial@gmail.com" };
 
@@ -112,7 +112,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 	private void sendMail(Session session, BillUser receipient) throws MessagingException, UnsupportedEncodingException {
 		LoggingUtil.logMessage("Sending mail to .." + receipient.getEmail());
 		Message message = new MimeMessage(session);
-		message.setFrom(new InternetAddress(MAIL_ID, "Pay Per Bill"));
+		message.setFrom(new InternetAddress("ajinkyashiva@gmail.com", "Pay Per Bill"));
 		prepareMailContent(message, receipient);
 		Transport.send(message);
 		LoggingUtil.logMessage("Mail sent to .." + receipient.getEmail());

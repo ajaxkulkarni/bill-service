@@ -44,6 +44,19 @@ public class BillInvoiceDaoImpl {
         return null;
 	}
 	
+	public BillDBInvoice getActiveInvoiceForMonth(Integer subscriptionId, Integer month, Integer year) {
+		 Criteria criteria = session.createCriteria(BillDBInvoice.class)
+				 .add(Restrictions.eq("subscription.id", subscriptionId))
+				 .add(Restrictions.eq("month", month))
+				 .add(Restrictions.eq("year", year))
+				 .add(Restrictions.ne("status", BillConstants.INVOICE_STATUS_DELETED));
+       Object result = criteria.uniqueResult();
+       if(result != null) {
+      	 return (BillDBInvoice) result;
+       }
+       return null;
+	}
+	
 	public BillDBItemInvoice getInvoiceItem(Integer invoiceId, Integer subscribedItemId) {
 		 Criteria criteria = session.createCriteria(BillDBItemInvoice.class)
 				 .add(Restrictions.eq("invoice.id", invoiceId))
