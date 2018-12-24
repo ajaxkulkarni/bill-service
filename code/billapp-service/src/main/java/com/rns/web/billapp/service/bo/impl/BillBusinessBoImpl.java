@@ -272,9 +272,12 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 				dbInvoice.setShortUrl(BillSMSUtil.shortenUrl(null, BillRuleEngine.preparePaymentUrl(dbInvoice.getId())));
 			}
 			tx.commit();
-			if(invoicePaid) {
+			if(invoicePaid && dbInvoice != null) {
 				BillInvoice currInvoice = new BillInvoice();
 				nullAwareBeanUtils.copyProperties(currInvoice, invoice);
+				if(currInvoice.getId() == null) {
+					currInvoice.setId(dbInvoice.getId());
+				}
 				currInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + currInvoice.getId());
 				BillRuleEngine.sendEmails(currInvoice, dbInvoice, nullAwareBeanUtils, executor);
 			}
