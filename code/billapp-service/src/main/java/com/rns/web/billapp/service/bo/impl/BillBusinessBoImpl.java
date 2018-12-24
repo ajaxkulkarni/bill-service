@@ -41,6 +41,7 @@ import com.rns.web.billapp.service.domain.BillServiceResponse;
 import com.rns.web.billapp.service.util.BillBusinessConverter;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
+import com.rns.web.billapp.service.util.BillPropertyUtil;
 import com.rns.web.billapp.service.util.BillRuleEngine;
 import com.rns.web.billapp.service.util.BillSMSUtil;
 import com.rns.web.billapp.service.util.CommonUtils;
@@ -272,6 +273,9 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 			}
 			tx.commit();
 			if(invoicePaid) {
+				BillInvoice currInvoice = new BillInvoice();
+				nullAwareBeanUtils.copyProperties(currInvoice, invoice);
+				currInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + currInvoice.getId());
 				BillRuleEngine.sendEmails(invoice, dbInvoice, nullAwareBeanUtils, executor);
 			}
 			if(dbInvoice != null) {
