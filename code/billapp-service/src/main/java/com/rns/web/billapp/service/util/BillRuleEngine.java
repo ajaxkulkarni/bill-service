@@ -119,6 +119,9 @@ public class BillRuleEngine {
 	}
 
 	public static boolean showBillDetails(BillUser user) {
+		if(user == null) {
+			return true;
+		}
 		if(StringUtils.equals(BillConstants.NO, user.getShowBillDetails())) {
 			return false;
 		} else if (user.getShowBillDetails() == null && user.getCurrentBusiness() != null && StringUtils.equals(BillConstants.NO, user.getCurrentBusiness().getShowBillDetails())) {

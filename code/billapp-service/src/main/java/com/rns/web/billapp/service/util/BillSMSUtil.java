@@ -78,7 +78,7 @@ public class BillSMSUtil implements BillConstants {
 		}
 		
 		if(invoice != null) {
-			result = BillMailUtil.prepareInvoiceInfo(result, invoice);
+			result = BillMailUtil.prepareInvoiceInfo(result, invoice, user);
 			if(StringUtils.equals(BillConstants.PAYMENT_STATUS_CREDIT, invoice.getStatus())) {
 				result = StringUtils.replace(result, "{status}", "Successful");	
 			} else {
@@ -101,13 +101,13 @@ public class BillSMSUtil implements BillConstants {
 					}
 				}
 				builder.append(SMS_COSMETIC_SEPARATOR).append("\n");
-				if(invoice.getPendingBalance() != null && BigDecimal.ZERO.compareTo(invoice.getPendingBalance()) < 0) {
+				if(invoice.getPendingBalance() != null && BigDecimal.ZERO.compareTo(invoice.getPendingBalance()) < 0 && BillRuleEngine.showBillDetails(user)) {
 					builder.append("Pending = ").append(CommonUtils.getStringValue(invoice.getPendingBalance(), false)).append("\n");;
 				}
-				if(invoice.getServiceCharge() != null && BigDecimal.ZERO.compareTo(invoice.getServiceCharge()) < 0) {
+				if(invoice.getServiceCharge() != null && BigDecimal.ZERO.compareTo(invoice.getServiceCharge()) < 0 && BillRuleEngine.showBillDetails(user)) {
 					builder.append("Service charge = ").append(CommonUtils.getStringValue(invoice.getServiceCharge(), false)).append("\n");;
 				}
-				if(invoice.getCreditBalance() != null && BigDecimal.ZERO.compareTo(invoice.getCreditBalance()) < 0) {
+				if(invoice.getCreditBalance() != null && BigDecimal.ZERO.compareTo(invoice.getCreditBalance()) < 0 && BillRuleEngine.showBillDetails(user)) {
 					builder.append("Credit = ").append(CommonUtils.getStringValue(invoice.getCreditBalance(), false)).append("\n");;
 				}
 				if(invoice.getOutstandingBalance() != null && BigDecimal.ZERO.compareTo(invoice.getOutstandingBalance()) < 0) {

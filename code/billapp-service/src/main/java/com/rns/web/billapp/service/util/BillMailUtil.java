@@ -39,15 +39,16 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 	private static final String READ_RECEIPT_MAIL = "talnoterns@gmail.com";
 
-	private static final String MAIL_HOST = "smtp.gmail.com";// "smtp.zoho.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";//smtp-relay.sendinblue.com
-	private static final String MAIL_ID = "visionlaturpattern@gmail.com";// "donotreply@payperbill.in";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
-	//private static final String MAIL_ID = "noreply@payperbill.in";
-	private static final String MAIL_PASSWORD = "Vision2018!";//"Success2018!";// "WickedSmile2@"; // "Vision2018!";//G5Xw3rFxsQ0DOK7S//mzyQYUhXc2b3//G5Xw3rFxsQ0DOK7S
+	private static final String MAIL_HOST = "smtp-relay.sendinblue.com";// "smtp.zoho.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";//smtp-relay.sendinblue.com
+	private static final String MAIL_ID = "help@payperbill.in";// "donotreply@payperbill.in";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
+	private static final String MAIL_USERNAME = "ajinkyashiva@gmail.com";
+	private static final String MAIL_PASSWORD = "G5Xw3rFxsQ0DOK7S";//"Success2018!";// "WickedSmile2@"; // "Vision2018!";//G5Xw3rFxsQ0DOK7S//mzyQYUhXc2b3//G5Xw3rFxsQ0DOK7S
 	
 	private static final String MAIL_AUTH = "true";
 	private static final String MAIL_PORT = "587";//"587";//"465";// "587";
 
 	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, help@payperbill.in, rssplsocial@gmail.com" };
+	
 
 	private String type;
 	private BillUser user;
@@ -112,7 +113,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 	private void sendMail(Session session, BillUser receipient) throws MessagingException, UnsupportedEncodingException {
 		LoggingUtil.logMessage("Sending mail to .." + receipient.getEmail());
 		Message message = new MimeMessage(session);
-		message.setFrom(new InternetAddress("ajinkyashiva@gmail.com", "Pay Per Bill"));
+		message.setFrom(new InternetAddress("help@payperbill.in", "Pay Per Bill"));
 		prepareMailContent(message, receipient);
 		Transport.send(message);
 		LoggingUtil.logMessage("Mail sent to .." + receipient.getEmail());
@@ -132,7 +133,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 		Session session = Session.getInstance(props, new javax.mail.Authenticator() {
 			protected PasswordAuthentication getPasswordAuthentication() {
-				return new PasswordAuthentication(MAIL_ID, MAIL_PASSWORD);
+				return new PasswordAuthentication(MAIL_USERNAME, MAIL_PASSWORD);
 			}
 		});
 		return session;
@@ -163,7 +164,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			}
 			
 			if (invoice != null) {
-				result = prepareInvoiceInfo(result, invoice);
+				result = prepareInvoiceInfo(result, invoice, user);
 
 				if (invoice.getMonth() != null) {
 					subject = StringUtils.replace(subject, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
@@ -287,7 +288,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			for (BillUser customer : users) {
 				String row = new String(invoiceItemsTemplate);
 				row = prepareUserInfo(row, customer);
-				row = prepareInvoiceInfo(row, customer.getCurrentInvoice());
+				row = prepareInvoiceInfo(row, customer.getCurrentInvoice(), user);
 				builder.append(row);
 			}
 			result = StringUtils.replace(result, "{invoices}", builder.toString());
@@ -301,7 +302,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		return StringUtils.contains(type, "Admin");
 	}
 
-	public static String prepareInvoiceInfo(String result, BillInvoice invoice) {
+	public static String prepareInvoiceInfo(String result, BillInvoice invoice, BillUser user) {
 		result = StringUtils.replace(result, "{invoiceId}", CommonUtils.getStringValue(invoice.getId()));
 		if (invoice.getMonth() != null) {
 			result = StringUtils.replace(result, "{month}", BillConstants.MONTHS[invoice.getMonth() - 1]);
@@ -312,10 +313,14 @@ public class BillMailUtil implements BillConstants, Runnable {
 			result = StringUtils.replace(result, "{month}", CommonUtils.convertDate(invoice.getCreatedDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
 		}
 		result = StringUtils.replace(result, "{year}", CommonUtils.getStringValue(invoice.getYear()));
-		result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(invoice.getAmount(), false));
-		result = StringUtils.replace(result, "{serviceCharge}", CommonUtils.getStringValue(invoice.getServiceCharge(), false));
-		result = StringUtils.replace(result, "{pending}", CommonUtils.getStringValue(invoice.getPendingBalance(), false));
-		result = StringUtils.replace(result, "{credit}", CommonUtils.getStringValue(invoice.getCreditBalance(), false));
+		
+		if(user == null || BillRuleEngine.showBillDetails(user)) {
+			//Don't show service charge if bill summary is not shown
+			result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(invoice.getAmount(), false));
+			result = StringUtils.replace(result, "{serviceCharge}", CommonUtils.getStringValue(invoice.getServiceCharge(), false));
+			result = StringUtils.replace(result, "{pending}", CommonUtils.getStringValue(invoice.getPendingBalance(), false));
+			result = StringUtils.replace(result, "{credit}", CommonUtils.getStringValue(invoice.getCreditBalance(), false));
+		}
 		result = StringUtils.replace(result, "{internetFees}", CommonUtils.getStringValue(invoice.getInternetFees(), false));
 		result = StringUtils.replace(result, "{payable}", CommonUtils.getStringValue(invoice.getPayable(), false));
 		result = StringUtils.replace(result, "{outstanding}", CommonUtils.getStringValue(invoice.getOutstandingBalance(), false));
