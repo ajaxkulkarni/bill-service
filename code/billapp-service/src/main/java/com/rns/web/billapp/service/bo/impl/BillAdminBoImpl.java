@@ -1,8 +1,6 @@
 package com.rns.web.billapp.service.bo.impl;
 
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -29,6 +27,7 @@ import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillNotification;
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
@@ -36,6 +35,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
+import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSector;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
@@ -199,6 +199,35 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					// User activated notification
 					executor.execute(new BillMailUtil(MAIL_TYPE_APPROVAL, approvedUser));
 					BillSMSUtil.sendSMS(approvedUser, null, MAIL_TYPE_APPROVAL, null);
+					
+					//Setup transaction charges
+					List<BillDBUserBusiness> businesses = null;
+					if(request.getBusiness() != null && request.getBusiness().getTransactionCharges() != null) {
+						businesses = new BillVendorDaoImpl(session).getUserBusinesses(existingUser.getId());
+						if(CollectionUtils.isNotEmpty(businesses)) {
+							businesses.get(0).setTransactionCharges(request.getBusiness().getTransactionCharges());
+						}
+					}
+					
+					if(request.getScheme() != null) {
+						//Logic to add referral scheme after approval
+						BillDBSchemes scheme = dao.getEntityByKey(BillDBSchemes.class, "schemeCode", request.getScheme().getSchemeCode(), true);
+						if(scheme != null) {
+							BillDBCustomerCoupons coupons = BillBusinessConverter.getCustomerCoupon(scheme, null, null);
+							if(coupons != null) {
+								if(businesses == null) {
+									businesses = new BillVendorDaoImpl(session).getUserBusinesses(existingUser.getId());
+								}
+								if(CollectionUtils.isNotEmpty(businesses)) {
+									coupons.setAcceptedBy(businesses.get(0));
+								}
+								session.persist(coupons);
+								BillRuleEngine.sendCouponMails(scheme, null, coupons, null, MAIL_TYPE_COUPON_ACCEPTED_BUSINESS, MAIL_TYPE_COUPON_ACCEPTED_ADMIN, executor, existingUser);
+							}
+						} else {
+							response.setWarningText(ERROR_SCHEME_NOT_FOUND);
+						}
+					}
 				}
 			}
 			tx.commit();

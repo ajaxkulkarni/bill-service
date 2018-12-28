@@ -57,6 +57,15 @@ public class BillPropertyUtil {
 	public static final String PAYTM_SECRET = "paytm.secret";
 	public static final String PAYTM_URL = "paytm.url";
 	
+	//Emails
+	public static final String MAIL_HOST = "mail.host";
+	public static final String MAIL_ID = "mail.from";
+	public static final String MAIL_USERNAME = "mail.user";//
+	public static final String MAIL_PASSWORD = "mail.password";
+	//
+	public static final String MAIL_AUTH = "true";
+	public static final String MAIL_PORT = "mail.port";//"587";//"465";// "587";
+	
 	
 	public static String getProperty(String name) {
 		try {

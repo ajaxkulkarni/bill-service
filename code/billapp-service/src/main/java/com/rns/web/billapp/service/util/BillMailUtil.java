@@ -37,19 +37,8 @@ import com.rns.web.billapp.service.bo.domain.BillUser;
 
 public class BillMailUtil implements BillConstants, Runnable {
 
-	private static final String READ_RECEIPT_MAIL = "talnoterns@gmail.com";
-
-	private static final String MAIL_HOST = "smtp-relay.sendinblue.com";// "smtp.zoho.com" ;//"smtpout.asia.secureserver.net";// "smtp.gmail.com";//smtp-relay.sendinblue.com
-	private static final String MAIL_ID = "help@payperbill.in";// "donotreply@payperbill.in";//"help@payperbill.in";// "visionlaturpattern@gmail.com";
-	private static final String MAIL_USERNAME = "ajinkyashiva@gmail.com";
-	private static final String MAIL_PASSWORD = "G5Xw3rFxsQ0DOK7S";//"Success2018!";// "WickedSmile2@"; // "Vision2018!";//G5Xw3rFxsQ0DOK7S//mzyQYUhXc2b3//G5Xw3rFxsQ0DOK7S
+	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, rssplsocial@gmail.com" };
 	
-	private static final String MAIL_AUTH = "true";
-	private static final String MAIL_PORT = "587";//"587";//"465";// "587";
-
-	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, help@payperbill.in, rssplsocial@gmail.com" };
-	
-
 	private String type;
 	private BillUser user;
 	private List<BillUser> users;
@@ -113,7 +102,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 	private void sendMail(Session session, BillUser receipient) throws MessagingException, UnsupportedEncodingException {
 		LoggingUtil.logMessage("Sending mail to .." + receipient.getEmail());
 		Message message = new MimeMessage(session);
-		message.setFrom(new InternetAddress("help@payperbill.in", "Pay Per Bill"));
+		message.setFrom(new InternetAddress(BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_ID), "Pay Per Bill"));
 		prepareMailContent(message, receipient);
 		Transport.send(message);
 		LoggingUtil.logMessage("Mail sent to .." + receipient.getEmail());
@@ -122,18 +111,18 @@ public class BillMailUtil implements BillConstants, Runnable {
 	private static Session prepareMailSession() {
 		Properties props = new Properties();
 
-		props.put("mail.smtp.auth", MAIL_AUTH);
+		props.put("mail.smtp.auth", BillPropertyUtil.MAIL_AUTH);
 		props.put("mail.smtp.socketFactory.port", "465"); // PROD
 		props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory"); // PROD
 		//props.put("mail.smtp.starttls.enable", "true");
-		props.put("mail.smtp.host", MAIL_HOST);
-		props.put("mail.smtp.port", MAIL_PORT);
+		props.put("mail.smtp.host", BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_HOST));
+		props.put("mail.smtp.port", BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_PORT));
 
-		LoggingUtil.logMessage("Mail credentials being used .." + MAIL_ID);
+		LoggingUtil.logMessage("Mail credentials being used .." + BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_ID));
 
 		Session session = Session.getInstance(props, new javax.mail.Authenticator() {
 			protected PasswordAuthentication getPasswordAuthentication() {
-				return new PasswordAuthentication(MAIL_USERNAME, MAIL_PASSWORD);
+				return new PasswordAuthentication(BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_USERNAME), BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_PASSWORD));
 			}
 		});
 		return session;
