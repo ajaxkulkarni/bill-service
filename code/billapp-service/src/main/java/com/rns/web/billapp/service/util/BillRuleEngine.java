@@ -289,5 +289,16 @@ public class BillRuleEngine {
 		return BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_LINK) + id;
 	}
 
+
+	public static BigDecimal getBillTotal(BillInvoice invoice) {
+		if(invoice == null || invoice.getPayable() == null) {
+			return null;
+		}
+		if (invoice.getOutstandingBalance() != null) {
+			return invoice.getPayable().subtract(invoice.getOutstandingBalance());
+		}
+		return invoice.getPayable();
+	}
+
 	
 }

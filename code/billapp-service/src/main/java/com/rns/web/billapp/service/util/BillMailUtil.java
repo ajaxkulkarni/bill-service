@@ -310,7 +310,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			result = StringUtils.replace(result, "{pending}", CommonUtils.getStringValue(invoice.getPendingBalance(), false));
 			result = StringUtils.replace(result, "{credit}", CommonUtils.getStringValue(invoice.getCreditBalance(), false));
 		} else {
-			result = StringUtils.replace(result, "{amount}", "");
+			result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(BillRuleEngine.getBillTotal(invoice), false));
 			result = StringUtils.replace(result, "{serviceCharge}", "");
 			result = StringUtils.replace(result, "{pending}", "");
 			result = StringUtils.replace(result, "{credit}", "");

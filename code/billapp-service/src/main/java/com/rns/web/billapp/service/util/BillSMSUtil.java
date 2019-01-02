@@ -101,6 +101,14 @@ public class BillSMSUtil implements BillConstants {
 					}
 				}
 				builder.append(SMS_COSMETIC_SEPARATOR).append("\n");
+				
+				if(invoice.getAmount() != null && BigDecimal.ZERO.compareTo(invoice.getAmount()) < 0 ) {
+					if(BillRuleEngine.showBillDetails(user)) {
+						builder.append("Total = ").append(CommonUtils.getStringValue(invoice.getAmount(), false)).append("\n");;
+					} else {
+						builder.append("Total = ").append(CommonUtils.getStringValue(BillRuleEngine.getBillTotal(invoice), false)).append("\n");
+					}
+				} 
 				if(invoice.getPendingBalance() != null && BigDecimal.ZERO.compareTo(invoice.getPendingBalance()) < 0 && BillRuleEngine.showBillDetails(user)) {
 					builder.append("Pending = ").append(CommonUtils.getStringValue(invoice.getPendingBalance(), false)).append("\n");;
 				}
