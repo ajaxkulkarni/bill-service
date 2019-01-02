@@ -372,7 +372,7 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 			if(request.getItem() != null && request.getItem().getChangeLog() != null) {
 				userLog = request.getItem().getChangeLog();
 				userLog.setFromDate(CommonUtils.setZero(userLog.getFromDate()));
-				userLog.setToDate(CommonUtils.setZero(userLog.getToDate()));
+				userLog.setToDate(CommonUtils.endDate(userLog.getToDate()));
 			}
 			List<BillDBInvoice> invoices = dao.getAllBusinessInvoices(request.getBusiness().getId(), null, userLog);
 			List<BillUser> userInvoices = BillDataConverter.getBusinessInvoices(invoices, session);
