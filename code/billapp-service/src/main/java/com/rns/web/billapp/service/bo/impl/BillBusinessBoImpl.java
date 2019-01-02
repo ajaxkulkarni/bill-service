@@ -289,6 +289,9 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 				BillInvoice currrInvoice = BillDataConverter.getInvoice(nullAwareBeanUtils, dbInvoice);
 				BillRuleEngine.calculatePayable(currrInvoice, dbInvoice, session);
 				BillUser customerDetails = BillDataConverter.getCustomerDetails(nullAwareBeanUtils, dbInvoice.getSubscription());
+				if(business == null && dbInvoice.getSubscription() != null) {
+					business = dbInvoice.getSubscription().getBusiness();
+				}
 				customerDetails.setCurrentBusiness(BillDataConverter.getBusinessBasic(business));
 				currrInvoice.setPaymentMessage(BillSMSUtil.generateResultMessage(customerDetails, currrInvoice, BillConstants.MAIL_TYPE_INVOICE, null));
 				response.setInvoice(currrInvoice);
