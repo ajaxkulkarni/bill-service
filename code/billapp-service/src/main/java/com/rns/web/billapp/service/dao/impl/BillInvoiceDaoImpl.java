@@ -37,9 +37,9 @@ public class BillInvoiceDaoImpl {
 				 .add(Restrictions.eq("subscription.id", subscriptionId))
 				 .add(Restrictions.eq("month", month))
 				 .add(Restrictions.eq("year", year));
-        Object result = criteria.uniqueResult();
-        if(result != null) {
-       	 return (BillDBInvoice) result;
+        List<BillDBInvoice> result = criteria.list();
+        if(CollectionUtils.isNotEmpty(result)) {
+        	return (BillDBInvoice) result.get(0);
         }
         return null;
 	}
