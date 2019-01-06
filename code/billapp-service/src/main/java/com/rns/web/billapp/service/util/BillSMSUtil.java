@@ -212,6 +212,7 @@ public class BillSMSUtil implements BillConstants {
 			}
 			return null;
 		}
+		LoggingUtil.logMessage("Converting the link " + url + " to " + resp.data.url);
 		return resp.data.url;
 	}
 
