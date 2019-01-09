@@ -38,7 +38,7 @@ import com.rns.web.billapp.service.bo.domain.BillUser;
 public class BillMailUtil implements BillConstants, Runnable {
 
 	private static final String[] ADMIN_MAILS = { "ajinkyashiva@gmail.com, mcm.abhishek@gmail.com, rssplsocial@gmail.com" };
-	
+
 	private String type;
 	private BillUser user;
 	private List<BillUser> users;
@@ -65,7 +65,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 	public BillMailUtil() {
 
 	}
-	
+
 	public void setMessageText(String messageText) {
 		this.messageText = messageText;
 	}
@@ -84,14 +84,13 @@ public class BillMailUtil implements BillConstants, Runnable {
 		Session session = prepareMailSession();
 
 		try {
-			if(CollectionUtils.isNotEmpty(users)) {
-				for(BillUser recipient: users) {
+			if (user != null) {
+				sendMail(session, user);
+			} else if (CollectionUtils.isNotEmpty(users)) {
+				for (BillUser recipient : users) {
 					sendMail(session, recipient);
 				}
-			} else {
-				sendMail(session, user);
 			}
-			
 		} catch (MessagingException e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} catch (UnsupportedEncodingException e) {
@@ -114,7 +113,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		props.put("mail.smtp.auth", BillPropertyUtil.MAIL_AUTH);
 		props.put("mail.smtp.socketFactory.port", "465"); // PROD
 		props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory"); // PROD
-		//props.put("mail.smtp.starttls.enable", "true");
+		// props.put("mail.smtp.starttls.enable", "true");
 		props.put("mail.smtp.host", BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_HOST));
 		props.put("mail.smtp.port", BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_PORT));
 
@@ -122,7 +121,8 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 		Session session = Session.getInstance(props, new javax.mail.Authenticator() {
 			protected PasswordAuthentication getPasswordAuthentication() {
-				return new PasswordAuthentication(BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_USERNAME), BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_PASSWORD));
+				return new PasswordAuthentication(BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_USERNAME),
+						BillPropertyUtil.getProperty(BillPropertyUtil.MAIL_PASSWORD));
 			}
 		});
 		return session;
@@ -140,18 +140,18 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 				if (currentBusiness != null) {
 					subject = StringUtils.replace(subject, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
-					if(selectedScheme != null) {
+					if (selectedScheme != null) {
 						result = prepareSchemeInfo(result, selectedScheme, currentBusiness);
 						subject = StringUtils.replace(subject, "{schemeName}", CommonUtils.getStringValue(selectedScheme.getSchemeName()));
 					}
 				}
 				subject = StringUtils.replace(subject, "{name}", CommonUtils.getStringValue(user.getName()));
 			}
-			
-			if(customerInfo != null) {
+
+			if (customerInfo != null) {
 				result = prepareCustomerInfo(result, customerInfo);
 			}
-			
+
 			if (invoice != null) {
 				result = prepareInvoiceInfo(result, invoice, user);
 
@@ -208,9 +208,13 @@ public class BillMailUtil implements BillConstants, Runnable {
 
 			if (isAdminMail()) {
 				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(getEmails(Arrays.asList(ADMIN_MAILS))));
-			} /*else if (genericMail()) {
-				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse("rssplsocial@gmail.com"));
-				message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(getUserEmails(users))); }*/
+			} /*
+				 * else if (genericMail()) {
+				 * message.setRecipients(Message.RecipientType.TO,
+				 * InternetAddress.parse("rssplsocial@gmail.com"));
+				 * message.setRecipients(Message.RecipientType.BCC,
+				 * InternetAddress.parse(getUserEmails(users))); }
+				 */
 			else {
 				message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(receipient.getEmail()));
 			}
@@ -220,7 +224,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			}
 
 			message.setSubject(subject);
-			
+
 			return result;
 
 		} catch (FileNotFoundException e) {
@@ -243,7 +247,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{customerEmail}", CommonUtils.getStringValue(customerInfo.getEmail()));
 		result = StringUtils.replace(result, "{customerPhone}", CommonUtils.getStringValue(customerInfo.getPhone()));
 		result = StringUtils.replace(result, "{customerAddress}", CommonUtils.getStringValue(customerInfo.getAddress()));
-		if(customerInfo.getCurrentSubscription() != null && customerInfo.getCurrentSubscription().getArea() != null) {
+		if (customerInfo.getCurrentSubscription() != null && customerInfo.getCurrentSubscription().getArea() != null) {
 			result = StringUtils.replace(result, "{customerLocation}", CommonUtils.getStringValue(customerInfo.getCurrentSubscription().getArea().getName()));
 		}
 		return result;
@@ -302,9 +306,9 @@ public class BillMailUtil implements BillConstants, Runnable {
 			result = StringUtils.replace(result, "{month}", CommonUtils.convertDate(invoice.getCreatedDate(), DATE_FORMAT_DISPLAY_NO_YEAR));
 		}
 		result = StringUtils.replace(result, "{year}", CommonUtils.getStringValue(invoice.getYear()));
-		
-		if(user == null || BillRuleEngine.showBillDetails(user)) {
-			//Don't show service charge if bill summary is not shown
+
+		if (user == null || BillRuleEngine.showBillDetails(user)) {
+			// Don't show service charge if bill summary is not shown
 			result = StringUtils.replace(result, "{amount}", CommonUtils.getStringValue(invoice.getAmount(), false));
 			result = StringUtils.replace(result, "{serviceCharge}", CommonUtils.getStringValue(invoice.getServiceCharge(), false));
 			result = StringUtils.replace(result, "{pending}", CommonUtils.getStringValue(invoice.getPendingBalance(), false));
@@ -319,10 +323,11 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{payable}", CommonUtils.getStringValue(invoice.getPayable(), false));
 		result = StringUtils.replace(result, "{outstanding}", CommonUtils.getStringValue(invoice.getOutstandingBalance(), false));
 		result = StringUtils.replace(result, "{createdDate}", CommonUtils.convertDate(invoice.getCreatedDate()));
-		result = StringUtils.replace(result, "{paymentUrl}", CommonUtils.getStringValue(BillSMSUtil.shortenUrl(invoice.getShortUrl(), invoice.getPaymentUrl())));
+		result = StringUtils.replace(result, "{paymentUrl}",
+				CommonUtils.getStringValue(BillSMSUtil.shortenUrl(invoice.getShortUrl(), invoice.getPaymentUrl())));
 		result = StringUtils.replace(result, "{offersUrl}", CommonUtils.getStringValue(invoice.getPaymentUrl()));
 		result = StringUtils.replace(result, "{paidAmount}", CommonUtils.getStringValue(invoice.getPaidAmount(), false));
-		result = StringUtils.replace(result, "{paymentId}", CommonUtils.getStringValue(invoice.getPaymentId())); 
+		result = StringUtils.replace(result, "{paymentId}", CommonUtils.getStringValue(invoice.getPaymentId()));
 		result = StringUtils.replace(result, "{paymentMode}", CommonUtils.getStringValue(invoice.getPaymentMode()));
 		result = StringUtils.replace(result, "{settlementId}", CommonUtils.getStringValue(invoice.getPaymentId()));
 		result = StringUtils.replace(result, "{settlementAmount}", CommonUtils.getStringValue(invoice.getPayable(), false));
@@ -343,7 +348,8 @@ public class BillMailUtil implements BillConstants, Runnable {
 				result = StringUtils.replace(result, "{sector}", CommonUtils.getStringValue(currentBusiness.getBusinessSector().getName()));
 			}
 			if (currentBusiness.getOwner() != null) {
-				result = StringUtils.replace(result, "{vendorContact}", StringUtils.substringAfter(CommonUtils.getStringValue(currentBusiness.getOwner().getPhone()), "+91"));
+				result = StringUtils.replace(result, "{vendorContact}",
+						StringUtils.substringAfter(CommonUtils.getStringValue(currentBusiness.getOwner().getPhone()), "+91"));
 				result = StringUtils.replace(result, "{vendorEmail}", CommonUtils.getStringValue(currentBusiness.getOwner().getEmail()));
 			}
 			result = StringUtils.replace(result, "{businessName}", CommonUtils.getStringValue(currentBusiness.getName()));
@@ -379,7 +385,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{offerValidity}", CommonUtils.convertDate(scheme.getValidTill(), DATE_FORMAT_DISPLAY_NO_YEAR));
 		result = StringUtils.replace(result, "{logoUrl}", BillPropertyUtil.getProperty(BillPropertyUtil.LOGO_URL) + business.getId());
 		result = StringUtils.replace(result, "{vendorCommission}", CommonUtils.getStringValue(scheme.getVendorCommission(), true));
- 		return result;
+		return result;
 	}
 
 	private String getEmails(List<String> users) {
@@ -395,7 +401,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 		}
 		return StringUtils.removeEnd(builder.toString(), ",");
 	}
-	
+
 	private String getUserEmails(List<BillUser> users) {
 		if (CollectionUtils.isEmpty(users)) {
 			return "";
@@ -426,7 +432,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 	private String readMailContent(Message message) throws FileNotFoundException, MessagingException {
 		String contentPath = "";
 		contentPath = "email/" + MAIL_TEMPLATES.get(type);
-		if(StringUtils.isNotBlank(mailSubject)) {
+		if (StringUtils.isNotBlank(mailSubject)) {
 			message.setSubject(mailSubject);
 		} else {
 			String subject = MAIL_SUBJECTS.get(type);

@@ -59,6 +59,7 @@ public class BillInvoice {
 	private String paytmChannel;
 	private String paytmUrl;
 	private String shortUrl;
+	private Integer noOfReminders;
 	
 	public Integer getId() {
 		return id;
@@ -323,6 +324,12 @@ public class BillInvoice {
 	}
 	public void setShortUrl(String shortUrl) {
 		this.shortUrl = shortUrl;
+	}
+	public Integer getNoOfReminders() {
+		return noOfReminders;
+	}
+	public void setNoOfReminders(Integer noOfReminders) {
+		this.noOfReminders = noOfReminders;
 	}
 	
 }

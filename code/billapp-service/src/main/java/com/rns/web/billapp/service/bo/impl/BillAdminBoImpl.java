@@ -607,6 +607,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 									ownerBusiness.setName(business.getName());
 									owner.setCurrentBusiness(ownerBusiness);
 									BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_SETTLEMENT_SUMMARY, owner);
+									mailUtil.setUser(owner);
 									mailUtil.setUsers(e.getValue());
 									BillInvoice currentInvoice = owner.getCurrentInvoice();
 									currentInvoice.setPaidDate(new Date());

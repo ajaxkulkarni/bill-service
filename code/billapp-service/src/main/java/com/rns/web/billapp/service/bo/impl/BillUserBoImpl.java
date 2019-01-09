@@ -855,6 +855,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					if(StringUtils.isBlank(dbInvoice.getShortUrl())) {
 						dbInvoice.setShortUrl(BillSMSUtil.shortenUrl(null, invoice.getPaymentUrl()));
 					}
+					if(dbInvoice.getNoOfReminders() == null) {
+						dbInvoice.setNoOfReminders(0);
+					}
+					dbInvoice.setNoOfReminders(dbInvoice.getNoOfReminders() + 1);
 					invoice.setShortUrl(dbInvoice.getShortUrl());
 					BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
 					mailUtil.setUser(customer);
@@ -1219,6 +1223,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				}
 				if (row[4] != null) {
 					invoice.setCreditBalance((BigDecimal) row[4]);
+				}
+				if (row[5] != null) {
+					Long count = (Long) row[5];
+					invoice.setNoOfReminders(count.intValue());
 				}
 				BillRuleEngine.calculatePayable(invoice, null, null);
 

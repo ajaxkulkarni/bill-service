@@ -161,7 +161,7 @@ public class BillInvoiceDaoImpl {
 	
 	public List<Object[]> getCustomerInvoiceSummary(Date date, Integer businessId, Integer currentMonth, Integer currentYear, CharSequence status) {
 		//AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) 
-		String queryString = "select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance) from BillDBInvoice invoice where invoice.status!=:deleted AND invoice.subscription!=:disabled AND invoice.subscription.business.id=:businessId {statusQuery} {monthQuery} group by invoice.subscription.id";
+		String queryString = "select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance),sum(invoice.noOfReminders) from BillDBInvoice invoice where invoice.status!=:deleted AND invoice.subscription!=:disabled AND invoice.subscription.business.id=:businessId {statusQuery} {monthQuery} group by invoice.subscription.id";
 		if(currentMonth != null && currentYear != null) {
 			queryString = StringUtils.replace(queryString, "{monthQuery}", " AND invoice.month=:currentMonth AND invoice.year=:currentYear");
 		} else {

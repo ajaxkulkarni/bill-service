@@ -52,6 +52,7 @@ public class BillDBInvoice {
 	private String settlementRef;
 	private Date invoiceDate;
 	private String shortUrl;
+	private Integer noOfReminders;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -270,6 +271,14 @@ public class BillDBInvoice {
 	}
 	public void setShortUrl(String shortUrl) {
 		this.shortUrl = shortUrl;
+	}
+	
+	@Column(name = "no_of_reminders")
+	public Integer getNoOfReminders() {
+		return noOfReminders;
+	}
+	public void setNoOfReminders(Integer noOfReminders) {
+		this.noOfReminders = noOfReminders;
 	}
 	
 
