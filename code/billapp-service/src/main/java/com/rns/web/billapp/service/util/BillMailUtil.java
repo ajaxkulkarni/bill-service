@@ -49,6 +49,11 @@ public class BillMailUtil implements BillConstants, Runnable {
 	private boolean copyAdmins;
 	private BillScheme selectedScheme;
 	private BillUser customerInfo;
+	private boolean bulkEmail = false;
+	
+	public void setBulkEmail(boolean bulkEmail) {
+		this.bulkEmail = bulkEmail;
+	}
 
 	public void setUser(BillUser user) {
 		this.user = user;
@@ -84,9 +89,9 @@ public class BillMailUtil implements BillConstants, Runnable {
 		Session session = prepareMailSession();
 
 		try {
-			if (user != null) {
+			if (user != null && StringUtils.isNotBlank(user.getEmail())) {
 				sendMail(session, user);
-			} else if (CollectionUtils.isNotEmpty(users)) {
+			} else if (CollectionUtils.isNotEmpty(users) && bulkEmail) {
 				for (BillUser recipient : users) {
 					sendMail(session, recipient);
 				}

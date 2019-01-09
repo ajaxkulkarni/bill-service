@@ -756,6 +756,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 				generic.setMailSubject(notification.getSubject());
 				generic.setMessageText(notification.getText());
 				generic.setUsers(users);
+				generic.setBulkEmail(true);
 				executor.execute(generic);
 			} else {
 				BillUser user = new BillUser();
