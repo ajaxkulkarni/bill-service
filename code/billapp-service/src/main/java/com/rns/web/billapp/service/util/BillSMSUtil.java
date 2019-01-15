@@ -23,6 +23,7 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 
 import net.swisstech.bitly.BitlyClient;
+import net.swisstech.bitly.builder.v3.ShortenRequest;
 import net.swisstech.bitly.model.v3.ShortenResponse;
 
 public class BillSMSUtil implements BillConstants {
@@ -203,13 +204,15 @@ public class BillSMSUtil implements BillConstants {
 			return url;
 		}
 		BitlyClient client = new BitlyClient(BillConstants.BITLY_ACCESS_TOKEN);
-		net.swisstech.bitly.model.Response<ShortenResponse> resp = client.shorten()
+		/*net.swisstech.bitly.model.Response<ShortenResponse> resp = client.shorten()
 		                          .setLongUrl(url)
-		                          .call();
+		                          .call();*/
+		ShortenRequest shortenRequest = new ShortenRequest(BillConstants.BITLY_ACCESS_TOKEN);
+		//shortenRequest.setDomain("payperbill.in");
+		net.swisstech.bitly.model.Response<ShortenResponse> resp = shortenRequest.setLongUrl(url).call();
+
+		
 		if(resp == null || resp.data == null) {
-			if(resp != null) {
-				System.out.println(resp.status_txt);
-			}
 			return null;
 		}
 		LoggingUtil.logMessage("Converting the link " + url + " to " + resp.data.url);
