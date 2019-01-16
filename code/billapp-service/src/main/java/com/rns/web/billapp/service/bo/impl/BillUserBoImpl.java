@@ -553,7 +553,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			if (dbInvoice.getId() == null) {
 				session.persist(dbInvoice);
 			}
-			BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice, true);
+			if(!invoicePaid && !StringUtils.equals(INVOICE_STATUS_DELETED, invoice.getStatus())) {
+				BillBusinessConverter.setInvoiceItems(invoice, session, dbInvoice, true);
+			}
 			if (customerSubscription != null) {
 				nullAware.copyProperties(invoice, dbInvoice);
 				if (invoicePaid) {
@@ -919,13 +921,17 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			}
 			invoicesInProgress.add(currentInvoice.getId()); // Locked
 			LoggingUtil.logMessage("Locked .. " + currentInvoice.getId() + " -- " + invoicesInProgress);
-			BillDBTransactions existingTransction = new BillGenericDaoImpl(session).getEntityByKey(BillDBTransactions.class, "paymentId",
-					currentInvoice.getPaymentId(), false);
-			if (existingTransction != null && StringUtils.equals(INVOICE_STATUS_PAID, existingTransction.getStatus())) {
-				//To avoid multiple hits from the server. In case of pending payment, multiple hits are allowed
-				LoggingUtil.logMessage("Already transacted with this invoice .." + currentInvoice.getId() + " PID " + currentInvoice.getPaymentId() + " txn "
-						+ existingTransction.getId() + " status " + existingTransction.getStatus());
-				return response;
+			List<BillDBTransactions> existingTransctions = new BillGenericDaoImpl(session).getEntitiesByKey(BillDBTransactions.class, "paymentId",
+					currentInvoice.getPaymentId(), false, null, null);
+			if(CollectionUtils.isNotEmpty(existingTransctions)) {
+				for(BillDBTransactions existingTransaction: existingTransctions) {
+					if (existingTransaction != null && (StringUtils.equals(INVOICE_STATUS_PAID, existingTransaction.getStatus()) || StringUtils.equals(INVOICE_SETTLEMENT_STATUS_SETTLED, existingTransaction.getStatus()))) {
+						//To avoid multiple hits from the server. In case of pending payment, multiple hits are allowed
+						LoggingUtil.logMessage("Already transacted with this invoice .." + currentInvoice.getId() + " PID " + currentInvoice.getPaymentId() + " txn "
+								+ existingTransaction.getId() + " status " + existingTransaction.getStatus() + " current status " + currentInvoice.getStatus());
+						return response;
+					}
+				}
 			}
 			Transaction tx = session.beginTransaction();
 			BillDBInvoice invoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, "paymentRequestId",

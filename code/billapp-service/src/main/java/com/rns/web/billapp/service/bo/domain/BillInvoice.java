@@ -60,6 +60,7 @@ public class BillInvoice {
 	private String paytmUrl;
 	private String shortUrl;
 	private Integer noOfReminders;
+	private Integer paymentAttempt;
 	
 	public Integer getId() {
 		return id;
@@ -330,6 +331,12 @@ public class BillInvoice {
 	}
 	public void setNoOfReminders(Integer noOfReminders) {
 		this.noOfReminders = noOfReminders;
+	}
+	public Integer getPaymentAttempt() {
+		return paymentAttempt;
+	}
+	public void setPaymentAttempt(Integer paymentAttempt) {
+		this.paymentAttempt = paymentAttempt;
 	}
 	
 }
