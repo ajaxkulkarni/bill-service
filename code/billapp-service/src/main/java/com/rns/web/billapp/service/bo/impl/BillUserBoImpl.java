@@ -28,6 +28,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillUserBo;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillCustomerGroup;
 import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
@@ -38,6 +39,7 @@ import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
+import com.rns.web.billapp.service.dao.domain.BillDBCustomerGroup;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
@@ -534,6 +536,12 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				dbInvoice.setStatus(INVOICE_STATUS_PENDING);
 				dbInvoice.setCreatedDate(new Date());
 			} else {
+				//If invoice is already paid.. don't allow user to un pay it
+				if(StringUtils.equals(INVOICE_STATUS_PAID, dbInvoice.getStatus()) && !StringUtils.equals(INVOICE_STATUS_DELETED, invoice.getStatus())) {
+					response.setResponse(ERROR_CODE_FATAL, ERROR_INVOICE_PAID);
+					return response;
+				}
+				
 				if (!StringUtils.equals(invoice.getStatus(), dbInvoice.getStatus())) {
 					if (StringUtils.equals(INVOICE_STATUS_PAID, invoice.getStatus())) {
 						invoicePaid = true;
@@ -934,12 +942,17 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				}
 			}
 			Transaction tx = session.beginTransaction();
-			BillDBInvoice invoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, "paymentRequestId",
-					currentInvoice.getPaymentRequestId(), false);
-			if (invoice == null) {
-				invoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, ID_ATTR, currentInvoice.getId(), false);
-				invoice.setPaymentRequestId(currentInvoice.getPaymentRequestId());
+			//This is causing issues on different transactions with same BANK TXNID or same request ID
+			//BillDBInvoice invoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, "paymentRequestId",
+			//		currentInvoice.getPaymentRequestId(), false);
+			//if (invoice == null) {
+			BillDBInvoice invoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, ID_ATTR, currentInvoice.getId(), false);
+			if(invoice == null) {
+				LoggingUtil.logMessage("Could not find any invoice for ID => " + currentInvoice.getId());
+				return response;
 			}
+			invoice.setPaymentRequestId(currentInvoice.getPaymentRequestId());
+			//}
 			invoice.setStatus(currentInvoice.getStatus());
 			updateInvoicePaymentStatus(currentInvoice, invoice);
 			if (StringUtils.equalsIgnoreCase("Success", currentInvoice.getStatus()) || StringUtils.equalsIgnoreCase("Ok", currentInvoice.getStatus())) {
@@ -1050,7 +1063,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			invoice.setSettlementStatus(INVOICE_STATUS_PENDING);
 		}
 		invoice.setStatus(INVOICE_STATUS_PAID);
-		LoggingUtil.logMessage("Updating invoice .. " + invoice.getId());
+		LoggingUtil.logMessage("Updating invoice .. " + invoice.getId() + " status " + invoice.getStatus());
 	}
 	
 	public BillServiceResponse getDailySummary(BillServiceRequest request) {
@@ -1530,6 +1543,87 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			CommonUtils.closeSession(session);
 		}
 		return response;
+	}
+
+	public BillServiceResponse updateCustomerGroup(BillServiceRequest request) {
+		/*BillServiceResponse response = new BillServiceResponse();
+		if(request.getCustomerGroup() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			BillCustomerGroup group = request.getCustomerGroup();
+			NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+			BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
+			if(group.getId() == null) {
+				BillDBCustomerGroup dbGroup = new BillDBCustomerGroup();
+				nullAwareBeanUtils.copyProperties(dbGroup, group);
+				dbGroup.setCreatedDate(new Date());
+				dbGroup.setStatus(STATUS_ACTIVE);
+				if(request.getBusiness() != null) {
+					BillDBUserBusiness userBusiness = billGenericDaoImpl.getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), true);
+					if(userBusiness != null) {
+						dbGroup.setBusiness(userBusiness);
+						session.persist(dbGroup);
+					}
+				}
+			} else {
+				BillDBCustomerGroup dbGroup = billGenericDaoImpl.getEntityByKey(BillDBCustomerGroup.class, ID_ATTR, group.getId(), true);
+				if(dbGroup != null) {
+					nullAwareBeanUtils.copyProperties(dbGroup, group);
+				}
+			}
+			tx.commit();
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;*/
+		return null;
+	}
+
+	public BillServiceResponse updateGroupCustomers(BillServiceRequest request) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public BillServiceResponse getAllCustomerGroups(BillServiceRequest request) {
+		/*BillServiceResponse response = new BillServiceResponse();
+		if(request.getBusiness() == null || request.getBusiness().getId() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			List<BillDBCustomerGroup> customerGroups = new BillGenericDaoImpl(session).getEntitiesByKey(BillDBCustomerGroup.class, "business.id", request.getBusiness().getId(), true, "groupName", "asc");
+			List<BillCustomerGroup> groups = new ArrayList<BillCustomerGroup>();
+			if(CollectionUtils.isNotEmpty(customerGroups)) {
+				for(BillDBCustomerGroup customerGroup: customerGroups) {
+					BillCustomerGroup group = new BillCustomerGroup();
+					new NullAwareBeanUtils().copyProperties(group, customerGroup);
+					groups.add(group);
+				}
+			}
+			response.setGroups(groups);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;*/
+		return null;
+	}
+
+	public BillServiceResponse getAllGroupCustomers(BillServiceRequest request) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 }
