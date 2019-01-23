@@ -60,7 +60,7 @@ public class BillVendorDaoImpl {
 		return criteria.list();
 	}
 	
-	public List<BillDBOrders> getOrders(Date date, Integer businessId) {
+	public List<BillDBOrders> getOrders(Date date, Integer businessId, Integer groupId) {
 		Criteria criteria = session.createCriteria(BillDBOrders.class)
 				.add(Restrictions.sqlRestriction("order_Date='" + CommonUtils.convertDate(date) + "'"));
 				 //.add(Restrictions.ge("orderDate", CommonUtils.startDate(date)))
@@ -74,14 +74,26 @@ public class BillVendorDaoImpl {
 		if(businessId != null) {
 			criteria.createAlias("business", "b").add(Restrictions.eq("b.id", businessId));
 		}
+		if(groupId != null) {
+			criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN).add(Restrictions.eq("customerGroup.id", groupId));
+		}
 		criteria.setFetchMode("subscription", FetchMode.JOIN);
 		return criteria.list();
 	}
 
-	public List<Object[]> getItemOrderSummary(Date date, Integer businessId) {
-		Query query = session.createQuery("select sum(items.quantity),items.businessItem,items.order,sum(items.costPrice),sum(items.amount) from BillDBOrderItems items where items.order.orderDate=:date AND items.order.business.id=:businessId group by items.businessItem");
+	public List<Object[]> getItemOrderSummary(Date date, Integer businessId, Integer groupId) {
+		String queryString = "select sum(items.quantity),items.businessItem,items.order,sum(items.costPrice),sum(items.amount) from BillDBOrderItems items where items.order.orderDate=:date AND items.order.business.id=:businessId {groupQuery} group by items.businessItem";
+		if(groupId != null) {
+			queryString = StringUtils.replace(queryString, "{groupQuery}", " AND items.order.subscription.customerGroup.id=:groupId"); 
+		} else {
+			queryString = StringUtils.replace(queryString, "{groupQuery}", ""); 
+		}
+		Query query = session.createQuery(queryString);
 		query.setDate("date", date);
 		query.setInteger("businessId", businessId);
+		if(groupId != null) {
+			query.setInteger("groupId", groupId);
+		}
 		return query.list();
 	}
 	

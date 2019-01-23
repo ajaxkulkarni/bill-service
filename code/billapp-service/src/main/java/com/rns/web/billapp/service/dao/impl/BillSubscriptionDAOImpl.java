@@ -52,10 +52,14 @@ public class BillSubscriptionDAOImpl {
          return null;
 	}
 	
-	public List<BillDBSubscription> getBusinessSubscriptions(Integer businessId) {
+	public List<BillDBSubscription> getBusinessSubscriptions(Integer businessId, Integer groupId) {
 		Criteria criteria = session.createCriteria(BillDBSubscription.class)
 				 .add(activeCriteria());
 		criteria.createCriteria("business").add(activeCriteria()).add(Restrictions.eq("id", businessId));
+		if(groupId != null) {
+			criteria.add(Restrictions.eq("customerGroup.id", groupId));
+			BillGenericDaoImpl.addOrder("groupSequence", "asc", criteria);
+		}
 		Criteria location = criteria.createCriteria("location", JoinType.LEFT_OUTER_JOIN);
 		Criteria subscribed = criteria.createCriteria("subscriptions", JoinType.LEFT_OUTER_JOIN)/*.add(activeCriteria())*/;
 		Criteria businessItem = subscribed.createCriteria("businessItem", JoinType.LEFT_OUTER_JOIN);

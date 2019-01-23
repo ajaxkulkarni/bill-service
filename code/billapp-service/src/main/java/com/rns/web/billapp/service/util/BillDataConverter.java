@@ -136,7 +136,7 @@ public class BillDataConverter implements BillConstants {
 		return businessItem;
 	}
 
-	public static List<BillUser> getCustomers(List<BillDBSubscription> customers) throws IllegalAccessException, InvocationTargetException {
+	public static List<BillUser> getCustomers(List<BillDBSubscription> customers, boolean sort) throws IllegalAccessException, InvocationTargetException {
 		if(CollectionUtils.isEmpty(customers)) {
 			return null;
 		}
@@ -146,7 +146,9 @@ public class BillDataConverter implements BillConstants {
 			BillUser customer = getCustomerDetails(beanUtils, dbCustomer);
 			businessCustomers.add(customer);
 		}
-		Collections.sort(businessCustomers, new BillNameSorter());
+		if(sort) {
+			Collections.sort(businessCustomers, new BillNameSorter());
+		}
 		return businessCustomers;
 	}
 

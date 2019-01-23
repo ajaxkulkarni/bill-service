@@ -159,9 +159,9 @@ public class BillInvoiceDaoImpl {
 		return (BillDBInvoice) list.get(0);
 	}
 	
-	public List<Object[]> getCustomerInvoiceSummary(Date date, Integer businessId, Integer currentMonth, Integer currentYear, CharSequence status) {
+	public List<Object[]> getCustomerInvoiceSummary(Date date, Integer businessId, Integer currentMonth, Integer currentYear, CharSequence status, Integer groupId) {
 		//AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) 
-		String queryString = "select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance),sum(invoice.noOfReminders) from BillDBInvoice invoice where invoice.status!=:deleted AND invoice.subscription!=:disabled AND invoice.subscription.business.id=:businessId {statusQuery} {monthQuery} group by invoice.subscription.id";
+		String queryString = "select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance),sum(invoice.noOfReminders) from BillDBInvoice invoice where invoice.status!=:deleted AND invoice.subscription!=:disabled AND invoice.subscription.business.id=:businessId {statusQuery} {monthQuery} {groupQuery} group by invoice.subscription.id";
 		if(currentMonth != null && currentYear != null) {
 			queryString = StringUtils.replace(queryString, "{monthQuery}", " AND invoice.month=:currentMonth AND invoice.year=:currentYear");
 		} else {
@@ -172,6 +172,11 @@ public class BillInvoiceDaoImpl {
 		} else {
 			queryString = StringUtils.replace(queryString, "{statusQuery}", "");
 		}
+		if(groupId != null) {
+			queryString = StringUtils.replace(queryString, "{groupQuery}", " AND invoice.subscription.customerGroup.id=:groupId ");
+		} else {
+			queryString = StringUtils.replace(queryString, "{groupQuery}", "");
+		}
 		Query query = session.createQuery(queryString);
 		if(StringUtils.isNotBlank(status)) {
 			query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
@@ -180,6 +185,9 @@ public class BillInvoiceDaoImpl {
 		if(currentMonth != null && currentYear != null) {
 			query.setInteger("currentMonth", currentMonth);
 			query.setInteger("currentYear", currentYear);
+		}
+		if(groupId != null) {
+			query.setInteger("groupId", groupId);
 		}
 		query.setString("deleted", BillConstants.INVOICE_STATUS_DELETED);
 		query.setString("disabled", BillConstants.STATUS_DELETED);

@@ -408,9 +408,9 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 			restrictions.put("business", request.getBusiness().getId());
 			restrictions.put("status", BillConstants.INVOICE_STATUS_PAID);
 			BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
-			dashboard.setTotalPaid((BigDecimal) billGenericDaoImpl.getSum(BillDBTransactions.class, "amount", restrictions, startDate, endDate, "sum"));
-			dashboard.setTotalInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count"));
-			dashboard.setTotalCustomers((Long) billGenericDaoImpl.getSum(BillDBSubscription.class, "id", restrictions, startDate, endDate, "count"));
+			dashboard.setTotalPaid((BigDecimal) billGenericDaoImpl.getSum(BillDBTransactions.class, "amount", restrictions, startDate, endDate, "sum", null, null));
+			dashboard.setTotalInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", null, null));
+			dashboard.setTotalCustomers((Long) billGenericDaoImpl.getSum(BillDBSubscription.class, "id", restrictions, startDate, endDate, "count", null, null));
 			restrictions.put("status", BillConstants.INVOICE_SETTLEMENT_STATUS_SETTLED);
 			
 			response.setDashboard(dashboard);

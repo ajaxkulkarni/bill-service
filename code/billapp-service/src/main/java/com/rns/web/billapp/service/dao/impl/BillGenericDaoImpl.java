@@ -13,7 +13,9 @@ import org.hibernate.Session;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.SimpleExpression;
+import org.hibernate.sql.JoinType;
 
+import com.rns.web.billapp.service.dao.domain.BillMyCriteria;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.CommonUtils;
 
@@ -50,7 +52,7 @@ public class BillGenericDaoImpl {
 		return criteria.list();
 	}
 
-	private void addOrder(String sortKey, String order, Criteria criteria) {
+	public static void addOrder(String sortKey, String order, Criteria criteria) {
 		if(StringUtils.isNotBlank(sortKey) && order != null) {
 			if(StringUtils.equals(order, "asc")) {
 				criteria.addOrder(org.hibernate.criterion.Order.asc(sortKey));
@@ -73,16 +75,28 @@ public class BillGenericDaoImpl {
 		return criteria.list();
 	}
 
-	public <T> Object getSum(Class<T> type, String key, Map<String, Object> restrictions, Date fromDate, Date toDate, String queryType) {
+	public <T> Object getSum(Class<T> type, String key, Map<String, Object> restrictions, Date fromDate, Date toDate, String queryType, String dateType, List<BillMyCriteria> criterias) {
 		Criteria criteria = session.createCriteria(type);
 		if (restrictions != null && CollectionUtils.isNotEmpty(restrictions.entrySet())) {
 			for (Entry<String, Object> e : restrictions.entrySet()) {
 				criteria.add(Restrictions.eq(e.getKey(), e.getValue()));
 			}
+			
+		}
+		if(CollectionUtils.isNotEmpty(criterias)) {
+			for(BillMyCriteria cri: criterias) {
+				Criteria subCriteria = criteria.createCriteria(cri.getAssociationPath(), JoinType.LEFT_OUTER_JOIN);
+				for (Entry<String, Object> e : cri.getRestrictions().entrySet()) {
+					subCriteria.add(Restrictions.eq(e.getKey(), e.getValue()));
+				}
+			}
+		}
+		if(dateType == null) {
+			dateType = "createdDate";
 		}
 		if (fromDate != null && toDate != null) {
-			criteria.add(Restrictions.ge("createdDate", CommonUtils.startDate(fromDate)));
-			criteria.add(Restrictions.le("createdDate", CommonUtils.endDate(toDate)));
+			criteria.add(Restrictions.ge(dateType, CommonUtils.startDate(fromDate)));
+			criteria.add(Restrictions.le(dateType, CommonUtils.endDate(toDate)));
 		}
 		if(StringUtils.equals(queryType, "sum")) {
 			criteria.setProjection(Projections.sum(key));
@@ -90,6 +104,17 @@ public class BillGenericDaoImpl {
 			criteria.setProjection(Projections.count(key));
 		}
 		return criteria.uniqueResult();
+	}
+	
+	public <T> Integer getMax(Class<T> type, String sortKey, Map<String, Object> restrictions) {
+		Criteria criteria = session.createCriteria(type);
+		if (restrictions != null && CollectionUtils.isNotEmpty(restrictions.entrySet())) {
+			for (Entry<String, Object> e : restrictions.entrySet()) {
+				criteria.add(Restrictions.eq(e.getKey(), e.getValue()));
+			}
+		}
+		criteria.setProjection(Projections.max(sortKey));
+		return (Integer) criteria.uniqueResult();
 	}
 
 }

@@ -138,7 +138,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 		
 		List<BillUserLog> logs = getLogsForDate(session, date);
 		
-		List<BillDBOrders> orders = vendorDaoImpl.getOrders(date, null);
+		List<BillDBOrders> orders = vendorDaoImpl.getOrders(date, null, null);
 		
 		
 		//List<BillDBInvoice> invoices = new BillInvoiceDaoImpl(session).getAllInvoicesForMonth(month, year);

@@ -22,7 +22,50 @@ public class BillAdminDashboard {
 	private Long totalBusinesses;
 	private Long pendingApprovals;
 	private BigDecimal pendingSettlements;
+	private BigDecimal completedSettlements;
+	private Long pendingInvoices;
+	private BigDecimal pendingAmount;
+	private Long onlineInvoices;
+	private BigDecimal onlinePaid;
+	private Long offlineInvoices;
+	private BigDecimal offlinePaid;
 	
+	public Long getPendingInvoices() {
+		return pendingInvoices;
+	}
+	public void setPendingInvoices(Long pendingInvoices) {
+		this.pendingInvoices = pendingInvoices;
+	}
+	public BigDecimal getPendingAmount() {
+		return pendingAmount;
+	}
+	public void setPendingAmount(BigDecimal pendingAmount) {
+		this.pendingAmount = pendingAmount;
+	}
+	public Long getOnlineInvoices() {
+		return onlineInvoices;
+	}
+	public void setOnlineInvoices(Long onlineInvoices) {
+		this.onlineInvoices = onlineInvoices;
+	}
+	public BigDecimal getOnlinePaid() {
+		return onlinePaid;
+	}
+	public void setOnlinePaid(BigDecimal onlinePaid) {
+		this.onlinePaid = onlinePaid;
+	}
+	public Long getOfflineInvoices() {
+		return offlineInvoices;
+	}
+	public void setOfflineInvoices(Long offlineInvoices) {
+		this.offlineInvoices = offlineInvoices;
+	}
+	public BigDecimal getOfflinePaid() {
+		return offlinePaid;
+	}
+	public void setOfflinePaid(BigDecimal offlinePaid) {
+		this.offlinePaid = offlinePaid;
+	}
 	public BigDecimal getTotalPaid() {
 		return totalPaid;
 	}
@@ -64,6 +107,18 @@ public class BillAdminDashboard {
 	}
 	public void setPendingApprovals(Long pendingApprovals) {
 		this.pendingApprovals = pendingApprovals;
+	}
+	public BigDecimal getPendingSettlements() {
+		return pendingSettlements;
+	}
+	public void setPendingSettlements(BigDecimal pendingSettlements) {
+		this.pendingSettlements = pendingSettlements;
+	}
+	public BigDecimal getCompletedSettlements() {
+		return completedSettlements;
+	}
+	public void setCompletedSettlements(BigDecimal completedSettlements) {
+		this.completedSettlements = completedSettlements;
 	}
 	
 

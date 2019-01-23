@@ -30,6 +30,7 @@ public class BillSubscription implements Serializable {
 	private BigDecimal quantity;
 	private Integer billsDue;
 	private Date lastBillPaid;
+	private BillCustomerGroup group;
 	
 	public Integer getId() {
 		return id;
@@ -90,6 +91,12 @@ public class BillSubscription implements Serializable {
 	}
 	public void setLastBillPaid(Date lastBillPaid) {
 		this.lastBillPaid = lastBillPaid;
+	}
+	public BillCustomerGroup getGroup() {
+		return group;
+	}
+	public void setGroup(BillCustomerGroup group) {
+		this.group = group;
 	}
 	
 }

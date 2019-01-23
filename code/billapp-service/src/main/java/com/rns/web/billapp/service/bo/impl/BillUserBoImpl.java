@@ -10,8 +10,10 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentSkipListSet;
 
@@ -21,13 +23,16 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillUserBo;
+import com.rns.web.billapp.service.bo.domain.BillAdminDashboard;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillCustomerGroup;
 import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
@@ -38,6 +43,7 @@ import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
+import com.rns.web.billapp.service.dao.domain.BillDBCustomerGroup;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
@@ -53,6 +59,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
 import com.rns.web.billapp.service.dao.domain.BillDBUserLog;
+import com.rns.web.billapp.service.dao.domain.BillMyCriteria;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillLogDAOImpl;
@@ -330,6 +337,25 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				executor.execute(new BillMailUtil(MAIL_TYPE_NEW_CUSTOMER, user));
 				BillSMSUtil.sendSMS(user, null, MAIL_TYPE_NEW_CUSTOMER, null);
 			}
+			if(request.getCustomerGroup() != null) {
+				if(request.getCustomerGroup().getId() == null || request.getCustomerGroup().getId() == 0) {
+					dbSubscription.setCustomerGroup(null);
+					dbSubscription.setGroupSequence(null);
+				} else if(dbSubscription.getCustomerGroup() == null || (dbSubscription.getCustomerGroup() != null && dbSubscription.getCustomerGroup().getId() != request.getCustomerGroup().getId())){
+					BillDBCustomerGroup customerGroup = dao.getEntityByKey(BillDBCustomerGroup.class, ID_ATTR, request.getCustomerGroup().getId(), true);
+					if(customerGroup != null) {
+						dbSubscription.setCustomerGroup(customerGroup);
+						Map<String, Object> restrictions = new HashMap<String, Object>();
+						restrictions.put("business.id", dbSubscription.getBusiness().getId());
+						Integer maxSequence = dao.getMax(BillDBSubscription.class, "groupSequence", restrictions);
+						if(maxSequence == null) {
+							maxSequence = 0;
+						}
+						maxSequence++;
+						dbSubscription.setGroupSequence(maxSequence);
+					}
+				}
+			}
 			tx.commit();
 			if(user.getId() == null) {
 				user.setId(dbSubscription.getId());
@@ -448,7 +474,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				}
 				if (itemBusiness != null) {
 					// Send log update to customers
-					List<BillDBSubscription> subscriptions = new BillSubscriptionDAOImpl(session).getBusinessSubscriptions(itemBusiness.getBusiness().getId());
+					List<BillDBSubscription> subscriptions = new BillSubscriptionDAOImpl(session).getBusinessSubscriptions(itemBusiness.getBusiness().getId(), null);
 					if (CollectionUtils.isNotEmpty(subscriptions)) {
 						for (BillDBSubscription subscription : subscriptions) {
 							BillUser billUser = new BillUser();
@@ -696,8 +722,14 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			BillSubscriptionDAOImpl dao = new BillSubscriptionDAOImpl(session);
-			List<BillDBSubscription> customers = dao.getBusinessSubscriptions(request.getBusiness().getId());
-			response.setUsers(BillDataConverter.getCustomers(customers));
+			Integer groupId = null;
+			boolean sort = true;
+			if(request.getCustomerGroup() != null) {
+				groupId = request.getCustomerGroup().getId();
+				sort = false; //No need to sort based on names
+			}
+			List<BillDBSubscription> customers = dao.getBusinessSubscriptions(request.getBusiness().getId(), groupId);
+			response.setUsers(BillDataConverter.getCustomers(customers, sort));
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {
@@ -717,7 +749,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			List<BillUser> users = new ArrayList<BillUser>();
 			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
-			List<BillDBOrders> orders = new BillVendorDaoImpl(session).getOrders(request.getRequestedDate(), request.getBusiness().getId());
+			Integer groupId = null;
+			if(request.getCustomerGroup() != null && request.getCustomerGroup().getId() != null) {
+				groupId = request.getCustomerGroup().getId();
+			}
+			List<BillDBOrders> orders = new BillVendorDaoImpl(session).getOrders(request.getRequestedDate(), request.getBusiness().getId(), groupId);
 			System.out.println("Fetching done..");
 			if (CollectionUtils.isNotEmpty(orders)) {
 				for (BillDBOrders order : orders) {
@@ -773,6 +809,15 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					}
 				} else {
 					currentSubscription.setBillsDue(0);
+				}
+				if(customer.getCustomerGroup() != null) {
+					//Get group
+					BillDBCustomerGroup customerGroup = new BillGenericDaoImpl(session).getEntityByKey(BillDBCustomerGroup.class, ID_ATTR, customer.getCustomerGroup().getId(), true);
+					if(customerGroup != null) {
+						BillCustomerGroup group = new BillCustomerGroup();
+						new NullAwareBeanUtils().copyProperties(group, customerGroup);
+						currentSubscription.setGroup(group);
+					}
 				}
 				
 			}
@@ -1074,7 +1119,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			BillVendorDaoImpl dao = new BillVendorDaoImpl(session);
-			List<Object[]> result = dao.getItemOrderSummary(request.getRequestedDate(), request.getBusiness().getId());
+			Integer groupId = null;
+			if(request.getCustomerGroup() != null) {
+				groupId = request.getCustomerGroup().getId();
+			}
+			List<Object[]> result = dao.getItemOrderSummary(request.getRequestedDate(), request.getBusiness().getId(), groupId);
 
 			List<BillItem> items = new ArrayList<BillItem>();
 			BigDecimal totalPayable = BigDecimal.ZERO;
@@ -1212,8 +1261,12 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			month = request.getInvoice().getMonth();
 			year = getYear(year, month);
 		}
+		Integer groupId = null;
+		if(request.getCustomerGroup() != null) {
+			groupId = request.getCustomerGroup().getId();
+		}
 		List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerInvoiceSummary(request.getRequestedDate(), request.getBusiness().getId(),
-				month, year, status);
+				month, year, status, groupId);
 		List<BillUser> users = new ArrayList<BillUser>();
 		if (CollectionUtils.isNotEmpty(result)) {
 			for (Object[] row : result) {
@@ -1398,7 +1451,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			} else {
 				log = request.getItem().getChangeLog();
 			}
-			List<BillDBTransactions> transactions = new BillTransactionsDaoImpl(session).getTransactions(log, request.getBusiness().getId());
+			Integer groupId = null;
+			if(request.getCustomerGroup() != null) {
+				groupId = request.getCustomerGroup().getId();
+			}
+			List<BillDBTransactions> transactions = new BillTransactionsDaoImpl(session).getTransactions(log, request.getBusiness().getId(), groupId);
 			List<BillUser> users = BillDataConverter.getTransactions(transactions);
 			response.setUsers(users);
 		} catch (Exception e) {
@@ -1544,7 +1601,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 	}
 
 	public BillServiceResponse updateCustomerGroup(BillServiceRequest request) {
-		/*BillServiceResponse response = new BillServiceResponse();
+		BillServiceResponse response = new BillServiceResponse();
 		if(request.getCustomerGroup() == null) {
 			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
 			return response;
@@ -1581,17 +1638,40 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		} finally {
 			CommonUtils.closeSession(session);
 		}
-		return response;*/
-		return null;
+		return response;
 	}
 
 	public BillServiceResponse updateGroupCustomers(BillServiceRequest request) {
-		// TODO Auto-generated method stub
-		return null;
+		BillServiceResponse response = new BillServiceResponse();
+		if(request.getCustomerGroup() == null || CollectionUtils.isEmpty(request.getUsers())) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			
+			for(BillUser customer: request.getUsers()) {
+				if(customer.getCurrentSubscription() != null && customer.getCurrentSubscription().getGroup() != null) {
+					BillDBSubscription subscription = new BillGenericDaoImpl(session).getEntityByKey(BillDBSubscription.class, ID_ATTR, customer.getId(), true);
+					if(subscription != null) {
+						subscription.setGroupSequence(customer.getCurrentSubscription().getGroup().getSequenceNumber());
+					}
+				}
+			}
+			tx.commit();
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
 	}
 
 	public BillServiceResponse getAllCustomerGroups(BillServiceRequest request) {
-		/*BillServiceResponse response = new BillServiceResponse();
+		BillServiceResponse response = new BillServiceResponse();
 		if(request.getBusiness() == null || request.getBusiness().getId() == null) {
 			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
 			return response;
@@ -1605,6 +1685,13 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				for(BillDBCustomerGroup customerGroup: customerGroups) {
 					BillCustomerGroup group = new BillCustomerGroup();
 					new NullAwareBeanUtils().copyProperties(group, customerGroup);
+					Map<String, Object> restrictions = new HashMap<String, Object>();
+					restrictions.put("customerGroup.id", group.getId());
+					//No of users in the group
+					Long count = (Long) new BillGenericDaoImpl(session).getSum(BillDBSubscription.class, ID_ATTR, restrictions, null, null, "count", null, null);
+					if(count != null) {
+						group.setNoOfCustomers(count.intValue());
+					}
 					groups.add(group);
 				}
 			}
@@ -1615,13 +1702,61 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		} finally {
 			CommonUtils.closeSession(session);
 		}
-		return response;*/
-		return null;
+		return response;
 	}
 
-	public BillServiceResponse getAllGroupCustomers(BillServiceRequest request) {
-		// TODO Auto-generated method stub
-		return null;
+	public BillServiceResponse getPaymentsReport(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if (request.getBusiness() == null || request.getBusiness().getId() == null || request.getItem().getChangeLog() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		BillUserLog log = request.getItem().getChangeLog();
+		
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			BillAdminDashboard dashboard = new BillAdminDashboard();
+			Map<String, Object> restrictions = new HashMap<String, Object>();
+			Date startDate = log.getFromDate();
+			Date endDate = log.getToDate();
+			BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
+			
+			List<BillMyCriteria> criteriaList = new ArrayList<BillMyCriteria>();
+			
+			Map<String, Object> keys = new HashMap<String, Object>();
+			keys.put("business.id", request.getBusiness().getId());
+			if(request.getCustomerGroup() != null) {
+				keys.put("customerGroup.id", request.getBusiness().getId());
+			}
+			criteriaList.add(new BillMyCriteria("subscription", keys));
+			
+			restrictions.put("status", BillConstants.INVOICE_STATUS_PAID);
+			//Paid offline
+			restrictions.put("paymentType", PAYMENT_OFFLINE);
+			dashboard.setOfflineInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", "paidDate", criteriaList));
+			dashboard.setOfflinePaid((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, startDate, endDate, "sum", "paidDate", criteriaList));
+			//Paid online
+			restrictions.put("paymentType", PAYMENT_ONLINE);
+			dashboard.setOnlineInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", "paidDate", criteriaList));
+			dashboard.setOnlinePaid((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, startDate, endDate, "sum", "paidDate", criteriaList));
+			restrictions.remove("paymentType");
+			//Pending
+			restrictions.put("status", BillConstants.INVOICE_STATUS_PENDING);
+			dashboard.setPendingInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", null, null));
+			dashboard.setPendingAmount((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, startDate, endDate, "sum", null, null));
+			//Settled
+			restrictions.put("status", BillConstants.INVOICE_SETTLEMENT_STATUS_SETTLED);
+			dashboard.setCompletedSettlements((BigDecimal) billGenericDaoImpl.getSum(BillDBTransactions.class, "amount", restrictions, startDate, endDate, "sum", "settlementDate", criteriaList));
+			
+			response.setDashboard(dashboard);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
 	}
 
 }

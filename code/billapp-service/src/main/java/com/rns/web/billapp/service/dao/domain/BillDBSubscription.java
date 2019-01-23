@@ -34,6 +34,8 @@ public class BillDBSubscription {
 	private BillDBLocation location;
 	private Set<BillDBItemSubscription> subscriptions = new HashSet<BillDBItemSubscription>();
 	private String showBillDetails;
+	private BillDBCustomerGroup customerGroup;
+	private Integer groupSequence;
 	
 	public BillDBSubscription(Integer id) {
 		setId(id);
@@ -145,5 +147,24 @@ public class BillDBSubscription {
 
 	public void setShowBillDetails(String showBillDetails) {
 		this.showBillDetails = showBillDetails;
+	}
+	
+	@ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
+	@JoinColumn(name = "customer_group")
+	public BillDBCustomerGroup getCustomerGroup() {
+		return customerGroup;
+	}
+	
+	public void setCustomerGroup(BillDBCustomerGroup customerGroup) {
+		this.customerGroup = customerGroup;
+	}
+	
+	@Column(name = "group_sequence")
+	public Integer getGroupSequence() {
+		return groupSequence;
+	}
+	
+	public void setGroupSequence(Integer groupSequence) {
+		this.groupSequence = groupSequence;
 	}
 }

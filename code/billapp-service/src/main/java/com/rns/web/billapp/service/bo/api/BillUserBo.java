@@ -18,6 +18,8 @@ public interface BillUserBo {
 	BillServiceResponse updatePaymentCredentials(BillServiceRequest request);
 	BillServiceResponse completePayment(BillServiceRequest request);
 	BillServiceResponse updateInvoiceItems(BillServiceRequest request);
+	BillServiceResponse updateCustomerGroup(BillServiceRequest request);
+	BillServiceResponse updateGroupCustomers(BillServiceRequest request);
 	
 	/*Read APIs*/
 	
@@ -36,5 +38,7 @@ public interface BillUserBo {
 	BillServiceResponse getFile(BillServiceRequest request);
 	BillServiceResponse getTransactions(BillServiceRequest request);
 	BillServiceResponse getCustomerBillsSummary(BillServiceRequest request);
+	BillServiceResponse getAllCustomerGroups(BillServiceRequest request);
+	BillServiceResponse getPaymentsReport(BillServiceRequest request);
 	
 }

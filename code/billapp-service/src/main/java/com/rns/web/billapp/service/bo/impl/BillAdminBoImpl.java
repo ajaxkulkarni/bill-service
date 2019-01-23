@@ -444,14 +444,14 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			Map<String, Object> restrictions = new HashMap<String, Object>();
 			restrictions.put("status", BillConstants.INVOICE_STATUS_PAID);
 			BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
-			dashboard.setPaidInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count"));
-			dashboard.setTotalPaid((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, startDate, endDate, "sum"));
-			dashboard.setTotalGenerated((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", null, startDate, endDate, "sum"));
-			dashboard.setTotalInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", null, startDate, endDate, "count"));
-			dashboard.setTotalCustomers((Long) billGenericDaoImpl.getSum(BillDBSubscription.class, "id", null, startDate, endDate, "count"));
-			dashboard.setTotalBusinesses((Long) billGenericDaoImpl.getSum(BillDBUserBusiness.class, "id", null, startDate, endDate, "count"));
+			dashboard.setPaidInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", null, null));
+			dashboard.setTotalPaid((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, startDate, endDate, "sum", null, null));
+			dashboard.setTotalGenerated((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", null, startDate, endDate, "sum", null, null));
+			dashboard.setTotalInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", null, startDate, endDate, "count", null, null));
+			dashboard.setTotalCustomers((Long) billGenericDaoImpl.getSum(BillDBSubscription.class, "id", null, startDate, endDate, "count", null, null));
+			dashboard.setTotalBusinesses((Long) billGenericDaoImpl.getSum(BillDBUserBusiness.class, "id", null, startDate, endDate, "count", null, null));
 			restrictions.put("status", BillConstants.STATUS_PENDING);
-			dashboard.setPendingApprovals((Long) billGenericDaoImpl.getSum(BillDBUser.class, "id", restrictions, startDate, endDate, "count"));
+			dashboard.setPendingApprovals((Long) billGenericDaoImpl.getSum(BillDBUser.class, "id", restrictions, startDate, endDate, "count", null, null));
 			response.setDashboard(dashboard);
 			
 		} catch (Exception e) {
@@ -682,7 +682,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 		Session session = null;
 		try {
 			session = this.sessionFactory.openSession();
-			List<BillDBTransactions> transactions = new BillTransactionsDaoImpl(session).getTransactions(null, null);
+			List<BillDBTransactions> transactions = new BillTransactionsDaoImpl(session).getTransactions(null, null, null);
 			List<BillUser> users = BillDataConverter.getTransactions(transactions);
 			response.setUsers(users);
 			

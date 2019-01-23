@@ -20,10 +20,13 @@ public class BillTransactionsDaoImpl {
 		this.session = session;
 	}
 
-	public List<BillDBTransactions> getTransactions(BillUserLog log, Integer businessId) {
+	public List<BillDBTransactions> getTransactions(BillUserLog log, Integer businessId, Integer groupId) {
 		Criteria criteria = session.createCriteria(BillDBTransactions.class);
 		criteria.createCriteria("invoice", JoinType.LEFT_OUTER_JOIN);
-		criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN);
+		Criteria subCriteria = criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN);
+		if(groupId != null) {
+			subCriteria.add(Restrictions.eq("customerGroup.id", groupId));
+		}
 		Criteria businessCriteria = criteria.createCriteria("business", JoinType.LEFT_OUTER_JOIN).setFetchMode("sector", FetchMode.JOIN);
 		if(businessId != null) {
 			businessCriteria.add(Restrictions.eq("id", businessId));

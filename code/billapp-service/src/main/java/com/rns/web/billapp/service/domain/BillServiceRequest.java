@@ -9,6 +9,7 @@ import org.codehaus.jackson.map.annotate.JsonSerialize;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillCustomerGroup;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
@@ -35,6 +36,7 @@ public class BillServiceRequest {
 	private List<BillUser> users;
 	private BillLocation location;
 	private BillNotification notification;
+	private BillCustomerGroup customerGroup;
 	
 	public BillUser getUser() {
 		return user;
@@ -138,6 +140,14 @@ public class BillServiceRequest {
 
 	public void setNotification(BillNotification notification) {
 		this.notification = notification;
+	}
+
+	public BillCustomerGroup getCustomerGroup() {
+		return customerGroup;
+	}
+
+	public void setCustomerGroup(BillCustomerGroup customerGroup) {
+		this.customerGroup = customerGroup;
 	}
 
 }

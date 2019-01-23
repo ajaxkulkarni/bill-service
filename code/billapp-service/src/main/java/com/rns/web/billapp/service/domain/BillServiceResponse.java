@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.rns.web.billapp.service.bo.domain.BillAdminDashboard;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillCustomerGroup;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillLocation;
@@ -42,6 +43,7 @@ public class BillServiceResponse {
 	private List<BillScheme> schemes;
 	private BillScheme scheme;
 	private List<BillSector> sectors;
+	private List<BillCustomerGroup> groups;
 	
 	public BillServiceResponse() {
 		setStatus(BillConstants.STATUS_OK);
@@ -192,6 +194,14 @@ public class BillServiceResponse {
 
 	public void setSectors(List<BillSector> sectors) {
 		this.sectors = sectors;
+	}
+
+	public List<BillCustomerGroup> getGroups() {
+		return groups;
+	}
+
+	public void setGroups(List<BillCustomerGroup> groups) {
+		this.groups = groups;
 	}
 	
 }
