@@ -768,7 +768,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					users.add(user);
 				}
 			}
-			Collections.sort(users, new BillNameSorter());
+			if(groupId == null) {
+				Collections.sort(users, new BillNameSorter());
+			}
 			response.setUsers(users);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));

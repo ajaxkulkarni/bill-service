@@ -12,8 +12,10 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.criterion.MatchMode;
 import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Projection;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.sql.JoinType;
+import org.springframework.aop.config.AdvisorComponentDefinition;
 
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
@@ -75,7 +77,9 @@ public class BillVendorDaoImpl {
 			criteria.createAlias("business", "b").add(Restrictions.eq("b.id", businessId));
 		}
 		if(groupId != null) {
-			criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN).add(Restrictions.eq("customerGroup.id", groupId));
+			Criteria subscriptionCriteria = criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN);
+			subscriptionCriteria.add(Restrictions.eq("customerGroup.id", groupId));
+			BillGenericDaoImpl.addOrder("customerGroup.id", "asc", subscriptionCriteria);
 		}
 		criteria.setFetchMode("subscription", FetchMode.JOIN);
 		return criteria.list();
