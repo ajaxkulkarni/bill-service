@@ -79,7 +79,18 @@ public class BillGenericDaoImpl {
 		Criteria criteria = session.createCriteria(type);
 		if (restrictions != null && CollectionUtils.isNotEmpty(restrictions.entrySet())) {
 			for (Entry<String, Object> e : restrictions.entrySet()) {
-				criteria.add(Restrictions.eq(e.getKey(), e.getValue()));
+				String col = e.getKey();
+				if(StringUtils.contains(col, "!")) {
+					col = StringUtils.removeStart(col, "!");
+					if(e.getValue() == null) {
+						criteria.add(Restrictions.isNotNull(col));
+					} else {
+						criteria.add(Restrictions.ne(col, e.getValue()));
+					}
+				} else {
+					criteria.add(Restrictions.eq(col, e.getValue()));
+				}
+				
 			}
 			
 		}

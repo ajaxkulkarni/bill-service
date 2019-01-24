@@ -1734,15 +1734,22 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			criteriaList.add(new BillMyCriteria("subscription", keys));
 			
 			restrictions.put("status", BillConstants.INVOICE_STATUS_PAID);
-			//Paid offline
+			
+			//Count of offline/online
 			restrictions.put("paymentType", PAYMENT_OFFLINE);
 			dashboard.setOfflineInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", "paidDate", criteriaList));
-			dashboard.setOfflinePaid((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, startDate, endDate, "sum", "paidDate", criteriaList));
-			//Paid online
 			restrictions.put("paymentType", PAYMENT_ONLINE);
 			dashboard.setOnlineInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", "paidDate", criteriaList));
-			dashboard.setOnlinePaid((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, startDate, endDate, "sum", "paidDate", criteriaList));
 			restrictions.remove("paymentType");
+			
+			//Amount of online/offline
+			restrictions.put("paymentMode", PAYMENT_OFFLINE);
+			dashboard.setOfflinePaid((BigDecimal) billGenericDaoImpl.getSum(BillDBTransactions.class, "amount", restrictions, startDate, endDate, "sum", "createdDate", criteriaList));
+			restrictions.remove("paymentMode");
+			restrictions.put("!paymentMode", PAYMENT_OFFLINE);
+			dashboard.setOnlinePaid((BigDecimal) billGenericDaoImpl.getSum(BillDBTransactions.class, "amount", restrictions, startDate, endDate, "sum", "createdDate", criteriaList));
+			restrictions.remove("!paymentMode");
+			
 			//Pending
 			restrictions.put("status", BillConstants.INVOICE_STATUS_PENDING);
 			dashboard.setPendingInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", null, null));
