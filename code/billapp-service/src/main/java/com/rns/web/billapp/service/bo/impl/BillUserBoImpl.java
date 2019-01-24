@@ -338,7 +338,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				BillSMSUtil.sendSMS(user, null, MAIL_TYPE_NEW_CUSTOMER, null);
 			}
 			if(request.getCustomerGroup() != null) {
-				if(request.getCustomerGroup().getId() == null || request.getCustomerGroup().getId() == 0) {
+				if(request.getCustomerGroup().getId() == null || request.getCustomerGroup().getId() == 0 | request.getCustomerGroup().getId().intValue() == 0) {
 					dbSubscription.setCustomerGroup(null);
 					dbSubscription.setGroupSequence(null);
 				} else if(dbSubscription.getCustomerGroup() == null || (dbSubscription.getCustomerGroup() != null && dbSubscription.getCustomerGroup().getId() != request.getCustomerGroup().getId())){
@@ -1742,6 +1742,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			dashboard.setOnlineInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", "paidDate", criteriaList));
 			restrictions.remove("paymentType");
 			
+			restrictions.remove("status");
 			//Amount of online/offline
 			restrictions.put("paymentMode", PAYMENT_OFFLINE);
 			dashboard.setOfflinePaid((BigDecimal) billGenericDaoImpl.getSum(BillDBTransactions.class, "amount", restrictions, startDate, endDate, "sum", "createdDate", criteriaList));
