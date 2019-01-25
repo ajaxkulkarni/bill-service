@@ -1742,8 +1742,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			dashboard.setOnlineInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", "paidDate", criteriaList));
 			restrictions.remove("paymentType");
 			
-			restrictions.remove("status");
+			//restrictions.remove("status");
 			//Amount of online/offline
+			restrictions.put("status", INVOICE_STATUS_PAID);
 			restrictions.put("paymentMode", PAYMENT_OFFLINE);
 			dashboard.setOfflinePaid((BigDecimal) billGenericDaoImpl.getSum(BillDBTransactions.class, "amount", restrictions, startDate, endDate, "sum", "createdDate", criteriaList));
 			restrictions.remove("paymentMode");
@@ -1753,11 +1754,20 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			
 			//Pending
 			restrictions.put("status", BillConstants.INVOICE_STATUS_PENDING);
-			dashboard.setPendingInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", null, null));
-			dashboard.setPendingAmount((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, startDate, endDate, "sum", null, null));
+			dashboard.setPendingInvoices((Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, startDate, endDate, "count", null, criteriaList));
+			dashboard.setPendingAmount((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, startDate, endDate, "sum", null, criteriaList));
 			//Settled
 			restrictions.put("status", BillConstants.INVOICE_SETTLEMENT_STATUS_SETTLED);
 			dashboard.setCompletedSettlements((BigDecimal) billGenericDaoImpl.getSum(BillDBTransactions.class, "amount", restrictions, startDate, endDate, "sum", "settlementDate", criteriaList));
+			
+			//Add completed settlements + pending = Total online payments
+			if(dashboard.getCompletedSettlements() != null) {
+				if(dashboard.getOnlinePaid() != null) {
+					dashboard.setOnlinePaid(dashboard.getOnlinePaid().add(dashboard.getCompletedSettlements()));
+				} else {
+					dashboard.setOnlinePaid(dashboard.getCompletedSettlements());
+				}
+			}
 			
 			response.setDashboard(dashboard);
 		} catch (Exception e) {
