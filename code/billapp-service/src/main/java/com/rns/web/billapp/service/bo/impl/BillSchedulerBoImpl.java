@@ -131,7 +131,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 				nullAwareBeanUtils.copyProperties(user, sub);
 				user.setHoliday(holiday.getHolidayName());
 				BillSMSUtil.sendSMS(user, null, MAIL_TYPE_HOLIDAY, null);
-				executor.execute(new BillMailUtil(MAIL_TYPE_HOLIDAY, user));
+				//executor.execute(new BillMailUtil(MAIL_TYPE_HOLIDAY, user));
 			}
 			return;
 		}
