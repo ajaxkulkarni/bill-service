@@ -1,6 +1,7 @@
 package com.rns.web.billapp.service.bo.domain;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.annotate.JsonSerialize;
@@ -29,6 +30,7 @@ public class BillAdminDashboard {
 	private BigDecimal onlinePaid;
 	private Long offlineInvoices;
 	private BigDecimal offlinePaid;
+	private List<BillBusinessSummary> summary;
 	
 	public Long getPendingInvoices() {
 		return pendingInvoices;
@@ -119,6 +121,12 @@ public class BillAdminDashboard {
 	}
 	public void setCompletedSettlements(BigDecimal completedSettlements) {
 		this.completedSettlements = completedSettlements;
+	}
+	public List<BillBusinessSummary> getSummary() {
+		return summary;
+	}
+	public void setSummary(List<BillBusinessSummary> summary) {
+		this.summary = summary;
 	}
 	
 

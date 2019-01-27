@@ -3,6 +3,7 @@ package com.rns.web.billapp.service.bo.impl;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -22,6 +23,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import com.rns.web.billapp.service.bo.api.BillAdminBo;
 import com.rns.web.billapp.service.bo.domain.BillAdminDashboard;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillBusinessSummary;
 import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
@@ -452,8 +454,33 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			dashboard.setTotalBusinesses((Long) billGenericDaoImpl.getSum(BillDBUserBusiness.class, "id", null, startDate, endDate, "count", null, null));
 			restrictions.put("status", BillConstants.STATUS_PENDING);
 			dashboard.setPendingApprovals((Long) billGenericDaoImpl.getSum(BillDBUser.class, "id", restrictions, startDate, endDate, "count", null, null));
-			response.setDashboard(dashboard);
 			
+			
+			List<Object[]> resultSet = new BillAdminDaoImpl(session).getVendorProgressSummary(session);
+			if(CollectionUtils.isNotEmpty(resultSet)) {
+				List<BillBusinessSummary> summaryList = new ArrayList<BillBusinessSummary>();
+				for(Object[] row: resultSet) {
+					BillBusinessSummary summary = new BillBusinessSummary();
+					BillUser user = new BillUser();
+					if(ArrayUtils.isNotEmpty(row)) {
+						user.setId((Integer) row[0]);
+						user.setName((String) row[1]);
+						user.setPhone((String) row[2]);
+						BillBusiness business = new BillBusiness();
+						business.setName((String) row[3]);
+						user.setCurrentBusiness(business);
+						summary.setCustomerCount((BigInteger) row[4]);
+						BillInvoice currentInvoice = new BillInvoice();
+						currentInvoice.setPaidDate((Date) row[5]);
+						user.setCurrentInvoice(currentInvoice);
+						summary.setOnlinePaidCount((BigInteger) row[6]);
+						summary.setUser(user);
+						summaryList.add(summary);
+					}
+				}
+				dashboard.setSummary(summaryList);
+			}
+			response.setDashboard(dashboard);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
