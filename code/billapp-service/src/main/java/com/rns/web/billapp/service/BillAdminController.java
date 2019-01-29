@@ -33,6 +33,7 @@ import com.rns.web.billapp.service.bo.api.BillAdminBo;
 import com.rns.web.billapp.service.bo.api.BillSchedulerBo;
 import com.rns.web.billapp.service.bo.api.BillUserBo;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.domain.BillFile;
@@ -204,7 +205,7 @@ public class BillAdminController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse uploadCustomers(
 		@FormDataParam("data") InputStream customerData, @FormDataParam("data") FormDataContentDisposition customerDataDetails,
-		@FormDataParam("businessId") Integer businessId) {
+		@FormDataParam("businessId") Integer businessId, @FormDataParam("month") Integer month, @FormDataParam("year") Integer year, @FormDataParam("customerServiceCharge") BigDecimal serviceCharge) {
 		BillServiceResponse response = new BillServiceResponse();
 		if(customerData != null) {
 			BillFile file = new BillFile();
@@ -217,6 +218,13 @@ public class BillAdminController {
 			BillBusiness business = new BillBusiness();
 			business.setId(businessId);
 			request.setBusiness(business);
+			if(month != null && year != null) {
+				BillInvoice invoice = new BillInvoice();
+				invoice.setYear(year);
+				invoice.setMonth(month);
+				invoice.setServiceCharge(serviceCharge);
+				request.setInvoice(invoice);
+			}
 			response = adminBo.uploadVendorData(request);
 		}
 		return response;
