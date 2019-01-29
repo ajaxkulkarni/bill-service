@@ -256,7 +256,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					request.getBusiness().getId(), true);
 			if (billDBUserBusiness != null) {
 				BillBusiness business = BillDataConverter.getBusiness(billDBUserBusiness);
-				BillExcelUtil.uploadCustomers(request.getFile().getFileData(), business, session, executor);
+				BillExcelUtil.uploadCustomers(request.getFile().getFileData(), business, session, executor, request.getInvoice());
 			}
 			tx.commit();
 		} catch (Exception e) {

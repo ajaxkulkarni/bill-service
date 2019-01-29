@@ -5,7 +5,9 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -26,6 +28,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
+import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 
 public class BillRuleEngine {
@@ -298,6 +301,21 @@ public class BillRuleEngine {
 			return invoice.getPayable().subtract(invoice.getOutstandingBalance());
 		}
 		return invoice.getPayable();
+	}
+	
+	public static Integer getNextGroupNumber(BillGenericDaoImpl dao, BillDBSubscription dbSubscription) {
+		if(dbSubscription == null || dbSubscription.getBusiness() == null || dbSubscription.getCustomerGroup() == null) {
+			return null;
+		}
+		Map<String, Object> restrictions = new HashMap<String, Object>();
+		restrictions.put("business.id", dbSubscription.getBusiness().getId());
+		restrictions.put("customerGroup.id", dbSubscription.getCustomerGroup().getId());
+		Integer maxSequence = dao.getMax(BillDBSubscription.class, "groupSequence", restrictions);
+		if(maxSequence == null) {
+			maxSequence = 0;
+		}
+		maxSequence++;
+		return maxSequence;
 	}
 
 	

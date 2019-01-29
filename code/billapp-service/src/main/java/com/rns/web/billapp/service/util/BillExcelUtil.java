@@ -15,7 +15,6 @@ import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CreationHelper;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Font;
-import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -24,9 +23,14 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.hibernate.Session;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import com.itextpdf.text.pdf.PdfEncodings;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillUser;
+import com.rns.web.billapp.service.dao.domain.BillDBCustomerGroup;
+import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
+import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
@@ -45,14 +49,17 @@ public class BillExcelUtil {
 	private static final String TITLE_ADDRESS = "Address";
 	private static final String TITLE_LOCATION = "Location";
 	private static final String TITLE_ITEMS = "Items";
+	private static final String TITLE_LINE = "Line";
+	private static final String TITLE_AMOUNT = "Bill Amount";
 	private static final String TITLE_SERVICE_CHARGE = "Service charge";
+	private static final String TITLE_DAYS = "Days";
 	
 	private static String[] RBL_EXCEL_COLUMNS = {"Payment Type","Cust Ref Number","Source Account Number","Source Narration","Destination Account Number",
 												"Currency","Amount","Destination Narration","Destination bank","Destination Bank IFS Code",
 												"Beneficiary Name","Beneficiary Account Type","Email"};
 
 
-	public static void uploadCustomers(InputStream excel, BillBusiness business, Session session, ThreadPoolTaskExecutor executor)
+	public static void uploadCustomers(InputStream excel, BillBusiness business, Session session, ThreadPoolTaskExecutor executor, BillInvoice invoice)
 			throws InvalidFormatException, IOException, IllegalAccessException, InvocationTargetException {
 		Workbook workbook = WorkbookFactory.create(excel);
 
@@ -62,6 +69,10 @@ public class BillExcelUtil {
 		DataFormatter dataFormatter = new DataFormatter();
 
 		Integer colName = null, colEmail = null, colPhone = null, colLoc = null, colAddress = null, colItems = null, colSC = null;
+		Integer colAmount = null, colLine = null, colDays = null;
+		BillDBUserBusiness dbBusiness = new BillDBUserBusiness();
+		dbBusiness.setId(business.getId());
+		
 		for (Row row : sheet) {
 			if (row.getRowNum() == 0) { // Title row
 				for (Cell cell : row) {
@@ -81,6 +92,12 @@ public class BillExcelUtil {
 						colItems = cell.getColumnIndex();
 					} else if (StringUtils.equalsIgnoreCase(cellValue, TITLE_SERVICE_CHARGE)) {
 						colSC = cell.getColumnIndex();
+					} else if (StringUtils.equalsIgnoreCase(cellValue, TITLE_AMOUNT)) {
+						colAmount = cell.getColumnIndex();
+					} else if (StringUtils.equalsIgnoreCase(cellValue, TITLE_LINE)) {
+						colLine = cell.getColumnIndex();
+					} else if (StringUtils.equalsIgnoreCase(cellValue, TITLE_DAYS)) {
+						colDays = cell.getColumnIndex();
 					}
 				}
 			} else {
@@ -114,34 +131,75 @@ public class BillExcelUtil {
 					}
 					if (row.getCell(colLoc) != null) {
 						BillDBLocation loc = new BillDBLocation();
-						loc.setId(new Integer(dataFormatter.formatCellValue(row.getCell(colLoc))));
-						subscription.setLocation(loc);
+						String cellValue = dataFormatter.formatCellValue(row.getCell(colLoc));
+						if(StringUtils.isNotBlank(cellValue)) {
+							loc.setId(new Integer(cellValue));
+							subscription.setLocation(loc);
+						}
 					}
 					if (row.getCell(colSC) != null) {
 						subscription.setServiceCharge(new BigDecimal(row.getCell(colSC).getNumericCellValue()));
 					}
-					BillDBUserBusiness dbBusiness = new BillDBUserBusiness();
-					dbBusiness.setId(business.getId());
+					BillDBCustomerGroup deliveryLine = null;
+					if(row.getCell(colLine) != null) {
+						String groupName = row.getCell(colLine).getStringCellValue();
+						deliveryLine = billGenericDaoImpl.getEntityByKey(BillDBCustomerGroup.class, "groupName", groupName, true);
+						if(deliveryLine == null) {
+							deliveryLine = new BillDBCustomerGroup();
+							deliveryLine.setGroupName(groupName);
+							deliveryLine.setCreatedDate(new Date());
+							deliveryLine.setStatus(BillConstants.STATUS_ACTIVE);
+							deliveryLine.setBusiness(dbBusiness);
+							session.persist(deliveryLine);
+						}
+					}
 					subscription.setBusiness(dbBusiness);
 					subscription.setCreatedDate(new Date());
 					subscription.setStatus(BillConstants.STATUS_ACTIVE);
+					subscription.setCustomerGroup(deliveryLine);
+					if(deliveryLine != null) {
+						subscription.setGroupSequence(BillRuleEngine.getNextGroupNumber(billGenericDaoImpl, subscription));
+					}
 					session.persist(subscription);
 					BillUser customer = new BillUser();
 					new NullAwareBeanUtils().copyProperties(customer, subscription);
 					customer.setCurrentBusiness(business);
-					if (StringUtils.isNotBlank(subscription.getEmail())) {
+					/*if (StringUtils.isNotBlank(subscription.getEmail())) {
 						executor.execute(new BillMailUtil(BillConstants.MAIL_TYPE_NEW_CUSTOMER, customer));
-					}
-					BillSMSUtil.sendSMS(customer, null, BillConstants.MAIL_TYPE_NEW_CUSTOMER, null);
+					}*/
+					//TODO Later on actual adding BillSMSUtil.sendSMS(customer, null, BillConstants.MAIL_TYPE_NEW_CUSTOMER, null);
 					LoggingUtil.logMessage("Added customer ..." + customer.getName());
 					if (row.getCell(colItems) != null) {
 						String[] items = StringUtils.split(dataFormatter.formatCellValue(row.getCell(colItems)), ",");
+						String[] days = null;
+						if(colDays != null && row.getCell(colDays) != null) {
+							days = StringUtils.split(row.getCell(colDays).getStringCellValue(), "|");
+						}
+						String[] amounts = null;
+						if(colAmount != null && row.getCell(colAmount) != null) {
+							amounts = StringUtils.split(row.getCell(colAmount).getStringCellValue(), ",");
+						}
 						if (ArrayUtils.isNotEmpty(items)) {
+							Integer i = 0;
+							BigDecimal amount = BigDecimal.ZERO;
+							BillDBInvoice dbInvoice = null;
 							for (String item : items) {
 								if (StringUtils.isBlank(item)) {
 									continue;
 								}
 								BillDBItemSubscription itemSubscription = new BillDBItemSubscription();
+								if(StringUtils.contains(item, "(S)")) {
+									item = StringUtils.removeEnd(item, "(S)");
+									itemSubscription.setPrice(BigDecimal.ZERO);
+									itemSubscription.setPriceType(BillConstants.FREQ_MONTHLY);
+									if(ArrayUtils.isNotEmpty(amounts) && i < amounts.length) {
+										String itemAmount = amounts[i];
+										if(itemAmount != null && StringUtils.isNumeric(itemAmount)) {
+											itemSubscription.setPrice(new BigDecimal(itemAmount));
+										}
+									}
+									
+								}
 								BillDBItemBusiness businessItemByParent = new BillVendorDaoImpl(session).getBusinessItemByParent(new Integer(item),
 										business.getId());
 								if (businessItemByParent == null) {
@@ -152,17 +210,69 @@ public class BillExcelUtil {
 								itemSubscription.setQuantity(new BigDecimal(1));
 								itemSubscription.setStatus(BillConstants.STATUS_ACTIVE);
 								itemSubscription.setSubscription(subscription);
+								if(ArrayUtils.isNotEmpty(days)) {
+									if(i < days.length) {
+										String weekDays = days[i];
+										if(StringUtils.isNotBlank(weekDays)) {
+											itemSubscription.setWeekDays(weekDays);
+										}
+									}
+								}
 								session.persist(itemSubscription);
 								// subItems.add(itemSubscription);
+								if(ArrayUtils.isNotEmpty(amounts)) {
+									if(i < amounts.length) {
+										String itemAmount = amounts[i];
+										if(StringUtils.isNotBlank(itemAmount)) {
+											if(dbInvoice == null && invoice != null) {
+												dbInvoice = prepareInvoice(subscription, invoice);
+												session.persist(dbInvoice);
+												System.out.println("........ Created Invoice ...... #" + dbInvoice.getId());
+											}
+											if(dbInvoice != null) {
+												BillDBItemInvoice invoiceItem = new BillDBItemInvoice();
+												invoiceItem.setStatus(BillConstants.STATUS_ACTIVE);
+												invoiceItem.setCreatedDate(new Date());
+												invoiceItem.setInvoice(dbInvoice);
+												invoiceItem.setQuantity(new BigDecimal("31"));
+												invoiceItem.setPrice(new BigDecimal(itemAmount));
+												invoiceItem.setSubscribedItem(itemSubscription);
+												invoiceItem.setBusinessItem(businessItemByParent);
+												session.persist(invoiceItem);
+												amount = amount.add(invoiceItem.getPrice());
+											}
+											dbInvoice.setAmount(amount);
+										}
+									}
+								}
+								i++;
 							}
 							// subscription.setSubscriptions(subItems);
+							if(dbInvoice != null && dbInvoice.getAmount().equals(BigDecimal.ZERO)) {
+								dbInvoice.setServiceCharge(subscription.getServiceCharge());
+							}
 						}
 					}
 				}
 			}
-			System.out.println();
+			System.out.println(" .......... ");
 		}
 
+	}
+
+	private static BillDBInvoice prepareInvoice(BillDBSubscription subscription, BillInvoice requestInvoice) {
+		BillDBInvoice invoice = new BillDBInvoice();
+		invoice.setStatus(BillConstants.INVOICE_STATUS_PENDING);
+		invoice.setCreatedDate(new Date());
+		invoice.setMonth(requestInvoice.getMonth());
+		invoice.setYear(requestInvoice.getYear());
+		if(requestInvoice.getServiceCharge() != null) {
+			invoice.setServiceCharge(requestInvoice.getServiceCharge());
+		} else {
+			invoice.setServiceCharge(subscription.getServiceCharge());
+		}
+		invoice.setSubscription(subscription);
+		return invoice;
 	}
 
 	public static BillFile generateExcel(List<BillBusiness> businesses) {

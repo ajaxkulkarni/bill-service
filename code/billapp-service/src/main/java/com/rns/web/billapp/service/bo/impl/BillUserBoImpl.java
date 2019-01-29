@@ -345,13 +345,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillDBCustomerGroup customerGroup = dao.getEntityByKey(BillDBCustomerGroup.class, ID_ATTR, request.getCustomerGroup().getId(), true);
 					if(customerGroup != null) {
 						dbSubscription.setCustomerGroup(customerGroup);
-						Map<String, Object> restrictions = new HashMap<String, Object>();
-						restrictions.put("business.id", dbSubscription.getBusiness().getId());
-						Integer maxSequence = dao.getMax(BillDBSubscription.class, "groupSequence", restrictions);
-						if(maxSequence == null) {
-							maxSequence = 0;
-						}
-						maxSequence++;
+						Integer maxSequence = BillRuleEngine.getNextGroupNumber(dao, dbSubscription);
 						dbSubscription.setGroupSequence(maxSequence);
 					}
 				}
@@ -381,6 +375,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		}
 		return response;
 	}
+
 
 	public BillServiceResponse updateCustomerItem(BillServiceRequest request) {
 		BillServiceResponse response = new BillServiceResponse();
