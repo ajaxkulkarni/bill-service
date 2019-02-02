@@ -109,14 +109,14 @@ public class BillInvoiceDaoImpl {
 		return Restrictions.ne("status", BillConstants.INVOICE_STATUS_DELETED);
 	}
 
-	public List<BillDBInvoice> getAllInvoicesForMonth(Integer month, Integer year) {
+	public List<BillDBInvoice> getAllInvoicesForMonth(Integer month, Integer year, Integer businessId) {
 		Criteria criteria = session.createCriteria(BillDBInvoice.class)
 								.add(Restrictions.eq("month", month))
 								.add(Restrictions.eq("year", year))
 								.add(invoiceNotDeleted());
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
-		criteria.setFetchMode("subscription", FetchMode.JOIN);
+		criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN).add(Restrictions.eq("business.id", businessId));
 		return criteria.list();
 	}
 	

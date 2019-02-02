@@ -256,7 +256,15 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					request.getBusiness().getId(), true);
 			if (billDBUserBusiness != null) {
 				BillBusiness business = BillDataConverter.getBusiness(billDBUserBusiness);
-				BillExcelUtil.uploadCustomers(request.getFile().getFileData(), business, session, executor, request.getInvoice());
+				if(StringUtils.equals("EXTERNAL", request.getRequestType())) {
+					String groupName = null;
+					if(request.getCustomerGroup() != null) {
+						groupName = request.getCustomerGroup().getGroupName();
+					}
+					BillExcelUtil.uploadCustomersFromExternal(request.getFile().getFileData(), business, session, executor, groupName, request.getInvoice());
+				} else {
+					BillExcelUtil.uploadCustomers(request.getFile().getFileData(), business, session, executor, request.getInvoice());
+				}
 			}
 			tx.commit();
 		} catch (Exception e) {
@@ -472,7 +480,11 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						summary.setCustomerCount((BigInteger) row[4]);
 						BillInvoice currentInvoice = new BillInvoice();
 						currentInvoice.setPaidDate((Date) row[5]);
+						if(row[8] != null) {
+							currentInvoice.setNoOfReminders(((BigInteger) row[8]).intValue());
+						}
 						user.setCurrentInvoice(currentInvoice);
+						user.setCreatedDate((Date) row[7]);
 						summary.setOnlinePaidCount((BigInteger) row[6]);
 						summary.setUser(user);
 						summaryList.add(summary);

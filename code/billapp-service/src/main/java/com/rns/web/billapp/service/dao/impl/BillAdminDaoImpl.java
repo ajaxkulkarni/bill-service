@@ -31,10 +31,11 @@ public class BillAdminDaoImpl {
 	}
 	
 	public List<Object[]> getVendorProgressSummary(Session session) {
-		String queryString = "select user_business.id,users.full_name,phone,user_business.name,customerCount.cnt,maxPaid.pd, onlinePaid.onlineCount from "
+		String queryString = "select user_business.id,users.full_name,phone,user_business.name,customerCount.cnt,maxPaid.pd, onlinePaid.onlineCount,user_business.created_date,reminders.noOfReminders from "
 				+ " users join user_business on users.id = user_business.user "
 				+ " left join (select count(*) as cnt, business from subscriptions group by business) as customerCount on user_business.id = customerCount.business "
 				+ " left join (select max(paid_date) as pd, subscriptions.business as business from invoices join subscriptions on invoices.subscription = subscriptions.id group by subscriptions.business) as maxPaid on maxPaid.business = user_business.id "
+				+ " left join (select sum(no_of_reminders) as noOfReminders, subscriptions.business as business from invoices join subscriptions on invoices.subscription = subscriptions.id group by subscriptions.business) as reminders on reminders.business = user_business.id "
 				+ " left join (select count(*) as onlineCount, subscriptions.business as business from invoices join subscriptions on invoices.subscription = subscriptions.id where invoices.payment_type=:online group by subscriptions.business) as onlinePaid on onlinePaid.business = user_business.id "
 				+ " where user_business.sector=:sectorId AND users.status=:active" + " order by customerCount.cnt asc ";
 
