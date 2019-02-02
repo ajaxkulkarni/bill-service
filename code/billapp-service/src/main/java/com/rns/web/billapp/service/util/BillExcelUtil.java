@@ -4,12 +4,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.format.CellFormatType;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CreationHelper;
@@ -23,7 +27,6 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.hibernate.Session;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-import com.itextpdf.text.pdf.PdfEncodings;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -31,10 +34,10 @@ import com.rns.web.billapp.service.dao.domain.BillDBCustomerGroup;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
+import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
-import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillSubscriptionDAOImpl;
@@ -69,10 +72,9 @@ public class BillExcelUtil {
 		DataFormatter dataFormatter = new DataFormatter();
 
 		Integer colName = null, colEmail = null, colPhone = null, colLoc = null, colAddress = null, colItems = null, colSC = null;
-		Integer colAmount = null, colLine = null, colDays = null;
+		Integer colAmount = null, colLine = null, colDays = null, colPending = null, colTotal = null;
 		BillDBUserBusiness dbBusiness = new BillDBUserBusiness();
 		dbBusiness.setId(business.getId());
-		
 		for (Row row : sheet) {
 			if (row.getRowNum() == 0) { // Title row
 				for (Cell cell : row) {
@@ -98,6 +100,10 @@ public class BillExcelUtil {
 						colLine = cell.getColumnIndex();
 					} else if (StringUtils.equalsIgnoreCase(cellValue, TITLE_DAYS)) {
 						colDays = cell.getColumnIndex();
+					} else if (StringUtils.equalsIgnoreCase(cellValue, "Pending")) {
+						colPending = cell.getColumnIndex();
+					} else if (StringUtils.equalsIgnoreCase(cellValue, "Total")) {
+						colTotal = cell.getColumnIndex();
 					}
 				}
 			} else {
@@ -112,12 +118,15 @@ public class BillExcelUtil {
 
 						BillDBSubscription dbSubscription = new BillSubscriptionDAOImpl(session).getActiveSubscription(phone, business.getId());
 						if (dbSubscription != null) {
+							//TODO remove later?
+							BillDBSubscription subscription2 = (BillDBSubscription) session.get(BillDBSubscription.class, dbSubscription.getId());
+							addSubscriptionItems(business, session, invoice, dataFormatter, colItems, colAmount, colDays, row, subscription2);
 							continue;
 						}
-						BillDBUser existingUser = billGenericDaoImpl.getEntityByKey(BillDBUser.class, BillConstants.USER_DB_ATTR_PHONE, phone, true);
+						/*BillDBUser existingUser = billGenericDaoImpl.getEntityByKey(BillDBUser.class, BillConstants.USER_DB_ATTR_PHONE, phone, true);
 						if (existingUser != null) {
 							continue;
-						}
+						}*/
 						subscription.setPhone(phone);
 					}
 					if (row.getCell(colName) != null) {
@@ -169,95 +178,95 @@ public class BillExcelUtil {
 					}*/
 					//TODO Later on actual adding BillSMSUtil.sendSMS(customer, null, BillConstants.MAIL_TYPE_NEW_CUSTOMER, null);
 					LoggingUtil.logMessage("Added customer ..." + customer.getName());
-					if (row.getCell(colItems) != null) {
-						String[] items = StringUtils.split(dataFormatter.formatCellValue(row.getCell(colItems)), ",");
-						String[] days = null;
-						if(colDays != null && row.getCell(colDays) != null) {
-							days = StringUtils.split(row.getCell(colDays).getStringCellValue(), "|");
-						}
-						String[] amounts = null;
-						if(colAmount != null && row.getCell(colAmount) != null) {
-							amounts = StringUtils.split(row.getCell(colAmount).getStringCellValue(), ",");
-						}
-						if (ArrayUtils.isNotEmpty(items)) {
-							Integer i = 0;
-							BigDecimal amount = BigDecimal.ZERO;
-							BillDBInvoice dbInvoice = null;
-							for (String item : items) {
-								if (StringUtils.isBlank(item)) {
-									continue;
-								}
-								BillDBItemSubscription itemSubscription = new BillDBItemSubscription();
-								if(StringUtils.contains(item, "(S)")) {
-									item = StringUtils.removeEnd(item, "(S)");
-									itemSubscription.setPrice(BigDecimal.ZERO);
-									itemSubscription.setPriceType(BillConstants.FREQ_MONTHLY);
-									if(ArrayUtils.isNotEmpty(amounts) && i < amounts.length) {
-										String itemAmount = amounts[i];
-										if(itemAmount != null && StringUtils.isNumeric(itemAmount)) {
-											itemSubscription.setPrice(new BigDecimal(itemAmount));
-										}
-									}
-									
-								}
-								BillDBItemBusiness businessItemByParent = new BillVendorDaoImpl(session).getBusinessItemByParent(new Integer(item),
-										business.getId());
-								if (businessItemByParent == null) {
-									continue;
-								}
-								itemSubscription.setBusinessItem(businessItemByParent);
-								itemSubscription.setCreatedDate(new Date());
-								itemSubscription.setQuantity(new BigDecimal(1));
-								itemSubscription.setStatus(BillConstants.STATUS_ACTIVE);
-								itemSubscription.setSubscription(subscription);
-								if(ArrayUtils.isNotEmpty(days)) {
-									if(i < days.length) {
-										String weekDays = days[i];
-										if(StringUtils.isNotBlank(weekDays)) {
-											itemSubscription.setWeekDays(weekDays);
-										}
-									}
-								}
-								session.persist(itemSubscription);
-								// subItems.add(itemSubscription);
-								if(ArrayUtils.isNotEmpty(amounts)) {
-									if(i < amounts.length) {
-										String itemAmount = amounts[i];
-										if(StringUtils.isNotBlank(itemAmount)) {
-											if(dbInvoice == null && invoice != null) {
-												dbInvoice = prepareInvoice(subscription, invoice);
-												session.persist(dbInvoice);
-												System.out.println("........ Created Invoice ...... #" + dbInvoice.getId());
-											}
-											if(dbInvoice != null) {
-												BillDBItemInvoice invoiceItem = new BillDBItemInvoice();
-												invoiceItem.setStatus(BillConstants.STATUS_ACTIVE);
-												invoiceItem.setCreatedDate(new Date());
-												invoiceItem.setInvoice(dbInvoice);
-												invoiceItem.setQuantity(new BigDecimal("31"));
-												invoiceItem.setPrice(new BigDecimal(itemAmount));
-												invoiceItem.setSubscribedItem(itemSubscription);
-												invoiceItem.setBusinessItem(businessItemByParent);
-												session.persist(invoiceItem);
-												amount = amount.add(invoiceItem.getPrice());
-											}
-											dbInvoice.setAmount(amount);
-										}
-									}
-								}
-								i++;
-							}
-							// subscription.setSubscriptions(subItems);
-							if(dbInvoice != null && dbInvoice.getAmount().equals(BigDecimal.ZERO)) {
-								dbInvoice.setServiceCharge(subscription.getServiceCharge());
-							}
-						}
+					if (colPending != null && row.getCell(colPending) != null) {
+						invoice.setPendingBalance(new BigDecimal(row.getCell(colPending).getNumericCellValue()));
 					}
+					if(colTotal != null && row.getCell(colTotal) != null) {
+						invoice.setAmount(new BigDecimal(row.getCell(colTotal).getNumericCellValue()));
+					}
+					addSubscriptionItems(business, session, invoice, dataFormatter, colItems, colAmount, colDays, row, subscription);
 				}
 			}
 			System.out.println(" .......... ");
 		}
 
+	}
+
+	private static void addSubscriptionItems(BillBusiness business, Session session, BillInvoice invoice, DataFormatter dataFormatter, Integer colItems,
+			Integer colAmount, Integer colDays, Row row, BillDBSubscription subscription) {
+		if (row.getCell(colItems) != null) {
+			String[] items = StringUtils.split(dataFormatter.formatCellValue(row.getCell(colItems)), ",");
+			String[] days = null;
+			if(colDays != null && row.getCell(colDays) != null) {
+				days = StringUtils.split(row.getCell(colDays).getStringCellValue(), "|");
+			}
+			String[] amounts = null;
+			if(colAmount != null && row.getCell(colAmount) != null) {
+				amounts = StringUtils.split(row.getCell(colAmount).getStringCellValue(), ",");
+			}
+			if (ArrayUtils.isNotEmpty(items)) {
+				Integer i = 0;
+				BigDecimal amount = BigDecimal.ZERO;
+				BillDBInvoice dbInvoice = null;
+				for (String item : items) {
+					if (StringUtils.isBlank(item)) {
+						continue;
+					}
+					BillDBItemSubscription itemSubscription = new BillDBItemSubscription();
+					if(StringUtils.contains(item, "(S)")) {
+						item = StringUtils.removeEnd(item, "(S)");
+						itemSubscription.setPrice(BigDecimal.ZERO);
+						itemSubscription.setPriceType(BillConstants.FREQ_MONTHLY);
+						if(ArrayUtils.isNotEmpty(amounts) && i < amounts.length) {
+							String itemAmount = amounts[i];
+							if(itemAmount != null && StringUtils.isNumeric(itemAmount)) {
+								itemSubscription.setPrice(new BigDecimal(itemAmount));
+							}
+						}
+						
+					}
+					BillDBItemBusiness businessItemByParent = new BillVendorDaoImpl(session).getBusinessItemByParent(new Integer(item),
+							business.getId());
+					if (businessItemByParent == null) {
+						continue;
+					}
+					itemSubscription.setBusinessItem(businessItemByParent);
+					itemSubscription.setCreatedDate(new Date());
+					itemSubscription.setQuantity(new BigDecimal(1));
+					itemSubscription.setStatus(BillConstants.STATUS_ACTIVE);
+					itemSubscription.setSubscription(subscription);
+					if(ArrayUtils.isNotEmpty(days)) {
+						if(i < days.length) {
+							String weekDays = days[i];
+							if(StringUtils.isNotBlank(weekDays)) {
+								itemSubscription.setWeekDays(weekDays);
+							}
+						}
+					}
+					session.persist(itemSubscription);
+					// subItems.add(itemSubscription);
+					if(ArrayUtils.isNotEmpty(amounts)) {
+						if(i < amounts.length) {
+							String itemAmount = amounts[i];
+							dbInvoice = addInvoiceAmount(session, invoice, subscription, dbInvoice, itemSubscription, businessItemByParent, itemAmount);
+						}
+					} 
+					i++;
+				}
+				if(dbInvoice == null) {
+					dbInvoice = prepareInvoice(subscription, invoice);
+					dbInvoice.setAmount(invoice.getAmount());
+					session.persist(dbInvoice);
+				}
+				// subscription.setSubscriptions(subItems);
+				if(dbInvoice != null && dbInvoice.getAmount().equals(BigDecimal.ZERO)) {
+					dbInvoice.setServiceCharge(subscription.getServiceCharge());
+				}
+				if(dbInvoice != null) {
+					dbInvoice.setPendingBalance(invoice.getPendingBalance());
+				}
+			}
+		}
 	}
 
 	private static BillDBInvoice prepareInvoice(BillDBSubscription subscription, BillInvoice requestInvoice) {
@@ -373,5 +382,334 @@ public class BillExcelUtil {
 		// Closing the workbook
 		workbook.close();*/
 	}
+	
+	public static void uploadCustomersFromExternal(InputStream excel, BillBusiness business, Session session, ThreadPoolTaskExecutor executor, String groupName, BillInvoice invoice) throws IllegalAccessException, InvocationTargetException, InvalidFormatException, IOException {
+		Workbook workbook = WorkbookFactory.create(excel);
+		Sheet sheet = workbook.getSheetAt(0);
 
+		// Create a DataFormatter to format and get each cell's value as String
+		DataFormatter dataFormatter = new DataFormatter();
+		//S.N.	Customer name	Newspapers Details	Readers days	Qty	Mobile no
+		Integer colName = null, colEmail = null, colPhone = null, colLoc = null, colAddress = null, colItems = null, colSC = null;
+		Integer colAmount = null, colDays = null;
+		BillDBUserBusiness dbBusiness = new BillDBUserBusiness();
+		dbBusiness.setId(business.getId());
+		Integer count = 0;
+		for (Row row : sheet) {
+			if (row.getRowNum() == 0) { // Title row
+				for (Cell cell : row) {
+					String cellValue = dataFormatter.formatCellValue(cell);
+					System.out.print(cellValue + "\t");
+					if (StringUtils.equalsIgnoreCase(cellValue, "Customer name")) {
+						colName = cell.getColumnIndex();
+					} else if (StringUtils.equalsIgnoreCase(cellValue, "Mobile no")) {
+						colPhone = cell.getColumnIndex();
+					} else if (StringUtils.equalsIgnoreCase(cellValue, "Newspapers Details")) {
+						colItems = cell.getColumnIndex();
+					} else if (StringUtils.equalsIgnoreCase(cellValue, "Readers days")) {
+						colDays = cell.getColumnIndex();
+					}
+				}
+			} else {
+				if (colName != null && colPhone != null) {
+					BillDBSubscription subscription = new BillDBSubscription();
+					BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
+					if (row.getCell(colPhone) != null) {
+						String phone = dataFormatter.formatCellValue(row.getCell(colPhone));
+						if (StringUtils.isBlank(phone)) {
+							continue;
+						}
+
+						BillDBSubscription dbSubscription = new BillSubscriptionDAOImpl(session).getActiveSubscription(phone, business.getId());
+						if (dbSubscription != null) {
+							System.out.println("Already saved the number .." + phone);
+							continue;
+						}
+						/*BillDBUser existingUser = billGenericDaoImpl.getEntityByKey(BillDBUser.class, BillConstants.USER_DB_ATTR_PHONE, phone, true);
+						if (existingUser != null) {
+							continue;
+						}*/
+						subscription.setPhone(phone);
+					}
+					if (row.getCell(colName) != null) {
+						subscription.setName(row.getCell(colName).getStringCellValue());
+					}
+					if(StringUtils.isBlank(subscription.getPhone()) || StringUtils.isBlank(subscription.getName())) {
+						LoggingUtil.logMessage("Phone number/ name not found ..");
+						continue;
+					}
+					/*if (row.getCell(colSC) != null) {
+						subscription.setServiceCharge(new BigDecimal(row.getCell(colSC).getNumericCellValue()));
+					}*/
+					subscription.setServiceCharge(new BigDecimal(30)); //TODO 
+					BillDBCustomerGroup deliveryLine = null;
+					if(StringUtils.isNotBlank(groupName)) {
+						deliveryLine = billGenericDaoImpl.getEntityByKey(BillDBCustomerGroup.class, "groupName", groupName, true);
+						if(deliveryLine == null) {
+							deliveryLine = new BillDBCustomerGroup();
+							deliveryLine.setGroupName(groupName);
+							deliveryLine.setCreatedDate(new Date());
+							deliveryLine.setStatus(BillConstants.STATUS_ACTIVE);
+							deliveryLine.setBusiness(dbBusiness);
+							session.persist(deliveryLine);
+						}
+					}
+					subscription.setBusiness(dbBusiness);
+					subscription.setCreatedDate(new Date());
+					subscription.setStatus(BillConstants.STATUS_ACTIVE);
+					subscription.setCustomerGroup(deliveryLine);
+					if(deliveryLine != null) {
+						subscription.setGroupSequence(BillRuleEngine.getNextGroupNumber(billGenericDaoImpl, subscription));
+					}
+					session.persist(subscription);
+					count++;
+					/*if (StringUtils.isNotBlank(subscription.getEmail())) {
+						executor.execute(new BillMailUtil(BillConstants.MAIL_TYPE_NEW_CUSTOMER, customer));
+					}*/
+					//TODO Later on actual adding BillSMSUtil.sendSMS(customer, null, BillConstants.MAIL_TYPE_NEW_CUSTOMER, null);
+					LoggingUtil.logMessage("Added customer ..." + subscription.getName());
+					
+					
+					if (row.getCell(colItems) != null) {
+						String[] items = StringUtils.split(dataFormatter.formatCellValue(row.getCell(colItems)), "\n");
+						String[] days = null;
+						String[] amounts = {};
+						if(colDays != null && row.getCell(colDays) != null) {
+							days = StringUtils.split(row.getCell(colDays).getStringCellValue(), " ");
+							if(days.length < items.length) {
+								//Splitting on the basis of next line
+								days = StringUtils.split(row.getCell(colDays).getStringCellValue(), "\n");
+							}
+						}
+						//System.out.println("Items =>" + items[0]);
+						//System.out.println("Days =>" + days[0]);
+						
+						if (ArrayUtils.isNotEmpty(items)) {
+							Integer i = 0;
+							BigDecimal amount = BigDecimal.ZERO;
+							BillDBInvoice dbInvoice = null;
+							for (String item : items) {
+								if (StringUtils.isBlank(item)) {
+									continue;
+								}
+								item = StringUtils.removeStart(item, "1.");
+								item = StringUtils.removeStart(item, "2.");
+								item = StringUtils.removeStart(item, "3.");
+								item = StringUtils.removeStart(item, "4.");
+								item = StringUtils.removeStart(item, "5.");
+								item = StringUtils.removeStart(item, "6.");
+								item = StringUtils.removeStart(item, "7.");
+								item = StringUtils.removeStart(item, "8.");
+								
+								item = StringUtils.trimToEmpty(item);
+								//Get parent item by name
+								BillDBItemParent subParentItem = null;
+								BillDBItemParent parentItem = billGenericDaoImpl.getEntityByKey(BillDBItemParent.class, "name", item, true);
+								if(parentItem == null) {
+									if(StringUtils.equalsIgnoreCase("TOI", item)) {
+										//TOI means Times of India + Mirror
+										parentItem = billGenericDaoImpl.getEntityByKey(BillDBItemParent.class, "name", "Times of India", true);
+										subParentItem = billGenericDaoImpl.getEntityByKey(BillDBItemParent.class, "name", "Mirror", true);
+									} else {
+										System.out.println("parent item not found for ==> " + item);
+										continue;
+									}
+								}
+								System.out.println("parent item found for ==> " + item);
+								BillDBItemSubscription itemSubscription = new BillDBItemSubscription();
+								if(StringUtils.contains(days[i], "Scheme")) {
+									itemSubscription.setPrice(BigDecimal.ZERO);
+									itemSubscription.setPriceType(BillConstants.FREQ_MONTHLY);
+									/*if(ArrayUtils.isNotEmpty(amounts) && i < amounts.length) {
+										String itemAmount = amounts[i];
+										if(itemAmount != null && StringUtils.isNumeric(itemAmount)) {
+											itemSubscription.setPrice(new BigDecimal(itemAmount));
+										}
+									}*/
+								} else if (StringUtils.contains(days[i], ",")) {
+									String daysToDeliver = StringUtils.replace(days[i], "Sun", "1");
+									daysToDeliver = StringUtils.replace(days[i], "Sun", "1");
+									daysToDeliver = StringUtils.replace(daysToDeliver, "Mon", "2");
+									daysToDeliver = StringUtils.replace(daysToDeliver, "Tue", "3");
+									daysToDeliver = StringUtils.replace(daysToDeliver, "Wed", "4");
+									daysToDeliver = StringUtils.replace(daysToDeliver, "Thu", "5");
+									daysToDeliver = StringUtils.replace(daysToDeliver, "Fri", "6");
+									daysToDeliver = StringUtils.replace(daysToDeliver, "Sat", "7");
+									daysToDeliver = StringUtils.replacePattern(daysToDeliver, "\\s+","");
+									itemSubscription.setWeekDays(daysToDeliver);
+									System.out.println("Days ..... " + daysToDeliver);
+									
+								}
+								BillDBItemBusiness businessItemByParent = new BillVendorDaoImpl(session).getBusinessItemByParent(parentItem.getId(),
+										business.getId());
+								if (businessItemByParent == null) {
+									continue;
+								}
+								itemSubscription.setBusinessItem(businessItemByParent);
+								itemSubscription.setCreatedDate(new Date());
+								itemSubscription.setQuantity(new BigDecimal(1));
+								itemSubscription.setStatus(BillConstants.STATUS_ACTIVE);
+								itemSubscription.setSubscription(subscription);
+								
+								BillDBItemSubscription subItemSubscription = null;
+								BillDBItemBusiness subBusinessItem = null;
+								if(subParentItem != null) {
+									subBusinessItem = new BillVendorDaoImpl(session).getBusinessItemByParent(subParentItem.getId(),
+											business.getId());
+									subItemSubscription = new BillDBItemSubscription();
+									new NullAwareBeanUtils().copyProperties(subItemSubscription, itemSubscription);
+									subItemSubscription.setBusinessItem(subBusinessItem);
+									session.persist(subItemSubscription);
+								}
+								
+								session.persist(itemSubscription);
+								if(ArrayUtils.isNotEmpty(amounts)) {
+									if(i < amounts.length) {
+										String itemAmount = amounts[i];
+										dbInvoice = addInvoiceAmount(session, invoice, subscription, dbInvoice, itemSubscription, businessItemByParent,
+												itemAmount);
+									}
+								} else {
+									BigDecimal predefinedCost = COSTS.get(parentItem.getId());
+									if(predefinedCost == null && itemSubscription.getPrice() == null) {
+										System.out.println("Cost not found for .. " + parentItem.getId());
+										continue;
+									} else if (predefinedCost == null) {
+										predefinedCost = itemSubscription.getPrice();
+									}
+									System.out.println("Calculated amount is =>" + predefinedCost);
+									dbInvoice = addInvoiceAmount(session, invoice, subscription, dbInvoice, itemSubscription, businessItemByParent,
+											predefinedCost.toString());
+									//For sub item e.g. Mirror
+									if(subItemSubscription != null) {
+										BigDecimal predefinedCost2 = COSTS.get(subParentItem.getId());
+										dbInvoice = addInvoiceAmount(session, invoice, subscription, dbInvoice, subItemSubscription, subBusinessItem,
+												predefinedCost2.toString());
+									}
+								}
+								i++;
+							}
+							if(dbInvoice != null && dbInvoice.getAmount().equals(BigDecimal.ZERO)) {
+								dbInvoice.setServiceCharge(subscription.getServiceCharge());
+							}
+						}
+					}
+					
+				}
+			}
+			System.out.println(" .......... ");
+		}
+		System.out.println("Total customers => " + count);
+	}
+
+	private static BillDBInvoice addInvoiceAmount(Session session, BillInvoice invoice, BillDBSubscription subscription,
+			BillDBInvoice dbInvoice, BillDBItemSubscription itemSubscription, BillDBItemBusiness businessItemByParent, String itemAmount) {
+		if(StringUtils.isNotBlank(itemAmount)) {
+			if(dbInvoice == null && invoice != null) {
+				dbInvoice = prepareInvoice(subscription, invoice);
+				dbInvoice.setAmount(BigDecimal.ZERO);
+				session.persist(dbInvoice);
+				System.out.println("........ Created Invoice ...... #" + dbInvoice.getId());
+			}
+			if(dbInvoice != null) {
+				BillDBItemInvoice invoiceItem = new BillDBItemInvoice();
+				invoiceItem.setStatus(BillConstants.STATUS_ACTIVE);
+				invoiceItem.setCreatedDate(new Date());
+				invoiceItem.setInvoice(dbInvoice);
+				invoiceItem.setQuantity(new BigDecimal("31"));
+				invoiceItem.setPrice(new BigDecimal(itemAmount));
+				invoiceItem.setSubscribedItem(itemSubscription);
+				invoiceItem.setBusinessItem(businessItemByParent);
+				session.persist(invoiceItem);
+				dbInvoice.setAmount(dbInvoice.getAmount().add(invoiceItem.getPrice()));
+			}
+			//dbInvoice.setAmount(amount);
+		}
+		return dbInvoice;
+	}
+	
+	private static Map<Integer, BigDecimal> COSTS = Collections.unmodifiableMap(new HashMap<Integer, BigDecimal>() {
+		{
+			/*put(8, new BigDecimal("165"));//Sakal
+			put(9, new BigDecimal("180"));//Pune times (Without Mirror)
+			put(13, new BigDecimal("95"));//Mirror
+			put(14, new BigDecimal("185"));//Loksatta
+			put(11, new BigDecimal("225"));//Economic
+			put(16, new BigDecimal("160"));//Lokmat
+			put(31, new BigDecimal("360"));//Hindu
+			put(33, new BigDecimal("190"));//Navbharat
+			put(29, new BigDecimal("250"));//Aaj anand
+			put(40, new BigDecimal("220"));//Gujrat
+			put(25, new BigDecimal("170"));//Prabhat
+			put(32, new BigDecimal("185"));//NBT
+			put(49, new BigDecimal("40"));//Zee disha
+			//put(, new BigDecimal("360"));//Anand bazaar
+			put(15, new BigDecimal("185")); //with +30 //Indian
+			put(20, new BigDecimal("70"));//Wealth 8*5 = 40
+			put(55, new BigDecimal("123"));//original 93
+			put(37, new BigDecimal("166"));//Mint 136 + 30
+			put(67, new BigDecimal("183"));//Inadu
+			put(10, new BigDecimal("157"));//Ma Ta 127 is original
+			put(43, new BigDecimal("158"));//Punyanagari 128 is original
+			put(26, new BigDecimal("163"));//Pudhari 133
+			put(66, new BigDecimal("158"));//Yashobhumi 128
+			put(50, new BigDecimal("158"));//Samrat 128
+			put(12, new BigDecimal("42"));//Speaking tree 12 = 3*4
+			put(23, new BigDecimal("127"));//Hindustan times 97
+			put(21, new BigDecimal("254"));//Business standard 224
+			put(42, new BigDecimal("246"));//Business line 216
+			put(30, new BigDecimal("247"));//Sandhyanand 217
+			put(28, new BigDecimal("121"));//Agro one 91
+			put(61, new BigDecimal("262.5"));//Matrubhumi 232.5
+			put(27, new BigDecimal("154"));//Sakal times 124
+			put(35, new BigDecimal("185"));//Pratyaksha 155
+			put(70, new BigDecimal("189"));//Sakshi 159
+			put(36, new BigDecimal("123"));//Mumbai Chopher 93
+			*///Inqalab 222
+			//Without SC
+			put(8, new BigDecimal("127"));//Sakal
+			put(9, new BigDecimal("141"));//Pune times (Without Mirror)
+			put(13, new BigDecimal("93"));//Mirror
+			put(14, new BigDecimal("150"));//Loksatta
+			put(11, new BigDecimal("225"));//Economic
+			put(16, new BigDecimal("120"));//Lokmat
+			put(31, new BigDecimal("305"));//Hindu
+			put(33, new BigDecimal("159"));//Navbharat
+			put(29, new BigDecimal("217"));//Aaj anand
+			put(40, new BigDecimal("180"));//Gujrat
+			put(25, new BigDecimal("133"));//Prabhat
+			put(32, new BigDecimal("155"));//NBT
+			put(49, new BigDecimal("40"));//Zee disha
+			//put(, new BigDecimal("360"));//Anand bazaar
+			put(15, new BigDecimal("155")); //with +30 //Indian
+			put(20, new BigDecimal("40"));//Wealth 8*5 = 40
+			put(55, new BigDecimal("93"));//original 93
+			put(37, new BigDecimal("136"));//Mint 136 + 30
+			put(67, new BigDecimal("153"));//Inadu
+			put(10, new BigDecimal("127"));//Ma Ta 127 is original
+			put(43, new BigDecimal("128"));//Punyanagari 128 is original
+			put(26, new BigDecimal("133"));//Pudhari 133
+			put(66, new BigDecimal("128"));//Yashobhumi 128
+			put(50, new BigDecimal("128"));//Samrat 128
+			put(12, new BigDecimal("12"));//Speaking tree 12 = 3*4
+			put(23, new BigDecimal("97"));//Hindustan times 97
+			put(21, new BigDecimal("224"));//Business standard 224
+			put(42, new BigDecimal("216"));//Business line 216
+			put(30, new BigDecimal("217"));//Sandhyanand 217
+			put(28, new BigDecimal("91"));//Agro one 91
+			put(61, new BigDecimal("232.5"));//Matrubhumi 232.5
+			put(27, new BigDecimal("124"));//Sakal times 124
+			put(35, new BigDecimal("155"));//Pratyaksha 155
+			put(70, new BigDecimal("159"));//Sakshi 159
+			put(36, new BigDecimal("93"));//Mumbai Chopher 93
+			put(57, new BigDecimal("155"));//Udayvani 155
+			put(71, new BigDecimal("188"));//Manorama 188
+			put(68, new BigDecimal("155"));//Malla karnatak 155
+			put(34, new BigDecimal("121"));//Samana 121
+			put(19, new BigDecimal("218"));//Financial 218
+		
+		}
+	});
+	//67,37,10,55,15,20
+	//Not found from other app Eenadu -> Inadu, Pune times -> Times of India, Navbharat -> Hindi Navabharat, Times of India -> TOI + Mirror, Hindu -> THe Hindu, THe Hindustan Times - Hindustan Times
 }
