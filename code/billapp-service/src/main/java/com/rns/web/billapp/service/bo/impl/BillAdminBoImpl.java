@@ -481,7 +481,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						BillInvoice currentInvoice = new BillInvoice();
 						currentInvoice.setPaidDate((Date) row[5]);
 						if(row[8] != null) {
-							currentInvoice.setNoOfReminders(((BigInteger) row[8]).intValue());
+							currentInvoice.setNoOfReminders(((BigDecimal) row[8]).intValue());
 						}
 						user.setCurrentInvoice(currentInvoice);
 						user.setCreatedDate((Date) row[7]);
