@@ -290,6 +290,9 @@ public class BillBusinessConverter {
 
 	
 	public static void updateItemImage(BillItem item, BillDBItemParent dbItem) throws IOException {
+		if(item.getImage() == null) {
+			return;
+		}
 		String folderPath = BillConstants.ROOT_FOLDER_LOCATION + "Items/" + dbItem.getId() + "/";
 		String imgPath = saveItemImage(item, folderPath);
 		dbItem.setImagePath(imgPath);
