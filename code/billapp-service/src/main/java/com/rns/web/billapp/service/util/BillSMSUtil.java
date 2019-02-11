@@ -56,7 +56,12 @@ public class BillSMSUtil implements BillConstants {
 		if (StringUtils.contains(type, "Admin")) {
 			smsUrl = StringUtils.replace(smsUrl, "{mobiles}", ADMIN_PHONES);
 		} else {
-			smsUrl = StringUtils.replace(smsUrl, "{mobiles}", user.getPhone());
+			String phone = user.getPhone();
+			if(user.getPhone() != null && user.getPhone().length() != 10) {
+				phone = CommonUtils.trimPhoneNumber(user.getPhone());
+			}
+			LoggingUtil.logMessage("Sending SMS to phone number => " + phone);
+			smsUrl = StringUtils.replace(smsUrl, "{mobiles}", phone);
 		}
 		
 		WebResource webResource;
