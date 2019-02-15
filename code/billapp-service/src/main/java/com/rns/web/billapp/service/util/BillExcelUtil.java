@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -119,8 +121,8 @@ public class BillExcelUtil {
 						BillDBSubscription dbSubscription = new BillSubscriptionDAOImpl(session).getActiveSubscription(phone, business.getId());
 						if (dbSubscription != null) {
 							//TODO remove later?
-							BillDBSubscription subscription2 = (BillDBSubscription) session.get(BillDBSubscription.class, dbSubscription.getId());
-							addSubscriptionItems(business, session, invoice, dataFormatter, colItems, colAmount, colDays, row, subscription2);
+							//BillDBSubscription subscription2 = (BillDBSubscription) session.get(BillDBSubscription.class, dbSubscription.getId());
+							//addSubscriptionItems(business, session, invoice, dataFormatter, colItems, colAmount, colDays, row, subscription2);
 							continue;
 						}
 						/*BillDBUser existingUser = billGenericDaoImpl.getEntityByKey(BillDBUser.class, BillConstants.USER_DB_ATTR_PHONE, phone, true);
@@ -128,6 +130,9 @@ public class BillExcelUtil {
 							continue;
 						}*/
 						subscription.setPhone(phone);
+					} else {
+						System.out.println("Phone number is NULL");
+						continue;
 					}
 					if (row.getCell(colName) != null) {
 						subscription.setName(row.getCell(colName).getStringCellValue());
@@ -152,14 +157,16 @@ public class BillExcelUtil {
 					BillDBCustomerGroup deliveryLine = null;
 					if(row.getCell(colLine) != null) {
 						String groupName = row.getCell(colLine).getStringCellValue();
-						deliveryLine = billGenericDaoImpl.getEntityByKey(BillDBCustomerGroup.class, "groupName", groupName, true);
-						if(deliveryLine == null) {
-							deliveryLine = new BillDBCustomerGroup();
-							deliveryLine.setGroupName(groupName);
-							deliveryLine.setCreatedDate(new Date());
-							deliveryLine.setStatus(BillConstants.STATUS_ACTIVE);
-							deliveryLine.setBusiness(dbBusiness);
-							session.persist(deliveryLine);
+						if(StringUtils.isNotBlank(groupName)) {
+							deliveryLine = billGenericDaoImpl.getEntityByKey(BillDBCustomerGroup.class, "groupName", groupName, true);
+							if(deliveryLine == null) {
+								deliveryLine = new BillDBCustomerGroup();
+								deliveryLine.setGroupName(groupName);
+								deliveryLine.setCreatedDate(new Date());
+								deliveryLine.setStatus(BillConstants.STATUS_ACTIVE);
+								deliveryLine.setBusiness(dbBusiness);
+								session.persist(deliveryLine);
+							}
 						}
 					}
 					subscription.setBusiness(dbBusiness);
@@ -201,8 +208,16 @@ public class BillExcelUtil {
 				days = StringUtils.split(row.getCell(colDays).getStringCellValue(), "|");
 			}
 			String[] amounts = null;
-			if(colAmount != null && row.getCell(colAmount) != null) {
-				amounts = StringUtils.split(row.getCell(colAmount).getStringCellValue(), ",");
+			Cell cell = row.getCell(colAmount);
+			if(colAmount != null && cell != null) {
+				if(cell.getCellType() == Cell.CELL_TYPE_NUMERIC) {
+					Double amount = cell.getNumericCellValue();
+					List<String> amountsList = new ArrayList<String>();
+					amountsList.add(amount.toString());
+					amounts = amountsList.toArray(new String[1]);
+				} else {
+					amounts = StringUtils.split(cell.getStringCellValue(), ",");
+				}
 			}
 			if (ArrayUtils.isNotEmpty(items)) {
 				Integer i = 0;
