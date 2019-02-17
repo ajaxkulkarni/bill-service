@@ -2026,7 +2026,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 							}
 						}
 						if(!found) {
-							break;
+							continue;
 						}
 					}
 					
