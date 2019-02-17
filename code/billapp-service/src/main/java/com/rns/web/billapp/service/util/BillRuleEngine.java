@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
@@ -316,6 +317,30 @@ public class BillRuleEngine {
 		}
 		maxSequence++;
 		return maxSequence;
+	}
+	
+	public static BigDecimal calculatePricing(Integer day, String weekDaysString, String pricingString, BigDecimal price) {
+		if(StringUtils.isBlank(weekDaysString) || StringUtils.isBlank(pricingString)) {
+			return null;
+		}
+		String[] weekdays = StringUtils.split(weekDaysString, ",");
+		String[] pricing = StringUtils.split(pricingString, ",");
+		if(ArrayUtils.isNotEmpty(weekdays)) {
+			for(int i = 0; i < weekdays.length; i++) {
+				if(day == Integer.parseInt(weekdays[i])) {
+					if(ArrayUtils.isNotEmpty(pricing)) {
+						if(pricing.length > i) {
+							return new BigDecimal(pricing[i]);
+						} else {
+							return new BigDecimal(pricing[0]);
+						}
+					} else {
+						return price;
+					}
+				}
+			}
+		}
+		return null;
 	}
 
 	

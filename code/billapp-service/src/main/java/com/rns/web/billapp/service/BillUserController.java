@@ -714,4 +714,36 @@ public class BillUserController {
 	public BillServiceResponse getPaymentSummary(BillServiceRequest request) {
 		return userBo.getPaymentsReport(request);
 	}
+	
+	@POST
+	@Path("/getDistributors")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getDistributors(BillServiceRequest request) {
+		return userBo.getBusinessesByType(request);
+	}
+	
+	@POST
+	@Path("/getBusinessInvoices")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getBusinessInvoices(BillServiceRequest request) {
+		return userBo.getBusinessInvoicesForBusiness(request);
+	}
+	
+	@POST
+	@Path("/getBusinessItemsByDate")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getBusinessItemsByDate(BillServiceRequest request) {
+		return userBo.getBusinessItemsByDate(request);
+	}
+	
+	@POST
+	@Path("/updateBusinessInvoice")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse updateBusinessInvoice(BillServiceRequest request) {
+		return userBo.updateBusinessInvoice(request);
+	}
 }

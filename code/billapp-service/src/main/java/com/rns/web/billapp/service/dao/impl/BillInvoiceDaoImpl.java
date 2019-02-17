@@ -17,6 +17,7 @@ import org.hibernate.criterion.SimpleExpression;
 import org.hibernate.sql.JoinType;
 
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBBusinessInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
@@ -272,6 +273,42 @@ public class BillInvoiceDaoImpl {
 		}
 		query.setString("pending", BillConstants.INVOICE_STATUS_PENDING);
 		return query.list();
+	}
+	
+	public BillDBBusinessInvoice getInvoiceByDate(Date date, Integer businessId) {
+		String queryString = "from BillDBBusinessInvoice tx where fromBusiness.id=:businessId AND invoiceDate=:invoiceDate AND status!=:deleted)";
+		if(businessId != null) {
+			queryString = queryString + " AND business.id=:businessId";
+		}
+		Query query = session.createQuery(queryString);
+		query.setString("invoiceDate", CommonUtils.convertDate(date));
+		query.setInteger("businessId", businessId);
+		query.setString("deleted", BillConstants.INVOICE_STATUS_DELETED);
+		List<BillDBBusinessInvoice> result = query.list();
+		if(CollectionUtils.isEmpty(result)) {
+			return null;
+		}
+		return result.get(0);
+	}
+	
+	public List<BillDBBusinessInvoice> getAllPurchaseInvoices(Integer toBusinessId, String status, BillUserLog log, Integer fromBusinessId) {
+		Criteria criteria = session.createCriteria(BillDBBusinessInvoice.class)
+				 .add(Restrictions.eq("toBusiness.id", toBusinessId))
+				 .add(Restrictions.eq("fromBusiness.id", fromBusinessId))
+				 .add(invoiceNotDeleted());
+		if(StringUtils.isNotBlank(status)) {
+			criteria.add(Restrictions.eq("status", status));
+		}
+		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		Criteria toBusinessCriteria = criteria.createCriteria("toBusiness", JoinType.LEFT_OUTER_JOIN);
+		Criteria businessCriteria = criteria.createCriteria("fromBusiness", JoinType.LEFT_OUTER_JOIN);
+		Criteria invoiceItems = criteria.createCriteria("items", JoinType.LEFT_OUTER_JOIN);
+		Criteria businessItem = invoiceItems.createCriteria("fromBusinessItem", JoinType.LEFT_OUTER_JOIN);
+		businessItem.createCriteria("parent", JoinType.LEFT_OUTER_JOIN);
+		if(log != null) {
+			criteria.add(Restrictions.ge("invoiceDate", log.getFromDate())).add(Restrictions.le("invoiceDate", log.getToDate()));
+		}
+		return criteria.list();
 	}
 	
 	/*public int updateSettlement(Integer businessId, String status, String oldStatus) {

@@ -63,6 +63,7 @@ public interface BillConstants {
 	String ERROR_INSUFFICIENT_FIELDS_COUPON_VERIFICATION = "Customer phone number and coupon code are mandatory!";
 	String ERROR_INVALID_PHONE_NUMBER = "Invalid phone number provided!";
 	String ERROR_INVOICE_PAID = "Invoice is already paid for this month and year!";
+	String ERROR_INVOICE_EXISTS = "Invoice already exists for this date! Please select a different date.";
 	
 	String MSG_REGISTERED_SUCCESS = "Your profile has been registered successfully! Our team will review your profile and contact you further to approve it.";
 

@@ -98,6 +98,8 @@
 				<value>com.rns.web.billapp.service.dao.domain.BillDBSchemes</value>
 				<value>com.rns.web.billapp.service.dao.domain.BillDBCustomerGroup
 				</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBBusinessInvoice</value>
+				<value>com.rns.web.billapp.service.dao.domain.BillDBItemBusinessInvoice</value>
 			</list>
 		</property>
 		<property name="hibernateProperties">

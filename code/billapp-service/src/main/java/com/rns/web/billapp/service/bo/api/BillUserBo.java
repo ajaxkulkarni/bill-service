@@ -20,6 +20,8 @@ public interface BillUserBo {
 	BillServiceResponse updateInvoiceItems(BillServiceRequest request);
 	BillServiceResponse updateCustomerGroup(BillServiceRequest request);
 	BillServiceResponse updateGroupCustomers(BillServiceRequest request);
+	BillServiceResponse updateBusinessInvoice(BillServiceRequest request);
+	
 	
 	/*Read APIs*/
 	
@@ -40,5 +42,8 @@ public interface BillUserBo {
 	BillServiceResponse getCustomerBillsSummary(BillServiceRequest request);
 	BillServiceResponse getAllCustomerGroups(BillServiceRequest request);
 	BillServiceResponse getPaymentsReport(BillServiceRequest request);
+	BillServiceResponse getBusinessInvoicesForBusiness(BillServiceRequest request);
+	BillServiceResponse getBusinessesByType(BillServiceRequest request);
+	BillServiceResponse getBusinessItemsByDate(BillServiceRequest request);
 	
 }

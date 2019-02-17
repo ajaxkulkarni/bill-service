@@ -68,6 +68,12 @@ public class BillDataConverter implements BillConstants {
 			}
 			user.setCurrentBusiness(business);
 		}
+		setUserFinancials(response, session, dbUser, user, nullBeans);
+		return user;
+	}
+
+	public static void setUserFinancials(BillServiceResponse response, Session session, BillDBUser dbUser, BillUser user, NullAwareBeanUtils nullBeans)
+			throws IllegalAccessException, InvocationTargetException {
 		BillDBUserFinancialDetails dbFinancials = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserFinancialDetails.class, "user.id", dbUser.getId(),
 				true);
 		if (dbFinancials == null) {
@@ -78,7 +84,6 @@ public class BillDataConverter implements BillConstants {
 			nullBeans.copyProperties(financials, dbFinancials);
 			user.setFinancialDetails(financials);
 		}
-		return user;
 	}
 
 	public static List<BillLocation> getLocations(List<BillDBLocation> dbLocations) throws IllegalAccessException, InvocationTargetException {

@@ -23,7 +23,6 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -42,10 +41,12 @@ import com.rns.web.billapp.service.bo.domain.BillSector;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBBusinessInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerGroup;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
+import com.rns.web.billapp.service.dao.domain.BillDBItemBusinessInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
@@ -1492,8 +1493,12 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				month = request.getInvoice().getMonth();
 				year = getYear(year, month);
 			}
+			Integer groupId = null;
+			if(request.getCustomerGroup() != null) {
+				groupId = request.getCustomerGroup().getId();
+			}
 			
-			List<Object[]> rows = new BillVendorDaoImpl(session).getBillSummary(request.getBusiness().getId(), request.getItem().getParentItemId(), month, year);
+			List<Object[]> rows = new BillVendorDaoImpl(session).getBillSummary(request.getBusiness().getId(), request.getItem().getParentItemId(), month, year, groupId);
 			for(Object[] row: rows) {
 				BillDBItemInvoice itemI = (BillDBItemInvoice) row[0];
 				BillDBInvoice invoice = (BillDBInvoice) row[1];
@@ -1768,6 +1773,289 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse updateBusinessInvoice(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			BillInvoice currentInvoice = request.getInvoice();
+			BillDBBusinessInvoice businessInvoice = null;
+			
+			if(currentInvoice.getId() == null) {
+				if(request.getBusiness() == null || request.getUser() == null || request.getInvoice() == null) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+					return response;
+				}
+				BillDBUserBusiness fromBusiness = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getUser().getCurrentBusiness().getId(), true);
+				BillDBUserBusiness toBusiness = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), true);
+				//New Invoice
+				BillDBBusinessInvoice existingInvoice = new BillInvoiceDaoImpl(session).getInvoiceByDate(currentInvoice.getInvoiceDate(), fromBusiness.getId());
+				if(existingInvoice != null) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_INVOICE_EXISTS);
+					return response;
+				}
+				businessInvoice = new BillDBBusinessInvoice();
+				businessInvoice.setCreatedDate(new Date());
+				businessInvoice.setStatus(INVOICE_STATUS_PENDING);
+				businessInvoice.setFromBusiness(fromBusiness);
+				businessInvoice.setToBusiness(toBusiness);
+				session.persist(businessInvoice);
+				updateBusinessInvoice(session, currentInvoice, businessInvoice);
+			} else {
+				businessInvoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBBusinessInvoice.class, ID_ATTR, currentInvoice.getId(), false);
+				if(businessInvoice != null) {
+					if(StringUtils.equals(BillConstants.INVOICE_STATUS_PAID, currentInvoice.getStatus())) {
+						//Cash or UPI paid
+						businessInvoice.setPaidDate(new Date());
+						//TODO add to transactions
+						//TODO notify users
+					}
+					updateBusinessInvoice(session, currentInvoice, businessInvoice);
+				}
+			}
+			tx.commit();
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	private void updateBusinessInvoice(Session session, BillInvoice currentInvoice, BillDBBusinessInvoice businessInvoice)
+			throws IllegalAccessException, InvocationTargetException {
+		new NullAwareBeanUtils().copyProperties(businessInvoice, currentInvoice);
+		if(CollectionUtils.isNotEmpty(currentInvoice.getInvoiceItems())) {
+			for(BillItem item: currentInvoice.getInvoiceItems()) {
+				BillDBItemBusinessInvoice businessInvoiceItem = null;
+				BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
+				if(item.getId() == null) {
+					businessInvoiceItem = new BillDBItemBusinessInvoice();
+					businessInvoiceItem.setStatus(STATUS_ACTIVE);
+					businessInvoiceItem.setCreatedDate(new Date());
+					BillDBItemBusiness fromBusinessItem = billGenericDaoImpl.getEntityByKey(BillDBItemBusiness.class, ID_ATTR, item.getParentItemId(), true);
+					businessInvoiceItem.setFromBusinessItem(fromBusinessItem);
+					if(item.getParentItem() != null) {
+						BillDBItemBusiness toBusinessItem = billGenericDaoImpl.getEntityByKey(BillDBItemBusiness.class, ID_ATTR, item.getParentItem().getId(), true) ;
+						businessInvoiceItem.setToBusinessItem(toBusinessItem);
+					}
+					businessInvoiceItem.setInvoice(businessInvoice);
+				} else {
+					businessInvoiceItem = billGenericDaoImpl.getEntityByKey(BillDBItemBusinessInvoice.class, ID_ATTR, item.getId(), true);
+				}
+				if(businessInvoiceItem != null) {
+					businessInvoiceItem.setQuantity(item.getQuantity());
+					businessInvoiceItem.setPrice(item.getPrice());
+					if(businessInvoiceItem.getId() == null) {
+						session.persist(businessInvoiceItem);
+					}
+				}
+			}
+		}
+	}
+
+	public BillServiceResponse getBusinessInvoicesForBusiness(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if (request.getUser() == null || request.getUser().getCurrentBusiness() == null || request.getBusiness() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			BillInvoiceDaoImpl dao = new BillInvoiceDaoImpl(session);
+			BillUserLog log = null;
+			if(request.getInvoice() != null && request.getInvoice().getMonth() != null && request.getInvoice().getYear() != null) {
+				log = new BillUserLog();
+				log.setFromDate(CommonUtils.getMonthFirstDate(request.getInvoice().getMonth(), request.getInvoice().getYear()));
+				log.setToDate(CommonUtils.getMonthLastDate(request.getInvoice().getMonth(), request.getInvoice().getYear()));
+			} else if(request.getItem() != null) {
+				log = request.getItem().getChangeLog();
+			}
+			List<BillDBBusinessInvoice> invoices = dao.getAllPurchaseInvoices(request.getUser().getCurrentBusiness().getId(), null, log, request.getBusiness().getId());
+			List<BillInvoice> businessInvoices = new ArrayList<BillInvoice>();
+			if(CollectionUtils.isNotEmpty(invoices)) {
+				NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
+				for(BillDBBusinessInvoice invoice: invoices) {
+					BillInvoice businessInvoice = new BillInvoice();
+					nullAwareBeanUtils.copyProperties(businessInvoice, invoice);
+					businessInvoice.setPayable(invoice.getAmount());
+					if(CollectionUtils.isNotEmpty(invoice.getItems())) {
+						List<BillItem> invoiceItems = new ArrayList<BillItem>();
+						for(BillDBItemBusinessInvoice item: invoice.getItems()) {
+							BillItem invoiceItem = new BillItem();
+							if(item.getFromBusinessItem() != null && item.getFromBusinessItem().getParent() != null) {
+								nullAwareBeanUtils.copyProperties(invoiceItem, item.getFromBusinessItem().getParent());
+							}
+							nullAwareBeanUtils.copyProperties(invoiceItem, item);
+							invoiceItems.add(invoiceItem);
+						}
+						businessInvoice.setInvoiceItems(invoiceItems);
+					}
+					businessInvoices.add(businessInvoice);
+				}
+			}
+			response.setInvoices(businessInvoices);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getBusinessesByType(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if (request.getBusiness() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
+			BillDBUserBusiness userBusiness = dao.getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), true);
+			if(CollectionUtils.isEmpty(userBusiness.getLocations())) {
+				response.setResponse(ERROR_CODE_GENERIC, "Please setup locations in your profile!");
+				return response;
+			}
+			List<BillDBItemBusiness> items = dao.getEntitiesByKey(BillDBItemBusiness.class, "business.id", request.getBusiness().getId(), true, null, null);
+			List<BillDBUserBusiness> businessesByType = new BillVendorDaoImpl(session).getBusinessesByType(ACCESS_DISTRIBUTOR, new ArrayList<BillDBLocation>(userBusiness.getLocations()),  items);
+			List<BillUser> businesses = new ArrayList<BillUser>();
+			if(CollectionUtils.isNotEmpty(businessesByType)) {
+				for(BillDBUserBusiness business: businessesByType) {
+					BillBusiness currentBusiness = BillDataConverter.getBusiness(business);
+					BillUser user = currentBusiness.getOwner();
+					//Load financials for UPI transfer
+					BillDataConverter.setUserFinancials(response, session, business.getUser(), user, new NullAwareBeanUtils());
+					if(user != null) {
+						if(CollectionUtils.isNotEmpty(businesses)) {
+							boolean found = false;
+							for(BillUser existing: businesses) {
+								if(existing.getId().intValue() == user.getId().intValue()) {
+									found = true;
+									break;
+								}
+							}
+							if(found) {
+								continue;
+							}
+						}
+						currentBusiness.setOwner(null);
+						List<BillItem> businessItems = BillDataConverter.getBusinessItems(new ArrayList<BillDBItemBusiness>(business.getBusinessItems()));
+						/*if(CollectionUtils.isNotEmpty(businessItems)) {
+							for(BillItem distributorItem: businessItems) {
+								BillItem parentItem = distributorItem.getParentItem();
+								if(parentItem != null) {
+									Calendar cal = Calendar.getInstance();
+									if(StringUtils.equals(FREQ_DAILY, parentItem.getFrequency()) && StringUtils.isNotBlank(parentItem.getWeekDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+										//Calculate cost price
+										distributorItem.setCostPrice(BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(), parentItem.getWeeklyCostPrice(), parentItem.getPrice()));
+										if(costPrice == null) {
+											if(parentItem.getCostPrice() != null) {
+												distributorItem.setCostPrice(parentItem.getCostPrice());
+											}
+										} else {
+											distributorItem.setCostPrice(costPrice);
+										}
+										
+									} else if ( (StringUtils.equals(FREQ_WEEKLY, parentItem.getFrequency()) || StringUtils.equals(FREQ_MONTHLY, parentItem.getFrequency())) && StringUtils.isNotBlank(parentItem.getMonthDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+										//Calculate cost price
+										distributorItem.setCostPrice(BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyCostPrice(), parentItem.getPrice()));
+									}
+									//Find parent that matches the business owner
+									if(CollectionUtils.isNotEmpty(items)) {
+										for(BillDBItemBusiness businessItem: items) {
+											if(businessItem.getParent() != null && businessItem.getParent().getId().intValue() == parentItem.getId().intValue()) {
+												distributorItem.setParentItemId(businessItem.getId());
+											}
+										}
+									}
+								}
+							}
+						}*/
+						currentBusiness.setItems(businessItems);
+						user.setCurrentBusiness(currentBusiness);
+						businesses.add(user);
+					}
+				}
+			}
+			response.setUsers(businesses);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getBusinessItemsByDate(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if (request.getBusiness() == null || request.getUser() == null || request.getUser().getCurrentBusiness() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			List<BillDBItemBusiness> items = new BillVendorDaoImpl(session).getBusinessItems(request.getBusiness().getId());
+			List<BillDBItemBusiness> distributorItems = new BillVendorDaoImpl(session).getBusinessItems(request.getUser().getCurrentBusiness().getId());
+			if(CollectionUtils.isEmpty(items) || CollectionUtils.isEmpty(distributorItems)) {
+				return response;
+			}
+			List<BillItem> businessItems = BillDataConverter.getBusinessItems(distributorItems);
+			List<BillItem> responseItems = new ArrayList<BillItem>();
+			if (CollectionUtils.isNotEmpty(businessItems)) {
+				for (BillItem distributorItem : businessItems) {
+					BillItem parentItem = distributorItem.getParentItem();
+					// Find parent that matches the business owner
+					if (CollectionUtils.isNotEmpty(items)) {
+						boolean found = false;
+						for (BillDBItemBusiness businessItem : items) {
+							if (businessItem.getParent() != null && businessItem.getParent().getId().intValue() == parentItem.getId().intValue()) {
+								distributorItem.setParentItemId(businessItem.getId());
+								found = true;
+							}
+						}
+						if(!found) {
+							break;
+						}
+					}
+					
+					if (parentItem != null) {
+						Calendar cal = Calendar.getInstance();
+						//Set the date
+						if(request.getRequestedDate() != null) {
+							cal.setTime(request.getRequestedDate());
+						}
+						if (StringUtils.equals(FREQ_DAILY, parentItem.getFrequency()) && StringUtils.isNotBlank(parentItem.getWeekDays())
+								&& StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+							// Calculate cost price
+							distributorItem.setCostPrice(BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(),
+									parentItem.getWeeklyCostPrice(), parentItem.getPrice()));
+
+						} else if ((StringUtils.equals(FREQ_WEEKLY, parentItem.getFrequency()) || StringUtils.equals(FREQ_MONTHLY, parentItem.getFrequency()))
+								&& StringUtils.isNotBlank(parentItem.getMonthDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+							// Calculate cost price
+							distributorItem.setCostPrice(BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(),
+									parentItem.getWeeklyCostPrice(), parentItem.getPrice()));
+						}
+						
+					}
+					responseItems.add(distributorItem);
+				}
+			}
+			response.setItems(responseItems);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {
 			CommonUtils.closeSession(session);
 		}

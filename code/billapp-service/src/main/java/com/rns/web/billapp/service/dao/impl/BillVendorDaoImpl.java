@@ -1,6 +1,7 @@
 package com.rns.web.billapp.service.dao.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
@@ -118,6 +119,35 @@ public class BillVendorDaoImpl {
 		 return criteria.list();
 	}
 	
+	public List<BillDBUserBusiness> getBusinessesByType(String type, List<BillDBLocation> locations, List<BillDBItemBusiness> items) {
+		Criteria criteria = session.createCriteria(BillDBUserBusiness.class);
+		criteria.add(Restrictions.eq("type", type));
+		criteria.createCriteria("user");
+		List<Integer> list = new ArrayList<Integer>();
+		if (CollectionUtils.isNotEmpty(locations)) {
+			for (BillDBLocation loc : locations) {
+				list.add(loc.getId());
+			}
+		}
+		if (CollectionUtils.isNotEmpty(list)) {
+			criteria.createCriteria("locations", JoinType.LEFT_OUTER_JOIN).add(Restrictions.in("id", list));
+		}
+		Criteria businessItemCriteria = criteria.createCriteria("businessItems", JoinType.LEFT_OUTER_JOIN).add(BillGenericDaoImpl.activeCriteria());
+		if(CollectionUtils.isNotEmpty(items)) {
+			List<Integer> parentIds = new ArrayList<Integer>();
+			if (CollectionUtils.isNotEmpty(items)) {
+				for (BillDBItemBusiness item : items) {
+					if(item.getParent() == null) {
+						continue;
+					}
+					parentIds.add(item.getParent().getId());
+				}
+			}
+			businessItemCriteria.createCriteria("parent", JoinType.LEFT_OUTER_JOIN).add(Restrictions.in("id", parentIds)).add(BillGenericDaoImpl.activeCriteria());
+		}
+		return criteria.list();
+	}
+	
 	public BillDBItemBusiness getBusinessItemByParent(Integer parentId, Integer businessId) {
 		 Criteria criteria = session.createCriteria(BillDBItemBusiness.class)
 				 .add(Restrictions.eq("business.id", businessId))
@@ -139,16 +169,22 @@ public class BillVendorDaoImpl {
 		return criteria.list();
 	}
 	
-	public List<Object[]> getBillSummary(Integer businessId, Integer parentItemId, Integer month, Integer year) {
+	public List<Object[]> getBillSummary(Integer businessId, Integer parentItemId, Integer month, Integer year, Integer groupId) {
 		//Query query = session.createQuery("select sum(items.quantity),items.businessItem,items.order,sum(items.price),sum(items.amount) from BillDBItemInvoice items where items.invoice.month=:month AND items.order.business.id=:businessId group by items.businessItem");
 		String sqlQuery = "from BillDBItemInvoice itemInvoice join itemInvoice.invoice join itemInvoice.invoice.subscription where itemInvoice.invoice.subscription.business.id=:businessId AND itemInvoice.invoice.month=:month AND itemInvoice.invoice.year=:year ";
 		if(parentItemId != null) {
 			sqlQuery = sqlQuery + " AND itemInvoice.businessItem.parent.id=:itemId";
 		}
+		if(groupId != null) {
+			sqlQuery = sqlQuery + " AND itemInvoice.invoice.subscription.customerGroup.id=:groupId";
+		}
 		Query query = session.createQuery(sqlQuery);
 		query.setInteger("businessId", businessId);
 		query.setInteger("month", month);
 		query.setInteger("year", year);
+		if(groupId != null) {
+			query.setInteger("groupId", groupId);
+		}
 		if(parentItemId != null) {
 			query.setInteger("itemId", parentItemId);
 		}
@@ -164,6 +200,14 @@ public class BillVendorDaoImpl {
 			return list.get(0);
 		}
 		return null;
+	}
+	
+	public List<BillDBItemBusiness> getBusinessItems(Integer businessId) {
+		 Criteria criteria = session.createCriteria(BillDBItemBusiness.class)
+				 .add(Restrictions.eq("business.id", businessId))
+				 .add(BillGenericDaoImpl.activeCriteria())
+				 .createCriteria("parent", JoinType.LEFT_OUTER_JOIN);
+		 return criteria.list();
 	}
 	
 }

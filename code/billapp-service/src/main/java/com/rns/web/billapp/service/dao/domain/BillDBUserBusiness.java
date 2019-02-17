@@ -17,6 +17,7 @@ import javax.persistence.JoinColumn;
 import javax.persistence.JoinTable;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
 @Entity
@@ -38,7 +39,7 @@ public class BillDBUserBusiness {
 	private String type;
 	private String showBillDetails;
 	private BigDecimal transactionCharges;
-	
+	private Set<BillDBItemBusiness> businessItems = new HashSet<BillDBItemBusiness>();
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -163,6 +164,14 @@ public class BillDBUserBusiness {
 	}
 	public void setTransactionCharges(BigDecimal transactionCharges) {
 		this.transactionCharges = transactionCharges;
+	}
+	
+	@OneToMany(mappedBy = "business", fetch = FetchType.LAZY)
+	public Set<BillDBItemBusiness> getBusinessItems() {
+		return businessItems;
+	}
+	public void setBusinessItems(Set<BillDBItemBusiness> businessItems) {
+		this.businessItems = businessItems;
 	}
 	
 

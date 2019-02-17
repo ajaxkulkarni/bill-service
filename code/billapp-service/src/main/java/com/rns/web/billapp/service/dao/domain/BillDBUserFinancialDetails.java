@@ -27,6 +27,7 @@ public class BillDBUserFinancialDetails {
 	private String status;
 	private BillDBUser user;
 	private String accountHolderName;
+	private String vpa;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -101,6 +102,14 @@ public class BillDBUserFinancialDetails {
 	}
 	public void setAccountHolderName(String accountHolderName) {
 		this.accountHolderName = accountHolderName;
+	}
+	
+	@Column(name = "vpa")
+	public String getVpa() {
+		return vpa;
+	}
+	public void setVpa(String vpa) {
+		this.vpa = vpa;
 	}
 	
 }

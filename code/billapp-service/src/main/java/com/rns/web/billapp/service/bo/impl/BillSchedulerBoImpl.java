@@ -345,7 +345,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 			if(parentItem != null) {
 				if(StringUtils.equals(FREQ_DAILY, parentItem.getFrequency()) && StringUtils.isNotBlank(parentItem.getWeekDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
 					//Calculate cost price
-					BigDecimal costPrice = calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(), parentItem.getWeeklyCostPrice(), parentItem.getPrice());
+					BigDecimal costPrice = BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(), parentItem.getWeeklyCostPrice(), parentItem.getPrice());
 					if(costPrice == null) {
 						if(parentItem.getCostPrice() != null && item.getQuantity() != null) {
 							item.setCostPrice(parentItem.getCostPrice().multiply(item.getQuantity()));
@@ -354,13 +354,13 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 						item.setCostPrice(costPrice.multiply(item.getQuantity()));
 					}
 					
-					BigDecimal price = calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(), parentItem.getWeeklyPricing(), parentItem.getPrice());
+					BigDecimal price = BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(), parentItem.getWeeklyPricing(), parentItem.getPrice());
 					if(price != null) {
 						return price;
 					}
 				} else if ( (StringUtils.equals(FREQ_WEEKLY, parentItem.getFrequency()) || StringUtils.equals(FREQ_MONTHLY, parentItem.getFrequency())) && StringUtils.isNotBlank(parentItem.getMonthDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
 					//Calculate cost price
-					BigDecimal costPrice = calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyCostPrice(), parentItem.getPrice());
+					BigDecimal costPrice = BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyCostPrice(), parentItem.getPrice());
 					if(costPrice == null) {
 						//Wrong logic //Do nothing here
 						/*if(parentItem.getCostPrice() != null && item.getQuantity() != null) {
@@ -370,7 +370,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 						item.setCostPrice(costPrice.multiply(item.getQuantity()));
 					}
 					
-					BigDecimal price = calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyPricing(), parentItem.getPrice());
+					BigDecimal price = BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyPricing(), parentItem.getPrice());
 					if(price != null) {
 						return price;
 					}
@@ -382,29 +382,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 		}
 		return null;
 	}
-	private BigDecimal calculatePricing(Integer day, String weekDaysString, String pricingString, BigDecimal price) {
-		if(StringUtils.isBlank(weekDaysString) || StringUtils.isBlank(pricingString)) {
-			return null;
-		}
-		String[] weekdays = StringUtils.split(weekDaysString, ",");
-		String[] pricing = StringUtils.split(pricingString, ",");
-		if(ArrayUtils.isNotEmpty(weekdays)) {
-			for(int i = 0; i < weekdays.length; i++) {
-				if(day == Integer.parseInt(weekdays[i])) {
-					if(ArrayUtils.isNotEmpty(pricing)) {
-						if(pricing.length > i) {
-							return new BigDecimal(pricing[i]);
-						} else {
-							return new BigDecimal(pricing[0]);
-						}
-					} else {
-						return price;
-					}
-				}
-			}
-		}
-		return null;
-	}
+	
 	private boolean weekDayNotPresent(Calendar cal, String weekDays) {
 		return StringUtils.isNotEmpty(weekDays) && !StringUtils.contains(weekDays, String.valueOf(cal.get(Calendar.DAY_OF_WEEK)));
 	}
