@@ -311,6 +311,19 @@ public class BillInvoiceDaoImpl {
 		return criteria.list();
 	}
 	
+	public Object getTotalPendingForBusiness(Integer toBusinessId, Integer fromBusinessId, BillUserLog log) {
+		Criteria criteria = session.createCriteria(BillDBBusinessInvoice.class)
+				 .add(Restrictions.eq("toBusiness.id", toBusinessId))
+				 .add(Restrictions.eq("fromBusiness.id", fromBusinessId))
+				 .add(invoiceNotDeleted()).add(Restrictions.ne("status", BillConstants.INVOICE_STATUS_PAID));
+		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		if(log != null) {
+			criteria.add(Restrictions.ge("invoiceDate", log.getFromDate())).add(Restrictions.le("invoiceDate", log.getToDate()));
+		}
+		criteria.setProjection(Projections.sum("amount"));
+		return criteria.uniqueResult();
+	}
+	
 	/*public int updateSettlement(Integer businessId, String status, String oldStatus) {
 		Query query = session.createQuery("update BillDBTransactions set status=:status where status=:oldStatus AND business.id=:business");
 		query.setString("status", status);

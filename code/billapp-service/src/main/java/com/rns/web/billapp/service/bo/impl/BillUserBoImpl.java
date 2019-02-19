@@ -1729,7 +1729,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			Map<String, Object> keys = new HashMap<String, Object>();
 			keys.put("business.id", request.getBusiness().getId());
 			if(request.getCustomerGroup() != null) {
-				keys.put("customerGroup.id", request.getBusiness().getId());
+				keys.put("customerGroup.id", request.getCustomerGroup().getId());
 			}
 			criteriaList.add(new BillMyCriteria("subscription", keys));
 			
@@ -1934,8 +1934,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				for(BillDBUserBusiness business: businessesByType) {
 					BillBusiness currentBusiness = BillDataConverter.getBusiness(business);
 					BillUser user = currentBusiness.getOwner();
-					//Load financials for UPI transfer
+					//Load financial for UPI transfer
 					BillDataConverter.setUserFinancials(response, session, business.getUser(), user, new NullAwareBeanUtils());
+					//Get total pending for this business
+					BigDecimal sum = (BigDecimal) new BillInvoiceDaoImpl(session).getTotalPendingForBusiness(business.getId(), request.getBusiness().getId(), null);
 					if(user != null) {
 						if(CollectionUtils.isNotEmpty(businesses)) {
 							boolean found = false;
@@ -1951,38 +1953,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						}
 						currentBusiness.setOwner(null);
 						List<BillItem> businessItems = BillDataConverter.getBusinessItems(new ArrayList<BillDBItemBusiness>(business.getBusinessItems()));
-						/*if(CollectionUtils.isNotEmpty(businessItems)) {
-							for(BillItem distributorItem: businessItems) {
-								BillItem parentItem = distributorItem.getParentItem();
-								if(parentItem != null) {
-									Calendar cal = Calendar.getInstance();
-									if(StringUtils.equals(FREQ_DAILY, parentItem.getFrequency()) && StringUtils.isNotBlank(parentItem.getWeekDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
-										//Calculate cost price
-										distributorItem.setCostPrice(BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(), parentItem.getWeeklyCostPrice(), parentItem.getPrice()));
-										if(costPrice == null) {
-											if(parentItem.getCostPrice() != null) {
-												distributorItem.setCostPrice(parentItem.getCostPrice());
-											}
-										} else {
-											distributorItem.setCostPrice(costPrice);
-										}
-										
-									} else if ( (StringUtils.equals(FREQ_WEEKLY, parentItem.getFrequency()) || StringUtils.equals(FREQ_MONTHLY, parentItem.getFrequency())) && StringUtils.isNotBlank(parentItem.getMonthDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
-										//Calculate cost price
-										distributorItem.setCostPrice(BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyCostPrice(), parentItem.getPrice()));
-									}
-									//Find parent that matches the business owner
-									if(CollectionUtils.isNotEmpty(items)) {
-										for(BillDBItemBusiness businessItem: items) {
-											if(businessItem.getParent() != null && businessItem.getParent().getId().intValue() == parentItem.getId().intValue()) {
-												distributorItem.setParentItemId(businessItem.getId());
-											}
-										}
-									}
-								}
-							}
-						}*/
 						currentBusiness.setItems(businessItems);
+						BillInvoice currentInvoice = new BillInvoice();
+						currentInvoice.setPayable(sum);
+						user.setCurrentInvoice(currentInvoice);
 						user.setCurrentBusiness(currentBusiness);
 						businesses.add(user);
 					}
