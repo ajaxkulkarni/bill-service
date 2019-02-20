@@ -2024,7 +2024,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						}
 						
 					}
-					responseItems.add(distributorItem);
+					if(distributorItem.getCostPrice() != null) {
+						responseItems.add(distributorItem);
+					}
 				}
 			}
 			response.setItems(responseItems);
