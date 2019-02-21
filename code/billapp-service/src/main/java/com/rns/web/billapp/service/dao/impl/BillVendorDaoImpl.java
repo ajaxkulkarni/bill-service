@@ -123,6 +123,7 @@ public class BillVendorDaoImpl {
 		Criteria criteria = session.createCriteria(BillDBUserBusiness.class);
 		criteria.add(Restrictions.eq("type", type));
 		criteria.createCriteria("user");
+		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		List<Integer> list = new ArrayList<Integer>();
 		if (CollectionUtils.isNotEmpty(locations)) {
 			for (BillDBLocation loc : locations) {

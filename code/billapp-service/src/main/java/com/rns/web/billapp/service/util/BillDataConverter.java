@@ -121,7 +121,9 @@ public class BillDataConverter implements BillConstants {
 		NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
 		for (BillDBItemBusiness item : items) {
 			BillItem businessItem = getBusinessItem(beanUtils, item);
-			businessItems.add(businessItem);
+			if(StringUtils.equals(STATUS_ACTIVE, businessItem.getStatus())) {
+				businessItems.add(businessItem);
+			}
 		}
 		Collections.sort(businessItems, new BillNameSorter());
 		return businessItems;
