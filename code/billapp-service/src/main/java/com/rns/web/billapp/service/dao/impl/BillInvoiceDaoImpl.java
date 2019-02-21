@@ -275,14 +275,15 @@ public class BillInvoiceDaoImpl {
 		return query.list();
 	}
 	
-	public BillDBBusinessInvoice getInvoiceByDate(Date date, Integer businessId) {
-		String queryString = "from BillDBBusinessInvoice tx where fromBusiness.id=:businessId AND invoiceDate=:invoiceDate AND status!=:deleted)";
+	public BillDBBusinessInvoice getInvoiceByDate(Date date, Integer businessId, Integer toBusinessId) {
+		String queryString = "from BillDBBusinessInvoice tx where fromBusiness.id=:businessId AND toBusiness.id=:toBusinessId AND invoiceDate=:invoiceDate AND status!=:deleted)";
 		if(businessId != null) {
 			queryString = queryString + " AND business.id=:businessId";
 		}
 		Query query = session.createQuery(queryString);
 		query.setString("invoiceDate", CommonUtils.convertDate(date));
 		query.setInteger("businessId", businessId);
+		query.setInteger("toBusinessId", toBusinessId);
 		query.setString("deleted", BillConstants.INVOICE_STATUS_DELETED);
 		List<BillDBBusinessInvoice> result = query.list();
 		if(CollectionUtils.isEmpty(result)) {

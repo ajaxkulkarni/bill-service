@@ -1796,7 +1796,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				BillDBUserBusiness fromBusiness = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getUser().getCurrentBusiness().getId(), true);
 				BillDBUserBusiness toBusiness = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), true);
 				//New Invoice
-				BillDBBusinessInvoice existingInvoice = new BillInvoiceDaoImpl(session).getInvoiceByDate(currentInvoice.getInvoiceDate(), fromBusiness.getId());
+				BillDBBusinessInvoice existingInvoice = new BillInvoiceDaoImpl(session).getInvoiceByDate(currentInvoice.getInvoiceDate(), fromBusiness.getId(), toBusiness.getId());
 				if(existingInvoice != null) {
 					response.setResponse(ERROR_CODE_GENERIC, ERROR_INVOICE_EXISTS);
 					return response;
