@@ -798,6 +798,13 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				//Get all pending invoices
 				BillInvoiceDaoImpl billInvoiceDaoImpl = new BillInvoiceDaoImpl(session);
 				List<BillDBInvoice> pendingInvoices = billInvoiceDaoImpl.getAllInvoices(currentSubscription.getId(), INVOICE_STATUS_PENDING);
+				List<BillDBInvoice> failedInvoices = billInvoiceDaoImpl.getAllInvoices(currentSubscription.getId(), INVOICE_STATUS_FAILED);
+				if(CollectionUtils.isNotEmpty(failedInvoices)) {
+					if(pendingInvoices == null) {
+						pendingInvoices = new ArrayList<BillDBInvoice>();
+					}
+					pendingInvoices.addAll(failedInvoices);
+				}
 				if(CollectionUtils.isNotEmpty(pendingInvoices)) {
 					currentSubscription.setBillsDue(pendingInvoices.size());
 					response.setInvoices(BillDataConverter.getInvoices(pendingInvoices, session));
