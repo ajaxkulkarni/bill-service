@@ -1937,6 +1937,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			List<BillDBItemBusiness> items = dao.getEntitiesByKey(BillDBItemBusiness.class, "business.id", request.getBusiness().getId(), true, null, null);
 			List<BillDBUserBusiness> businessesByType = new BillVendorDaoImpl(session).getBusinessesByType(ACCESS_DISTRIBUTOR, new ArrayList<BillDBLocation>(userBusiness.getLocations()),  items);
 			List<BillUser> businesses = new ArrayList<BillUser>();
+			if(CollectionUtils.isEmpty(businessesByType)) {
+				response.setResponse(ERROR_CODE_GENERIC, "Please contact our team to enable this feature for your location. Once enabled you will be able to track and pay your purchase online.");
+				return response;
+			}
 			if(CollectionUtils.isNotEmpty(businessesByType)) {
 				for(BillDBUserBusiness business: businessesByType) {
 					BillBusiness currentBusiness = BillDataConverter.getBusiness(business);
