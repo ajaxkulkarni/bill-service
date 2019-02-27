@@ -3,6 +3,7 @@ package com.rns.web.billapp.service.util;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -155,6 +156,7 @@ public class BillDataConverter implements BillConstants {
 		}
 		if(sort) {
 			Collections.sort(businessCustomers, new BillNameSorter());
+			//Lists.sort(businessCustomers, new BillNameSorter());
 		}
 		return businessCustomers;
 	}

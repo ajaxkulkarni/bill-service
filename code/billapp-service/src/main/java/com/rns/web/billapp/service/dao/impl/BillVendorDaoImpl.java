@@ -77,10 +77,12 @@ public class BillVendorDaoImpl {
 		if(businessId != null) {
 			criteria.createAlias("business", "b").add(Restrictions.eq("b.id", businessId));
 		}
+		Criteria subscriptionCriteria = criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN);
 		if(groupId != null) {
-			Criteria subscriptionCriteria = criteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN);
 			subscriptionCriteria.add(Restrictions.eq("customerGroup.id", groupId));
 			BillGenericDaoImpl.addOrder("customerGroup.id", "asc", subscriptionCriteria);
+		} else {
+			BillGenericDaoImpl.addOrder("name", "asc", subscriptionCriteria);
 		}
 		criteria.setFetchMode("subscription", FetchMode.JOIN);
 		return criteria.list();

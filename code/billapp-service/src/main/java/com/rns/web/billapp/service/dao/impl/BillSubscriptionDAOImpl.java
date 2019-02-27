@@ -59,6 +59,8 @@ public class BillSubscriptionDAOImpl {
 		if(groupId != null) {
 			criteria.add(Restrictions.eq("customerGroup.id", groupId));
 			BillGenericDaoImpl.addOrder("groupSequence", "asc", criteria);
+		} else {
+			BillGenericDaoImpl.addOrder("name", "asc", criteria);
 		}
 		Criteria location = criteria.createCriteria("location", JoinType.LEFT_OUTER_JOIN);
 		Criteria subscribed = criteria.createCriteria("subscriptions", JoinType.LEFT_OUTER_JOIN)/*.add(activeCriteria())*/;

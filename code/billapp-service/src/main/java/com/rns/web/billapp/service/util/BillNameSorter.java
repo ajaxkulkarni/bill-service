@@ -22,6 +22,12 @@ public class BillNameSorter implements Comparator<Object> {
 		} else if (o1 instanceof BillUser) {
 			BillUser user1 = (BillUser) o1;
 			BillUser user2 = (BillUser) o2;
+			if(StringUtils.isBlank(user1.getName())) {
+				return -1;
+			}
+			if(StringUtils.isBlank(user2.getName())) {
+				return 1;
+			}
 			if(user1.getName() != null && user2.getName() != null) {
 				return user1.getName().compareToIgnoreCase(user2.getName());
 			}

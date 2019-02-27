@@ -719,13 +719,13 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			BillSubscriptionDAOImpl dao = new BillSubscriptionDAOImpl(session);
 			Integer groupId = null;
-			boolean sort = true;
+			/*boolean sort = true;
 			if(request.getCustomerGroup() != null) {
 				groupId = request.getCustomerGroup().getId();
 				sort = false; //No need to sort based on names
-			}
+			}*/
 			List<BillDBSubscription> customers = dao.getBusinessSubscriptions(request.getBusiness().getId(), groupId);
-			response.setUsers(BillDataConverter.getCustomers(customers, sort));
+			response.setUsers(BillDataConverter.getCustomers(customers, false));
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {
@@ -764,9 +764,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					users.add(user);
 				}
 			}
-			if(groupId == null) {
+			/*if(groupId == null) {
 				Collections.sort(users, new BillNameSorter());
-			}
+			}*/
 			response.setUsers(users);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -1489,7 +1489,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			if(request.getItem() == null || request.getItem().getParentItemId() == null) {
 				//Get data for full invoices
 				users = prepareInvoiceSummary(request, session, null);
-				Collections.sort(users, new BillNameSorter());
+				//Collections.sort(users, new BillNameSorter());
 				response.setUsers(users);
 				return response;
 			} 

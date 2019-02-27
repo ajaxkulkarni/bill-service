@@ -162,7 +162,7 @@ public class BillInvoiceDaoImpl {
 	
 	public List<Object[]> getCustomerInvoiceSummary(Date date, Integer businessId, Integer currentMonth, Integer currentYear, CharSequence status, Integer groupId) {
 		//AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) 
-		String queryString = "select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance),sum(invoice.noOfReminders) from BillDBInvoice invoice where invoice.status!=:deleted AND invoice.subscription!=:disabled AND invoice.subscription.business.id=:businessId {statusQuery} {monthQuery} {groupQuery} group by invoice.subscription.id";
+		String queryString = "select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance),sum(invoice.noOfReminders) from BillDBInvoice invoice where invoice.status!=:deleted AND invoice.subscription!=:disabled AND invoice.subscription.business.id=:businessId {statusQuery} {monthQuery} {groupQuery} group by invoice.subscription.id {orderQuery}";
 		if(currentMonth != null && currentYear != null) {
 			queryString = StringUtils.replace(queryString, "{monthQuery}", " AND invoice.month=:currentMonth AND invoice.year=:currentYear");
 		} else {
@@ -175,8 +175,10 @@ public class BillInvoiceDaoImpl {
 		}
 		if(groupId != null) {
 			queryString = StringUtils.replace(queryString, "{groupQuery}", " AND invoice.subscription.customerGroup.id=:groupId ");
+			queryString = StringUtils.replace(queryString, "{orderQuery}", "order by invoice.subscription.groupSequence");
 		} else {
 			queryString = StringUtils.replace(queryString, "{groupQuery}", "");
+			queryString = StringUtils.replace(queryString, "{orderQuery}", "order by invoice.subscription.name");
 		}
 		Query query = session.createQuery(queryString);
 		if(StringUtils.isNotBlank(status)) {
