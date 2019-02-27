@@ -719,11 +719,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			BillSubscriptionDAOImpl dao = new BillSubscriptionDAOImpl(session);
 			Integer groupId = null;
-			/*boolean sort = true;
 			if(request.getCustomerGroup() != null) {
 				groupId = request.getCustomerGroup().getId();
-				sort = false; //No need to sort based on names
-			}*/
+			}
 			List<BillDBSubscription> customers = dao.getBusinessSubscriptions(request.getBusiness().getId(), groupId);
 			response.setUsers(BillDataConverter.getCustomers(customers, false));
 		} catch (Exception e) {
