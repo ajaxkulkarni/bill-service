@@ -378,8 +378,12 @@ public class CommonUtils {
 		return phone;
 	}
 	
-	public static void main(String[] args) {
-		System.out.println(String.format("%04d", 11223));
+	public static Integer getMonthDays(Integer month) {
+		if(month == null) {
+			return null;
+		}
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.MONTH, month - 1);
+		return cal.getActualMaximum(Calendar.DAY_OF_MONTH);
 	}
-	
 }

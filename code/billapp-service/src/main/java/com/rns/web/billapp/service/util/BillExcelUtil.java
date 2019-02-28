@@ -6,14 +6,18 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.ss.format.CellFormatType;
 import org.apache.poi.ss.usermodel.Cell;
@@ -39,6 +43,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
+import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
@@ -727,4 +732,69 @@ public class BillExcelUtil {
 	});
 	//67,37,10,55,15,20
 	//Not found from other app Eenadu -> Inadu, Pune times -> Times of India, Navbharat -> Hindi Navabharat, Times of India -> TOI + Mirror, Hindu -> THe Hindu, THe Hindustan Times - Hindustan Times
+
+	public static Map<Integer, BigDecimal> createPriceMap(InputStream excel) throws InvalidFormatException, IOException {
+		Workbook workbook = WorkbookFactory.create(excel);
+		Sheet sheet = workbook.getSheetAt(0);
+		Map<Integer, BigDecimal> priceMap = new HashMap<Integer, BigDecimal>();
+		for (Row row : sheet) {
+			if (row.getRowNum() == 0) { // Title row
+				continue;
+			} else {
+				if (row.getCell(0) != null && row.getCell(1) != null) {
+					priceMap.put(new Double(row.getCell(0).getNumericCellValue()).intValue(), new BigDecimal(row.getCell(1).getNumericCellValue()));
+				}
+			}
+		}
+		return priceMap;
+	}
+	
+	public static void createInvoiceFromReference(Map<Integer, BigDecimal> priceMap, Session session, BillDBSubscription subscription,
+			List<Object[]> orderItems, BillDBInvoice dbInvoice, Integer month)
+			throws InvalidFormatException, IOException, IllegalAccessException, InvocationTargetException {
+		if(CollectionUtils.isEmpty(priceMap.keySet())) {
+			return;
+		}
+		BigDecimal quantity = new BigDecimal(CommonUtils.getMonthDays(month));
+		BigDecimal total = BigDecimal.ZERO;
+		for (Entry<Integer, BigDecimal> e : priceMap.entrySet()) {
+			if (CollectionUtils.isNotEmpty(orderItems)) {
+				for (Object[] subRow : orderItems) {
+					if (ArrayUtils.isEmpty(subRow)) {
+						continue;
+					}
+					BillDBOrderItems orderItem = (BillDBOrderItems) subRow[2];
+					BillDBSubscription orderItemSub = (BillDBSubscription) subRow[3];
+					if (orderItemSub.getId().intValue() == subscription.getId().intValue()) {
+						if (orderItem.getBusinessItem() != null && orderItem.getBusinessItem().getParent() != null
+								&& e.getKey() == orderItem.getBusinessItem().getParent().getId().intValue()) {
+							if (CollectionUtils.isNotEmpty(dbInvoice.getItems())) {
+								for (BillDBItemInvoice invoiceItem : dbInvoice.getItems()) {
+									if (invoiceItem.getBusinessItem().getId().intValue() == orderItem.getBusinessItem().getId().intValue()) {
+										invoiceItem.setPrice(e.getValue());
+										invoiceItem.setQuantity(quantity);
+										total = total.add(invoiceItem.getPrice());
+									}
+								}
+							} else {
+								BillDBItemInvoice itemInvoice = new BillDBItemInvoice();
+								itemInvoice.setBusinessItem(orderItem.getBusinessItem());
+								itemInvoice.setSubscribedItem(orderItem.getSubscribedItem());
+								itemInvoice.setInvoice(dbInvoice);
+								itemInvoice.setCreatedDate(new Date());
+								itemInvoice.setStatus(BillConstants.STATUS_ACTIVE);
+								itemInvoice.setPrice(e.getValue());
+								itemInvoice.setQuantity(quantity);
+								session.persist(itemInvoice);
+								total = total.add(itemInvoice.getPrice());
+							}
+						}
+					}
+				}
+			}
+		}
+		dbInvoice.setAmount(total);
+		System.out.println(" .......... ");
+	}
+	
 }

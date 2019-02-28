@@ -234,8 +234,15 @@ public class BillAdminController {
 	@Path("/generateInvoices")
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces(MediaType.APPLICATION_JSON)
-	public BillServiceResponse generateInvoices(BillServiceRequest request) {
-		return adminBo.generateBills(request);
+	public BillServiceResponse generateInvoices(@FormDataParam("data") InputStream customerData, @FormDataParam("data") FormDataContentDisposition customerDataDetails,@FormDataParam("request") String request) throws JsonParseException, JsonMappingException, IOException {
+		BillServiceRequest serviceRequest = new ObjectMapper().readValue(request, BillServiceRequest.class);
+		BillFile file = new BillFile();
+		file.setFileData(customerData);
+		file.setFileSize(new BigDecimal((customerDataDetails.getSize())));
+		file.setFileType(customerDataDetails.getType());
+		file.setFilePath(customerDataDetails.getFileName());
+		serviceRequest.setFile(file);
+		return adminBo.generateBills(serviceRequest);
 	}
 	
 	@POST

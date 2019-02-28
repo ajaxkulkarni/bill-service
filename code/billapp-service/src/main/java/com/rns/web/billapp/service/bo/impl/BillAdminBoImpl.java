@@ -291,6 +291,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			Date fromDate = CommonUtils.getMonthFirstDate(month, year);
 			Date toDate = CommonUtils.getMonthLastDate(month, year);
 			List<Object[]> result = new BillInvoiceDaoImpl(session).getCustomerOrderSummary(fromDate, toDate);
+			System.out.println(result.size());
 			List<Object[]> orderItemsResult = new BillInvoiceDaoImpl(session).getCustomerOrderItemSummary(fromDate, toDate);
 			
 			Map<Integer, BillUser> vendors = new HashMap<Integer, BillUser>();
@@ -299,6 +300,15 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			
 			if(request.getBusiness() != null) {
 				businessId = request.getBusiness().getId();
+			}
+			
+			Map<Integer, BigDecimal> priceMap = null;
+			if(request.getFile() != null) {
+				priceMap = BillExcelUtil.createPriceMap(request.getFile().getFileData());
+				LoggingUtil.logMessage("Price map created =>" + priceMap);
+			} else {
+				response.setResponse(ERROR_CODE_GENERIC, "Price reference file not uploaded!");
+				return response;
 			}
 			
 			LoggingUtil.logMessage(" ### Invoice generation started for " + fromDate + " to " + toDate + " business " + businessId);
@@ -329,13 +339,22 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						dbInvoice.setCreatedDate(new Date());
 						dbInvoice.setSubscription(subscription);
 					} else if (!StringUtils.equalsIgnoreCase(REQUEST_TYPE_OVERWRITE, request.getRequestType())) {
+						LoggingUtil.logMessage("Invoice already exists => " + dbInvoice.getId() +  " for " + subscription.getId() + " total " + total);
 						continue;
 					}
-
+					
 					dbInvoice.setAmount(total);
 					dbInvoice.setServiceCharge(subscription.getServiceCharge());
-
-					if (CollectionUtils.isNotEmpty(orderItemsResult)) {
+					
+					if(subscription.getCreatedDate().compareTo(CommonUtils.getMonthFirstDate(month, year)) > 0) {
+						if(priceMap == null) {
+							LoggingUtil.logMessage("Price map not found .. ");
+							continue;
+						}
+						//Customer is registered after month's first date.. so calculate invoice by excel sheet
+						LoggingUtil.logMessage("Calculating by excel for subscription " + subscription + " of business " + subscription.getBusiness().getId());
+						BillExcelUtil.createInvoiceFromReference(priceMap, session, subscription, orderItemsResult, dbInvoice, month);
+					} else if (CollectionUtils.isNotEmpty(orderItemsResult)) {
 						for (Object[] subRow : orderItemsResult) {
 							if (ArrayUtils.isEmpty(subRow)) {
 								continue;
