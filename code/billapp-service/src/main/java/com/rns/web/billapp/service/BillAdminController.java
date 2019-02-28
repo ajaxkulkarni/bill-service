@@ -232,7 +232,7 @@ public class BillAdminController {
 	
 	@POST
 	@Path("/generateInvoices")
-	@Consumes(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse generateInvoices(@FormDataParam("data") InputStream customerData, @FormDataParam("data") FormDataContentDisposition customerDataDetails,@FormDataParam("request") String request) throws JsonParseException, JsonMappingException, IOException {
 		BillServiceRequest serviceRequest = new ObjectMapper().readValue(request, BillServiceRequest.class);
