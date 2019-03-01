@@ -320,11 +320,14 @@ public class BillRuleEngine {
 	}
 	
 	public static BigDecimal calculatePricing(Integer day, String weekDaysString, String pricingString, BigDecimal price) {
-		if(StringUtils.isBlank(weekDaysString) || StringUtils.isBlank(pricingString)) {
+		if(StringUtils.isBlank(weekDaysString) /*|| StringUtils.isBlank(pricingString)*/) {
 			return null;
 		}
 		String[] weekdays = StringUtils.split(weekDaysString, ",");
-		String[] pricing = StringUtils.split(pricingString, ",");
+		String[] pricing = null;
+		if(StringUtils.isNotBlank(pricingString)) {
+			pricing = StringUtils.split(pricingString, ",");
+		}
 		if(ArrayUtils.isNotEmpty(weekdays)) {
 			for(int i = 0; i < weekdays.length; i++) {
 				if(day == Integer.parseInt(weekdays[i])) {

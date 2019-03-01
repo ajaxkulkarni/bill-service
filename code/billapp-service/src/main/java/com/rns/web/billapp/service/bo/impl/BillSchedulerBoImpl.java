@@ -358,7 +358,7 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 					if(price != null) {
 						return price;
 					}
-				} else if ( (StringUtils.equals(FREQ_WEEKLY, parentItem.getFrequency()) || StringUtils.equals(FREQ_MONTHLY, parentItem.getFrequency())) && StringUtils.isNotBlank(parentItem.getMonthDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+				} else if ( (StringUtils.equals(FREQ_WEEKLY, parentItem.getFrequency()) || StringUtils.equals(FREQ_MONTHLY, parentItem.getFrequency())) && StringUtils.isNotBlank(parentItem.getMonthDays()) /*&& StringUtils.isNotBlank(parentItem.getWeeklyPricing())*/) {
 					//Calculate cost price
 					BigDecimal costPrice = BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyCostPrice(), parentItem.getPrice());
 					if(costPrice == null) {
@@ -373,6 +373,8 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 					BigDecimal price = BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(), parentItem.getWeeklyPricing(), parentItem.getPrice());
 					if(price != null) {
 						return price;
+					} else {
+						return BigDecimal.ZERO;
 					}
 				}
 				
