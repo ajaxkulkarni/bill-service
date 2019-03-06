@@ -79,7 +79,7 @@ public class BillExcelUtil {
 		DataFormatter dataFormatter = new DataFormatter();
 
 		Integer colName = null, colEmail = null, colPhone = null, colLoc = null, colAddress = null, colItems = null, colSC = null;
-		Integer colAmount = null, colLine = null, colDays = null, colPending = null, colTotal = null;
+		Integer colAmount = null, colLine = null, colDays = null, colPending = null, colTotal = null, colCredit = null;
 		BillDBUserBusiness dbBusiness = new BillDBUserBusiness();
 		dbBusiness.setId(business.getId());
 		for (Row row : sheet) {
@@ -111,6 +111,8 @@ public class BillExcelUtil {
 						colPending = cell.getColumnIndex();
 					} else if (StringUtils.equalsIgnoreCase(cellValue, "Total")) {
 						colTotal = cell.getColumnIndex();
+					} else if (StringUtils.equalsIgnoreCase(cellValue, "Credit")) {
+						colCredit = cell.getColumnIndex();
 					}
 				}
 			} else {
@@ -192,6 +194,9 @@ public class BillExcelUtil {
 					LoggingUtil.logMessage("Added customer ..." + customer.getName());
 					if (colPending != null && row.getCell(colPending) != null) {
 						invoice.setPendingBalance(new BigDecimal(row.getCell(colPending).getNumericCellValue()));
+					}
+					if (colCredit != null && row.getCell(colCredit) != null) {
+						invoice.setCreditBalance(new BigDecimal(row.getCell(colCredit).getNumericCellValue()));
 					}
 					if(colTotal != null && row.getCell(colTotal) != null) {
 						invoice.setAmount(new BigDecimal(row.getCell(colTotal).getNumericCellValue()));
@@ -284,6 +289,7 @@ public class BillExcelUtil {
 				}
 				if(dbInvoice != null) {
 					dbInvoice.setPendingBalance(invoice.getPendingBalance());
+					dbInvoice.setCreditBalance(invoice.getCreditBalance());
 				}
 			}
 		}
