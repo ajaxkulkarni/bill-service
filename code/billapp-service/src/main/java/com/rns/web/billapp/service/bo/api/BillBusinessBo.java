@@ -12,5 +12,6 @@ public interface BillBusinessBo {
 	BillServiceResponse updateCustomerBill(BillServiceRequest request);
 	BillServiceResponse getAllInvoices(BillServiceRequest request);
 	BillServiceResponse getBusinessSummary(BillServiceRequest request);
+	BillServiceResponse rewardBusinessReferral(BillServiceRequest request);//One time referral rewards
 
 }

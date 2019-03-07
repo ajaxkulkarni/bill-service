@@ -274,6 +274,27 @@ public class BillBusinessConverter {
 		return coupons;
 	}
 	
+	public static BillDBCustomerCoupons getBusinessCoupon(BillDBSchemes schemes, BillDBUserBusiness fromBusiness, BillDBUserBusiness toBusiness) {
+		BillDBCustomerCoupons coupons = new BillDBCustomerCoupons();
+		// nullAwareBeanUtils.copyProperties(coupons, request.getScheme());
+		coupons.setAcceptedDate(new Date());
+		coupons.setStatus(BillConstants.STATUS_ACTIVE);
+		if (StringUtils.equalsIgnoreCase(BillConstants.SCHEME_TYPE_LINK, schemes.getSchemeType())) {
+			coupons.setStatus(BillConstants.STATUS_PENDING);
+		}
+		coupons.setBusiness(fromBusiness);
+		coupons.setAcceptedBy(toBusiness);
+		coupons.setScheme(schemes);
+		// Decide validity
+		coupons.setValidFrom(new Date());
+		if(schemes.getDuration() != null) {
+			coupons.setValidTill(CommonUtils.addToDate(coupons.getValidFrom(), Calendar.MONTH, schemes.getDuration()));
+		} else {
+			coupons.setValidTill(new Date());
+		}
+		return coupons;
+	}
+	
 	public static void updatePaymentStatusAsPaid(BillInvoice invoice, BillDBInvoice dbInvoice) {
 		BillRuleEngine.calculatePayable(invoice, null, null);
 		dbInvoice.setPaidAmount(invoice.getPayable());

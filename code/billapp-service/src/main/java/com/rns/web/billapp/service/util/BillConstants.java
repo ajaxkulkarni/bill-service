@@ -77,6 +77,7 @@ public interface BillConstants {
 	String SCHEME_TYPE_INVOICE = "INVOICE"; //Only after invoice is paid
 	String SCHEME_TYPE_GENERAL = "GENERAL";
 	String SCHEME_TYPE_REWARD = "REWARD"; //Direct reward to vendors
+	String SCHEME_TYPE_REFFERAL_REWARD = "REFREWARD"; //Direct reward to vendors on refferrals
 	String SCHEME_TYPE_REFERRAL = "REFERRAL"; //Vendor referrals B2B
 	int NS_SCHEME_DAYS_LIMIT = 5;
 	String NO = "N";

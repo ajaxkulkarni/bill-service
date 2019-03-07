@@ -39,6 +39,18 @@ public class BillSchemesDaoImpl {
 		return null;
 	}
 	
+	public BillDBCustomerCoupons getAcceptedScheme(Integer schemeId, Integer fromBusiness, Integer toBusiness) {
+		Query query = session.createQuery("from BillDBCustomerCoupons where scheme.id=:schemeId AND business.id=:fromBusiness AND acceptedBy.id=:toBusiness");
+		query.setInteger("schemeId", schemeId);
+		query.setInteger("fromBusiness", fromBusiness);
+		query.setInteger("toBusiness", toBusiness);
+		List<BillDBCustomerCoupons> list = query.list();
+		if(CollectionUtils.isNotEmpty(list)) {
+			return list.get(0);
+		}
+		return null;
+	}
+	
 	public List<BillDBSchemes> getSchemes(String schemeType) {
 		Criteria criteria = session.createCriteria(BillDBSchemes.class);
 		criteria.add(Restrictions.eq("schemeType", schemeType));

@@ -22,6 +22,7 @@ import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
+import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
@@ -34,6 +35,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillSchemesDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillSubscriptionDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillServiceRequest;
@@ -416,6 +418,53 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 			response.setDashboard(dashboard);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse rewardBusinessReferral(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		if (request.getBusiness() == null || request.getUser() == null || request.getUser().getCurrentBusiness() == null) {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
+			return response;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			List<BillDBSchemes> rewardSchemes = new BillSchemesDaoImpl(session).getSchemes(SCHEME_TYPE_REFFERAL_REWARD);
+			if(CollectionUtils.isNotEmpty(rewardSchemes)) {
+				BillDBSchemes schemes = rewardSchemes.get(0);
+				BillDBCustomerCoupons existing = new BillSchemesDaoImpl(session).getAcceptedScheme(schemes.getId(), request.getUser().getCurrentBusiness().getId(), request.getBusiness().getId());
+				if (existing != null) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_ACCEPTED_SCHEME);
+					return response;
+				}
+				BillDBUserBusiness fromBusiness = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getUser().getCurrentBusiness().getId(), true);
+				BillDBUserBusiness toBusiness = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), true);
+				if(fromBusiness == null || toBusiness == null) {
+					response.setResponse(ERROR_CODE_GENERIC, "Business not found ..");
+					return response;
+				}
+				BillDBCustomerCoupons coupon = BillBusinessConverter.getBusinessCoupon(schemes, fromBusiness, toBusiness);
+				session.persist(coupon);
+				coupon.setStatus("R");
+				coupon.setRedeemDate(new Date());
+				// If vendor commission, then add the commission as a
+				// transaction
+				BillRuleEngine.addCouponTransaction(session, coupon, fromBusiness, null);
+				BillRuleEngine.sendCouponMails(schemes, null, coupon, BillConstants.MAIL_TYPE_COUPON_REDEEMED, BillConstants.MAIL_TYPE_COUPON_REDEEMED_BUSINESS, BillConstants.MAIL_TYPE_COUPON_REDEEMED_ADMIN, executor, fromBusiness.getUser());
+			} else {
+				response.setResponse(ERROR_CODE_GENERIC, ERROR_SCHEME_NOT_FOUND);
+				return response;
+			}
+			
+			tx.commit();
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
 		} finally {
 			CommonUtils.closeSession(session);
 		}

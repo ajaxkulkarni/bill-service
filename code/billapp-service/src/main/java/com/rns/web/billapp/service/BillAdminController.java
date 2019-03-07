@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import com.rns.web.billapp.service.bo.api.BillAdminBo;
+import com.rns.web.billapp.service.bo.api.BillBusinessBo;
 import com.rns.web.billapp.service.bo.api.BillSchedulerBo;
 import com.rns.web.billapp.service.bo.api.BillUserBo;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
@@ -82,6 +83,18 @@ public class BillAdminController {
 
 	public BillUserBo getUserBo() {
 		return userBo;
+	}
+	
+	@Autowired(required = true)
+	@Qualifier(value = "businessBo")
+	BillBusinessBo businessBo;
+
+	public void setBusinessBo(BillBusinessBo businessBo) {
+		this.businessBo = businessBo;
+	}
+	
+	public BillBusinessBo getBusinessBo() {
+		return businessBo;
 	}
 	
 	@POST
@@ -378,6 +391,14 @@ public class BillAdminController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse notify(BillServiceRequest request) {
 		return adminBo.sendNotifications(request);
+	}
+	
+	@POST
+	@Path("/referralReward")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse referralReward(BillServiceRequest request) {
+		return businessBo.rewardBusinessReferral(request);
 	}
 	
 }
