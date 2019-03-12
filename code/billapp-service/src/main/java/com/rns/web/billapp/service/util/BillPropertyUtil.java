@@ -56,6 +56,7 @@ public class BillPropertyUtil {
 	public static final String PAYTM_CHANNEL = "paytm.channel.id";
 	public static final String PAYTM_SECRET = "paytm.secret";
 	public static final String PAYTM_URL = "paytm.url";
+	public static final String PAYTM_TXN_STATUS_URL = "paytm.transaction.url";
 	
 	//Emails
 	public static final String MAIL_HOST = "mail.host";

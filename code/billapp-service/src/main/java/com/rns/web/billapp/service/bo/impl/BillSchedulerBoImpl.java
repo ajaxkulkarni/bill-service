@@ -39,6 +39,7 @@ import com.rns.web.billapp.service.domain.BillServiceResponse;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillMailUtil;
+import com.rns.web.billapp.service.util.BillPayTmStatusCheck;
 import com.rns.web.billapp.service.util.BillRuleEngine;
 import com.rns.web.billapp.service.util.BillSMSUtil;
 import com.rns.web.billapp.service.util.BillUserLogUtil;
@@ -420,6 +421,12 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 			
 		});
 
+		//Paytm task to check payment status of pending invoices
+		BillPayTmStatusCheck task = new BillPayTmStatusCheck();
+		task.setExecutor(executor);
+		task.setSessionFactory(sessionFactory);
+		taskRegistrar.addFixedDelayTask(task, 60000*30);//30 minutes
+		
 	}
 	
 	private Date nextOrdersExecution() {

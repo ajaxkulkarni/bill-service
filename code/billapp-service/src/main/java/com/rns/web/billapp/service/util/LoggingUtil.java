@@ -15,6 +15,7 @@ public class LoggingUtil {
 	
 	public static Logger schedulerLogger = Logger.getLogger("schedulerLogger");
 	
+	public static Logger paytmLogger = Logger.getLogger("paytmLogger");
 	
 	//private static Logger emailLogger = Logger.getLogger("email");
 	

@@ -76,6 +76,7 @@ import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillMailUtil;
 import com.rns.web.billapp.service.util.BillNameSorter;
+import com.rns.web.billapp.service.util.BillPayTmStatusCheck;
 import com.rns.web.billapp.service.util.BillPaymentUtil;
 import com.rns.web.billapp.service.util.BillPropertyUtil;
 import com.rns.web.billapp.service.util.BillRuleEngine;
@@ -90,7 +91,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 	private SessionFactory sessionFactory;
 	private ThreadPoolTaskExecutor executor;
 
-	private static Set<Integer> invoicesInProgress = new ConcurrentSkipListSet<Integer>();
+	public static Set<Integer> invoicesInProgress = new ConcurrentSkipListSet<Integer>();
 
 	public SessionFactory getSessionFactory() {
 		return sessionFactory;
@@ -1074,6 +1075,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			if(invoicesInProgress != null && currentInvoice != null && currentInvoice.getId() != null) {
 				invoicesInProgress.remove(currentInvoice.getId()); // Un-Locked
 				LoggingUtil.logMessage("Removed invoice .. " + currentInvoice.getId() + " .. " + invoicesInProgress);
+			}
+			if(BillPayTmStatusCheck.paytmPendingInvoices != null && currentInvoice != null && currentInvoice.getId() != null) {
+				BillPayTmStatusCheck.paytmPendingInvoices.remove(currentInvoice.getId()); // Un-Locked
+				LoggingUtil.logMessage("Removed paytm invoice .. " + currentInvoice.getId() + " .. " + BillPayTmStatusCheck.paytmPendingInvoices, LoggingUtil.paytmLogger);
 			}
 		}
 		return response;

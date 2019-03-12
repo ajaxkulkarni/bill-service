@@ -462,7 +462,8 @@ public class BillPaymentUtil {
 
 			TreeMap<String, String> paytmParams = new TreeMap<String, String>();
 			paytmParams.put("MID", invoice.getPaytmMid());
-			paytmParams.put("ORDER_ID", getOrderId(invoice, paymentAttempt));
+			String orderId = getOrderId(invoice, paymentAttempt);
+			paytmParams.put("ORDER_ID", orderId);
 			paytmParams.put("CHANNEL_ID", invoice.getPaytmChannel());
 			paytmParams.put("CUST_ID", customer.getId().toString());
 			paytmParams.put("MOBILE_NO", customer.getPhone());
@@ -473,6 +474,10 @@ public class BillPaymentUtil {
 			paytmParams.put("CALLBACK_URL", invoice.getPaytmRedirectUrl());
 			String paytmChecksum = CheckSumServiceHelper.getCheckSumServiceHelper().genrateCheckSum(BillPropertyUtil.getProperty(BillPropertyUtil.PAYTM_SECRET), paytmParams);
 			invoice.setPaytmChecksum(paytmChecksum);
+			//Add to paytm status check
+			if(BillPayTmStatusCheck.paytmPendingInvoices != null) {
+				BillPayTmStatusCheck.paytmPendingInvoices.put(invoice.getId(), orderId);
+			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		}
