@@ -328,8 +328,9 @@ public class BillMailUtil implements BillConstants, Runnable {
 		result = StringUtils.replace(result, "{payable}", CommonUtils.getStringValue(invoice.getPayable(), false));
 		result = StringUtils.replace(result, "{outstanding}", CommonUtils.getStringValue(invoice.getOutstandingBalance(), false));
 		result = StringUtils.replace(result, "{createdDate}", CommonUtils.convertDate(invoice.getCreatedDate()));
-		result = StringUtils.replace(result, "{paymentUrl}",
-				CommonUtils.getStringValue(BillSMSUtil.shortenUrl(invoice.getShortUrl(), invoice.getPaymentUrl())));
+		String shortenUrl = BillSMSUtil.shortenUrl(invoice.getShortUrl(), invoice.getPaymentUrl());
+		LoggingUtil.logMessage("Invoice URL => " + shortenUrl + " for invoice " + invoice.getId(), LoggingUtil.smsLogger);
+		result = StringUtils.replace(result, "{paymentUrl}", CommonUtils.getStringValue(shortenUrl));
 		result = StringUtils.replace(result, "{offersUrl}", CommonUtils.getStringValue(invoice.getPaymentUrl()));
 		result = StringUtils.replace(result, "{paidAmount}", CommonUtils.getStringValue(invoice.getPaidAmount(), false));
 		result = StringUtils.replace(result, "{paymentId}", CommonUtils.getStringValue(invoice.getPaymentId()));

@@ -17,6 +17,8 @@ public class LoggingUtil {
 	
 	public static Logger paytmLogger = Logger.getLogger("paytmLogger");
 	
+	public static Logger smsLogger = Logger.getLogger("smsLogger");
+	
 	//private static Logger emailLogger = Logger.getLogger("email");
 	
 	public static void logMessage(String message, Logger logger) {

@@ -43,6 +43,7 @@ public class BillSMSUtil implements BillConstants {
 			sendSMSProcess(user, type, result);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			LoggingUtil.logMessage(ExceptionUtils.getStackTrace(e), LoggingUtil.smsLogger);
 		}
 		return result;
 	}
@@ -60,7 +61,7 @@ public class BillSMSUtil implements BillConstants {
 			if(user.getPhone() != null && user.getPhone().length() != 10) {
 				phone = CommonUtils.trimPhoneNumber(user.getPhone());
 			}
-			LoggingUtil.logMessage("Sending SMS to phone number => " + phone);
+			LoggingUtil.logMessage("Sending SMS to phone number => " + phone, LoggingUtil.smsLogger);
 			smsUrl = StringUtils.replace(smsUrl, "{mobiles}", phone);
 		}
 		
@@ -68,7 +69,7 @@ public class BillSMSUtil implements BillConstants {
 		webResource = client.resource(smsUrl);
 		ClientResponse response = webResource.get(ClientResponse.class);
 		String entity = response.getEntity(String.class);
-		LoggingUtil.logMessage("SMS response -- " + entity);
+		LoggingUtil.logMessage("SMS response -- " + entity, LoggingUtil.smsLogger);
 	}
 
 	public static String generateResultMessage(BillUser user, BillInvoice invoice, String type, BillScheme selectedScheme) {
