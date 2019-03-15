@@ -75,6 +75,7 @@ import com.rns.web.billapp.service.util.BillBusinessConverter;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillMailUtil;
+import com.rns.web.billapp.service.util.BillMessageBroadcaster;
 import com.rns.web.billapp.service.util.BillNameSorter;
 import com.rns.web.billapp.service.util.BillPayTmStatusCheck;
 import com.rns.web.billapp.service.util.BillPaymentUtil;
@@ -589,6 +590,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				nullAware.copyProperties(invoice, dbInvoice);
 				if (invoicePaid) {
 					// updateTransactionLog(session, dbInvoice);
+					invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + invoice.getId());
 					BillRuleEngine.sendEmails(invoice, dbInvoice, nullAware, executor);
 				}
 				// Update payment URL
@@ -1252,6 +1254,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			List<BillUser> users = prepareInvoiceSummary(request, session, INVOICE_STATUS_PAID);
 			if (!StringUtils.equals(REQUEST_TYPE_EMAIL, request.getRequestType())) {
 				response.setUsers(users);
+			} else {
+				//Send SMS/Email to all customers asynchronously..
+				executor.execute(new BillMessageBroadcaster(users, MAIL_TYPE_INVOICE, BillConstants.REQUEST_TYPE_EMAIL));
+				executor.execute(new BillMessageBroadcaster(users, MAIL_TYPE_INVOICE, "SMS"));
 			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -1309,7 +1315,6 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				BillRuleEngine.calculatePayable(invoice, null, null);
 
 				customer.setCurrentInvoice(invoice);
-				users.add(customer);
 				if (StringUtils.equals(REQUEST_TYPE_EMAIL, request.getRequestType()) && total != null && total.compareTo(BigDecimal.ZERO) > 0) {
 					BillDBInvoice lastUnpaid = new BillInvoiceDaoImpl(session).getLatestUnPaidInvoice(subscription.getId());
 					if (lastUnpaid != null) {
@@ -1322,14 +1327,16 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 							tx.commit();
 						}
 						invoice.setShortUrl(lastUnpaid.getShortUrl());
-						BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
+						//BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
 						customer.setCurrentBusiness(BillDataConverter.getBusiness(subscription.getBusiness()));
-						mailUtil.setUser(customer);
-						mailUtil.setInvoice(lastInvoice);
-						executor.execute(mailUtil);
-						BillSMSUtil.sendSMS(customer, lastInvoice, MAIL_TYPE_INVOICE, null);
+						//mailUtil.setUser(customer);
+						//mailUtil.setInvoice(lastInvoice);
+						customer.setCurrentInvoice(lastInvoice);
+						//executor.execute(mailUtil);
+						//BillSMSUtil.sendSMS(customer, lastInvoice, MAIL_TYPE_INVOICE, null);
 					}
 				}
+				users.add(customer);
 			}
 		}
 		return users;
