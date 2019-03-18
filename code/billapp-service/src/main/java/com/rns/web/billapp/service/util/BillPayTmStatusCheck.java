@@ -120,8 +120,6 @@ public class BillPayTmStatusCheck implements Runnable {
 			config.getFeatures().put(JSONConfiguration.FEATURE_POJO_MAPPING, Boolean.TRUE);
 			Client client = Client.create(config);
 
-			//String url = "https://lumen.denmark.straviso.net/LumenRestServer/api/ExternalApp/TalkWithLumen";
-
 			WebResource webResource = client.resource(url);
 
 			LoggingUtil.logMessage("Calling paytm transaction URL :" + url + " request:" + new ObjectMapper().writeValueAsString(postData), LoggingUtil.paytmLogger);
