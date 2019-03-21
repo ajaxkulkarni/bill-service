@@ -42,6 +42,8 @@ public class BillDBBusinessInvoice {
 	private String paymentMode;
 	private Integer paymentAttempt;
 	private Date invoiceDate;
+	private String extraParams;
+	private BigDecimal soldAmount;
 	
 	@Id
 	@GeneratedValue(strategy = IDENTITY)
@@ -181,6 +183,22 @@ public class BillDBBusinessInvoice {
 	}
 	public void setFromBusiness(BillDBUserBusiness fromBusiness) {
 		this.fromBusiness = fromBusiness;
+	}
+	
+	@Column(name = "extra_params")
+	public String getExtraParams() {
+		return extraParams;
+	}
+	public void setExtraParams(String extraParams) {
+		this.extraParams = extraParams;
+	}
+	
+	@Column(name = "sold_amount")
+	public BigDecimal getSoldAmount() {
+		return soldAmount;
+	}
+	public void setSoldAmount(BigDecimal soldAmount) {
+		this.soldAmount = soldAmount;
 	}
 	
 

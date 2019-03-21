@@ -1785,7 +1785,14 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					dashboard.setOnlinePaid(dashboard.getCompletedSettlements());
 				}
 			}
-			
+			Map<String, Object> bInvoiceRestrictions = new HashMap<String, Object>();
+			keys.put("fromBusiness.id", request.getBusiness().getId());
+			keys.put("!status", INVOICE_STATUS_DELETED);
+			BigDecimal payableAmount = (BigDecimal) billGenericDaoImpl.getSum(BillDBBusinessInvoice.class, "amount", bInvoiceRestrictions, startDate, endDate, "sum", "invoiceDate", null);
+			BigDecimal soldAmount = (BigDecimal) billGenericDaoImpl.getSum(BillDBBusinessInvoice.class, "soldAmount", bInvoiceRestrictions, startDate, endDate, "sum", "invoiceDate", null);
+			if(payableAmount != null && soldAmount != null) {
+				dashboard.setTotalProfit(soldAmount.subtract(payableAmount));
+			}
 			response.setDashboard(dashboard);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -1871,6 +1878,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				if(businessInvoiceItem != null) {
 					businessInvoiceItem.setQuantity(item.getQuantity());
 					businessInvoiceItem.setPrice(item.getPrice());
+					businessInvoiceItem.setUnitSellingPrice(item.getUnitSellingPrice());
 					if(businessInvoiceItem.getId() == null) {
 						session.persist(businessInvoiceItem);
 					}
@@ -1898,6 +1906,9 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				log = request.getItem().getChangeLog();
 			}
 			List<BillDBBusinessInvoice> invoices = dao.getAllPurchaseInvoices(request.getUser().getCurrentBusiness().getId(), null, log, request.getBusiness().getId());
+			//Calculate profit
+			BigDecimal totalProfit = BigDecimal.ZERO;
+			BigDecimal totalPending = BigDecimal.ZERO;
 			List<BillInvoice> businessInvoices = new ArrayList<BillInvoice>();
 			if(CollectionUtils.isNotEmpty(invoices)) {
 				NullAwareBeanUtils nullAwareBeanUtils = new NullAwareBeanUtils();
@@ -1905,12 +1916,19 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillInvoice businessInvoice = new BillInvoice();
 					nullAwareBeanUtils.copyProperties(businessInvoice, invoice);
 					businessInvoice.setPayable(invoice.getAmount());
+					if(businessInvoice.getSoldAmount() != null && businessInvoice.getPayable() != null) {
+						totalProfit = totalProfit.add(businessInvoice.getSoldAmount().subtract(businessInvoice.getPayable()));
+					}
+					if(StringUtils.equals(INVOICE_STATUS_PENDING, businessInvoice.getStatus()) && businessInvoice.getPayable() != null) {
+						totalPending = totalPending.add(businessInvoice.getPayable());
+					}
 					if(CollectionUtils.isNotEmpty(invoice.getItems())) {
 						List<BillItem> invoiceItems = new ArrayList<BillItem>();
 						for(BillDBItemBusinessInvoice item: invoice.getItems()) {
 							BillItem invoiceItem = new BillItem();
 							if(item.getFromBusinessItem() != null && item.getFromBusinessItem().getParent() != null) {
 								nullAwareBeanUtils.copyProperties(invoiceItem, item.getFromBusinessItem().getParent());
+								invoiceItem.setParentItemId(item.getFromBusinessItem().getId());
 							}
 							nullAwareBeanUtils.copyProperties(invoiceItem, item);
 							invoiceItems.add(invoiceItem);
@@ -1920,6 +1938,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					businessInvoices.add(businessInvoice);
 				}
 			}
+			BillInvoice result = new BillInvoice();
+			result.setPayable(totalPending);
+			result.setSoldAmount(totalProfit);
+			response.setInvoice(result);
 			response.setInvoices(businessInvoices);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -2008,6 +2030,36 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			}
 			List<BillItem> businessItems = BillDataConverter.getBusinessItems(distributorItems);
 			List<BillItem> responseItems = new ArrayList<BillItem>();
+			BillInvoice returnInvoice = new BillInvoice();
+			if(request.getRequestedDate() != null) {
+				Calendar dayBefore = Calendar.getInstance();
+				dayBefore.setTime(request.getRequestedDate());
+				dayBefore.add(Calendar.DATE, -1);
+				//Find return price
+				BillDBBusinessInvoice existingInvoice = new BillInvoiceDaoImpl(session).getInvoiceByDate(dayBefore.getTime(), request.getBusiness().getId(), request.getUser().getCurrentBusiness().getId());
+				if(existingInvoice != null) {
+					//Create return JSON
+					if(CollectionUtils.isNotEmpty(existingInvoice.getItems())) {
+						List<BillItem> returnItems = new ArrayList<BillItem>();
+						for(BillDBItemBusinessInvoice bItem: existingInvoice.getItems()) {
+							if(StringUtils.equals(STATUS_DELETED, bItem.getStatus())) {
+								continue;
+							}
+							BillItem returnItem = new BillItem();
+							returnItem.setCostPrice(bItem.getPrice());
+							returnItem.setParentItemId(bItem.getFromBusinessItem().getId());
+							returnItem.setUnitSellingPrice(bItem.getUnitSellingPrice());
+							BillItem parentItem = new BillItem();
+							parentItem.setId(bItem.getToBusinessItem().getId());
+							returnItem.setParentItem(parentItem);
+							returnItems.add(returnItem);
+						}
+						returnInvoice.setInvoiceItems(returnItems);
+					}
+				}
+			}
+			
+			List<BillItem> returnItems = new ArrayList<BillItem>();
 			if (CollectionUtils.isNotEmpty(businessItems)) {
 				for (BillItem distributorItem : businessItems) {
 					BillItem parentItem = distributorItem.getParentItem();
@@ -2031,25 +2083,30 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						if(request.getRequestedDate() != null) {
 							cal.setTime(request.getRequestedDate());
 						}
-						if (StringUtils.equals(FREQ_DAILY, parentItem.getFrequency()) && StringUtils.isNotBlank(parentItem.getWeekDays())
-								&& StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
-							// Calculate cost price
-							distributorItem.setCostPrice(BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(),
-									parentItem.getWeeklyCostPrice(), parentItem.getPrice()));
-
-						} else if ((StringUtils.equals(FREQ_WEEKLY, parentItem.getFrequency()) || StringUtils.equals(FREQ_MONTHLY, parentItem.getFrequency()))
-								&& StringUtils.isNotBlank(parentItem.getMonthDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
-							// Calculate cost price
-							distributorItem.setCostPrice(BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(),
-									parentItem.getWeeklyCostPrice(), parentItem.getPrice()));
+						BigDecimal costPrice = getCostPrice(parentItem, cal, "CP");
+						distributorItem.setUnitSellingPrice(getCostPrice(parentItem, cal, "SP"));
+						distributorItem.setCostPrice(costPrice);
+						//Calculate the return price also
+						if(CollectionUtils.isEmpty(returnInvoice.getInvoiceItems())) {
+							cal.add(Calendar.DATE, -1);
+							BigDecimal returnPrice = getCostPrice(parentItem, cal, "CP");
+							BillItem returnItem = new BillItem();
+							returnItem.setParentItemId(distributorItem.getParentItemId());
+							returnItem.setParentItem(parentItem);
+							returnItem.setCostPrice(returnPrice);
+							returnItem.setUnitSellingPrice(getCostPrice(parentItem, cal, "SP"));
+							returnItems.add(returnItem);
 						}
-						
 					}
 					if(distributorItem.getCostPrice() != null) {
 						responseItems.add(distributorItem);
 					}
 				}
+				if(CollectionUtils.isEmpty(returnInvoice.getInvoiceItems())) {
+					returnInvoice.setInvoiceItems(returnItems);
+				}
 			}
+			response.setInvoice(returnInvoice);
 			response.setItems(responseItems);
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -2057,6 +2114,29 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			CommonUtils.closeSession(session);
 		}
 		return response;
+	}
+
+	private BigDecimal getCostPrice(BillItem parentItem, Calendar cal, String type) {
+		BigDecimal value = null;
+		String weeklyPricing = parentItem.getWeeklyCostPrice();
+		BigDecimal price = parentItem.getCostPrice();
+		if(StringUtils.equals("SP", type)) {
+			weeklyPricing = parentItem.getWeeklyPricing();
+			price = parentItem.getPrice();
+		}
+		if (StringUtils.equals(FREQ_DAILY, parentItem.getFrequency()) && StringUtils.isNotBlank(parentItem.getWeekDays())
+				&& StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+			// Calculate cost price
+			value = BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(),
+							weeklyPricing, price);
+			
+		} else if ((StringUtils.equals(FREQ_WEEKLY, parentItem.getFrequency()) || StringUtils.equals(FREQ_MONTHLY, parentItem.getFrequency()))
+				&& StringUtils.isNotBlank(parentItem.getMonthDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+			// Calculate cost price
+			value = BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(),
+							weeklyPricing, price);
+		}
+		return value;
 	}
 
 }

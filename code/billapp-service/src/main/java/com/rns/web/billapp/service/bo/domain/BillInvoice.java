@@ -61,6 +61,8 @@ public class BillInvoice {
 	private String shortUrl;
 	private Integer noOfReminders;
 	private Integer paymentAttempt;
+	private String extraParams;
+	private BigDecimal soldAmount;
 	
 	public Integer getId() {
 		return id;
@@ -337,6 +339,18 @@ public class BillInvoice {
 	}
 	public void setPaymentAttempt(Integer paymentAttempt) {
 		this.paymentAttempt = paymentAttempt;
+	}
+	public String getExtraParams() {
+		return extraParams;
+	}
+	public void setExtraParams(String extraParams) {
+		this.extraParams = extraParams;
+	}
+	public BigDecimal getSoldAmount() {
+		return soldAmount;
+	}
+	public void setSoldAmount(BigDecimal soldAmount) {
+		this.soldAmount = soldAmount;
 	}
 	
 }

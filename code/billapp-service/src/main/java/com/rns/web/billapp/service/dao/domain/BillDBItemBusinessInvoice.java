@@ -27,6 +27,7 @@ public class BillDBItemBusinessInvoice {
 	private BillDBBusinessInvoice invoice;
 	private BillDBItemBusiness fromBusinessItem;
 	private BillDBItemBusiness toBusinessItem;
+	private BigDecimal unitSellingPrice;
 	
 	
 	@Id
@@ -99,6 +100,14 @@ public class BillDBItemBusinessInvoice {
 	
 	public void setToBusinessItem(BillDBItemBusiness toBusinessItem) {
 		this.toBusinessItem = toBusinessItem;
+	}
+	
+	@Column(name = "selling_price")
+	public BigDecimal getUnitSellingPrice() {
+		return unitSellingPrice;
+	}
+	public void setUnitSellingPrice(BigDecimal unitSellingPrice) {
+		this.unitSellingPrice = unitSellingPrice;
 	}
 	
 }

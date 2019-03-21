@@ -31,6 +31,7 @@ public class BillAdminDashboard {
 	private Long offlineInvoices;
 	private BigDecimal offlinePaid;
 	private List<BillBusinessSummary> summary;
+	private BigDecimal totalProfit;
 	
 	public Long getPendingInvoices() {
 		return pendingInvoices;
@@ -127,6 +128,12 @@ public class BillAdminDashboard {
 	}
 	public void setSummary(List<BillBusinessSummary> summary) {
 		this.summary = summary;
+	}
+	public BigDecimal getTotalProfit() {
+		return totalProfit;
+	}
+	public void setTotalProfit(BigDecimal totalProfit) {
+		this.totalProfit = totalProfit;
 	}
 	
 
