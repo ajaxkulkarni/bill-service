@@ -278,7 +278,7 @@ public class BillExcelUtil {
 					} 
 					i++;
 				}
-				if(dbInvoice == null) {
+				if(dbInvoice == null && invoice != null) {
 					dbInvoice = prepareInvoice(subscription, invoice);
 					dbInvoice.setAmount(invoice.getAmount());
 					session.persist(dbInvoice);
@@ -296,6 +296,9 @@ public class BillExcelUtil {
 	}
 
 	private static BillDBInvoice prepareInvoice(BillDBSubscription subscription, BillInvoice requestInvoice) {
+		if(requestInvoice == null) {
+			return null;
+		}
 		BillDBInvoice invoice = new BillDBInvoice();
 		invoice.setStatus(BillConstants.INVOICE_STATUS_PENDING);
 		invoice.setCreatedDate(new Date());
