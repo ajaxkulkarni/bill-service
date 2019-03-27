@@ -58,6 +58,10 @@ public class BillPropertyUtil {
 	public static final String PAYTM_URL = "paytm.url";
 	public static final String PAYTM_TXN_STATUS_URL = "paytm.transaction.url";
 	
+	public static final String FCM_URL = "fcm.url";
+	public static final String FCM_SERVER_KEY = "fcm.key";
+	
+	
 	//Emails
 	public static final String MAIL_HOST = "mail.host";
 	public static final String MAIL_ID = "mail.from";

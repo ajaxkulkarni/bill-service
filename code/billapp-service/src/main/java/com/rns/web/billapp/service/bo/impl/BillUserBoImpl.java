@@ -44,6 +44,7 @@ import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBBusinessInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerGroup;
+import com.rns.web.billapp.service.dao.domain.BillDBDevices;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusinessInvoice;
@@ -591,7 +592,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				if (invoicePaid) {
 					// updateTransactionLog(session, dbInvoice);
 					invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + invoice.getId());
-					BillRuleEngine.sendEmails(invoice, dbInvoice, nullAware, executor);
+					BillRuleEngine.sendEmails(invoice, dbInvoice, nullAware, executor, sessionFactory);
 				}
 				// Update payment URL
 				BillBusinessConverter.updatePaymentURL(invoice, dbInvoice, customerSubscription, session);
@@ -643,6 +644,21 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			}
 			BillUser user = BillDataConverter.getUserProfile(response, session, dbUser);
 			response.setUser(user);
+			
+			//Store the device ID if not stored
+			if(StringUtils.isNotBlank(requestUser.getDeviceId())) {
+				BillDBDevices devices = dao.getEntityByKey(BillDBDevices.class, "token", requestUser.getDeviceId(), true);
+				if(devices == null) {
+					Transaction tx = session.beginTransaction();
+					devices = new BillDBDevices();
+					devices.setToken(requestUser.getDeviceId());
+					devices.setUser(dbUser);
+					devices.setCreatedDate(new Date());
+					devices.setStatus(STATUS_ACTIVE);
+					session.persist(devices);
+					tx.commit();
+				}
+			}
 
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -1065,7 +1081,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			response.setInvoice(currentInvoice);
 
 			BillBusinessConverter.updatePaymentTransactionLog(session, invoice, currentInvoice);
-			BillRuleEngine.sendEmails(currentInvoice, invoice, nullAwareBeanUtils, executor);
+			BillRuleEngine.sendEmails(currentInvoice, invoice, nullAwareBeanUtils, executor, sessionFactory);
 			
 			tx.commit();
 

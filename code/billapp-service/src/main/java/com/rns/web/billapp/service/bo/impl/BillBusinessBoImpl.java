@@ -281,7 +281,7 @@ public class BillBusinessBoImpl implements BillBusinessBo, BillConstants {
 					currInvoice.setId(dbInvoice.getId());
 				}
 				currInvoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + currInvoice.getId());
-				BillRuleEngine.sendEmails(currInvoice, dbInvoice, nullAwareBeanUtils, executor);
+				BillRuleEngine.sendEmails(currInvoice, dbInvoice, nullAwareBeanUtils, executor, sessionFactory);
 			}
 			if(dbInvoice != null) {
 				if(invoice.getId() == null) {

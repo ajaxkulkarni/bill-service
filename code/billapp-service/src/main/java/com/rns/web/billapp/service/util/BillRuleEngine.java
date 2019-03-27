@@ -13,6 +13,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
@@ -243,7 +244,7 @@ public class BillRuleEngine {
 		
 	}
 	
-	public static void sendEmails(BillInvoice currentInvoice, BillDBInvoice invoice, NullAwareBeanUtils nullAwareBeanUtils, ThreadPoolTaskExecutor executor)
+	public static void sendEmails(BillInvoice currentInvoice, BillDBInvoice invoice, NullAwareBeanUtils nullAwareBeanUtils, ThreadPoolTaskExecutor executor, SessionFactory sessionFactory)
 			throws IllegalAccessException, InvocationTargetException {
 		BillUser customer = new BillUser();
 		nullAwareBeanUtils.copyProperties(customer, invoice.getSubscription());
@@ -268,6 +269,10 @@ public class BillRuleEngine {
 		}
 		BillSMSUtil.sendSMS(customer, currentInvoice, BillConstants.MAIL_TYPE_PAYMENT_RESULT, null);
 		BillSMSUtil.sendSMS(vendor, currentInvoice, BillConstants.MAIL_TYPE_PAYMENT_RESULT_VENDOR, null);
+		//Send android notification to vendor
+		BillFCMNotificationBroadcaster broadcaster = new BillFCMNotificationBroadcaster(vendor, currentInvoice, sessionFactory);
+		broadcaster.setNotificationType(BillConstants.MAIL_TYPE_PAYMENT_RESULT_VENDOR);
+		executor.execute(broadcaster);
 	}
 
 	public static BigDecimal calculateTransactionCharges(BigDecimal amount, BigDecimal txCharges) {
