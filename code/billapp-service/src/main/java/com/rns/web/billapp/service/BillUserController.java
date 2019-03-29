@@ -798,10 +798,10 @@ public class BillUserController {
 	}
 	
 	@GET
-	@Path("/export/{type}/{businessId}/{groupId}")
+	@Path("/export/{type}/{businessId}/{groupId}/{params}")
 	//@Consumes(MediaType.MULTIPART_FORM_DATA)
 	@Produces(APPLICATION_PDF)
-	public Response exportPdf(@PathParam("businessId") Integer businessId, @PathParam("groupId") Integer groupId,@PathParam("type") String type) {
+	public Response exportPdf(@PathParam("businessId") Integer businessId, @PathParam("groupId") Integer groupId,@PathParam("type") String type, @PathParam("params") String params) {
 		try {
 			LoggingUtil.logMessage("PDF request for :" + businessId);
 			FileInputStream is = new FileInputStream("/home/service/BillData/example.pdf");
