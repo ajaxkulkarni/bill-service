@@ -1,5 +1,6 @@
 package com.rns.web.billapp.service;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -794,5 +795,26 @@ public class BillUserController {
 	@Produces(MediaType.APPLICATION_JSON)
 	public BillServiceResponse updateBusinessInvoice(BillServiceRequest request) {
 		return userBo.updateBusinessInvoice(request);
+	}
+	
+	@GET
+	@Path("/export/{type}/{businessId}/{groupId}")
+	//@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(APPLICATION_PDF)
+	public Response exportPdf(@PathParam("businessId") Integer businessId, @PathParam("groupId") Integer groupId,@PathParam("type") String type) {
+		try {
+			LoggingUtil.logMessage("PDF request for :" + businessId);
+			FileInputStream is = new FileInputStream("/home/service/BillData/example.pdf");
+			//File file = new File();
+			ResponseBuilder response = Response.ok(is);
+			String fileName = "example.pdf";
+			response.header("Content-Disposition","filename=" + fileName);  
+			return response.build();
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+		//LoggingUtil.logObject("Download resume Response :", response);
+		return Response.serverError().build();
+
 	}
 }
