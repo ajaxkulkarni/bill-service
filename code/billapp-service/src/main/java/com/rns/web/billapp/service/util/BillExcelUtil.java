@@ -35,6 +35,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
+import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerGroup;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
@@ -742,23 +743,31 @@ public class BillExcelUtil {
 	//67,37,10,55,15,20
 	//Not found from other app Eenadu -> Inadu, Pune times -> Times of India, Navbharat -> Hindi Navabharat, Times of India -> TOI + Mirror, Hindu -> THe Hindu, THe Hindustan Times - Hindustan Times
 
-	public static Map<Integer, BigDecimal> createPriceMap(InputStream excel) throws InvalidFormatException, IOException {
+	public static Map<Integer, BillItem> createPriceMap(InputStream excel) throws InvalidFormatException, IOException {
 		Workbook workbook = WorkbookFactory.create(excel);
 		Sheet sheet = workbook.getSheetAt(0);
-		Map<Integer, BigDecimal> priceMap = new HashMap<Integer, BigDecimal>();
+		Map<Integer, BillItem> priceMap = new HashMap<Integer, BillItem>();
 		for (Row row : sheet) {
 			if (row.getRowNum() == 0) { // Title row
 				continue;
 			} else {
 				if (row.getCell(0) != null && row.getCell(1) != null) {
-					priceMap.put(new Double(row.getCell(0).getNumericCellValue()).intValue(), new BigDecimal(row.getCell(1).getNumericCellValue()));
+					BigDecimal amount = new BigDecimal(row.getCell(1).getNumericCellValue());
+					String days = null;
+					if(row.getCell(2) != null) {
+						days = row.getCell(2).getStringCellValue();
+					}
+					BillItem item = new BillItem();
+					item.setPrice(amount);
+					item.setWeekDays(days);
+					priceMap.put(new Double(row.getCell(0).getNumericCellValue()).intValue(), item);
 				}
 			}
 		}
 		return priceMap;
 	}
 	
-	public static void createInvoiceFromReference(Map<Integer, BigDecimal> priceMap, Session session, BillDBSubscription subscription,
+	public static void createInvoiceFromReference(Map<Integer, BillItem> priceMap, Session session, BillDBSubscription subscription,
 			List<Object[]> orderItems, BillDBInvoice dbInvoice, Integer month)
 			throws InvalidFormatException, IOException, IllegalAccessException, InvocationTargetException {
 		if(CollectionUtils.isEmpty(priceMap.keySet())) {
@@ -766,7 +775,7 @@ public class BillExcelUtil {
 		}
 		BigDecimal quantity = new BigDecimal(CommonUtils.getMonthDays(month));
 		BigDecimal total = BigDecimal.ZERO;
-		for (Entry<Integer, BigDecimal> e : priceMap.entrySet()) {
+		for (Entry<Integer, BillItem> e : priceMap.entrySet()) {
 			if (CollectionUtils.isNotEmpty(orderItems)) {
 				for (Object[] subRow : orderItems) {
 					if (ArrayUtils.isEmpty(subRow)) {
@@ -774,13 +783,15 @@ public class BillExcelUtil {
 					}
 					BillDBOrderItems orderItem = (BillDBOrderItems) subRow[2];
 					BillDBSubscription orderItemSub = (BillDBSubscription) subRow[3];
+					BillDBItemSubscription subscribedItem = (BillDBItemSubscription) subRow[4];
+					
 					if (orderItemSub.getId().intValue() == subscription.getId().intValue()) {
 						if (orderItem.getBusinessItem() != null && orderItem.getBusinessItem().getParent() != null
 								&& e.getKey() == orderItem.getBusinessItem().getParent().getId().intValue()) {
 							if (CollectionUtils.isNotEmpty(dbInvoice.getItems())) {
 								for (BillDBItemInvoice invoiceItem : dbInvoice.getItems()) {
 									if (invoiceItem.getBusinessItem().getId().intValue() == orderItem.getBusinessItem().getId().intValue()) {
-										invoiceItem.setPrice(e.getValue());
+										invoiceItem.setPrice(calculatePrice(e.getValue(), subscribedItem, month));
 										invoiceItem.setQuantity(quantity);
 										total = total.add(invoiceItem.getPrice());
 									}
@@ -792,7 +803,7 @@ public class BillExcelUtil {
 								itemInvoice.setInvoice(dbInvoice);
 								itemInvoice.setCreatedDate(new Date());
 								itemInvoice.setStatus(BillConstants.STATUS_ACTIVE);
-								itemInvoice.setPrice(e.getValue());
+								itemInvoice.setPrice(calculatePrice(e.getValue(), subscribedItem, month));
 								itemInvoice.setQuantity(quantity);
 								session.persist(itemInvoice);
 								total = total.add(itemInvoice.getPrice());
@@ -804,6 +815,60 @@ public class BillExcelUtil {
 		}
 		dbInvoice.setAmount(total);
 		System.out.println(" .......... ");
+	}
+
+	private static BigDecimal calculatePrice(BillItem item, BillDBItemSubscription subscribedItem, Integer month) {
+		if(subscribedItem != null && subscribedItem.getPrice() != null) {
+			return subscribedItem.getPrice(); //Scheme
+		}
+		if(subscribedItem != null && StringUtils.isNotBlank(subscribedItem.getWeekDays())) {
+			String[] subscribedDays = StringUtils.split(subscribedItem.getWeekDays(), ",");
+			String[] daysPrice = StringUtils.split(item.getWeeklyPricing(), ",");
+			if(subscribedDays.length < 7) {
+				LoggingUtil.logMessage("Found specific days for sub item => " + subscribedItem.getId());
+				BigDecimal price = BigDecimal.ZERO;
+				month = month - 1;
+				for(String day: subscribedDays) {
+					Integer count = 0;
+					Integer dayVal = new Integer(day);
+					if(daysPrice.length <= (dayVal - 1)) {
+						LoggingUtil.logMessage("Incorrect pricing for subscribed item => " + subscribedItem.getId());
+						return item.getPrice();
+					}
+					Calendar instance = Calendar.getInstance();
+					instance.set(Calendar.MONTH, month);
+					instance.set(Calendar.DAY_OF_WEEK, dayVal);
+					instance.set(Calendar.DAY_OF_WEEK_IN_MONTH, 1);
+					int monthVal = -1;
+					System.out.println("Date:" + instance.getTime());
+					while(monthVal <= month) {
+						monthVal = instance.get(Calendar.MONTH); 
+						if(monthVal == month) {
+							System.out.println("Date:" + instance.getTime() + " month val " + monthVal);
+							count++;
+						}
+						instance.add(Calendar.DAY_OF_MONTH, 7);
+					}
+					String priceString = daysPrice[dayVal - 1];
+					if(StringUtils.isNotBlank(priceString)) {
+						System.out.println("Price =>" + price + " price " + priceString + " count " + count);
+						price = price.add(new BigDecimal(priceString).multiply(new BigDecimal(count)));
+					}
+				}
+				LoggingUtil.logMessage("Calculated specific price " + price + " for sub item => " + subscribedItem.getId());
+				return price;
+			}
+		}
+		return item.getPrice();
+	}
+	
+	public static void main(String[] args) {
+		BillDBItemSubscription subscribedItem = new BillDBItemSubscription();
+		//subscribedItem.setWeekDays("1,2,3,4,5,6,");
+		BillItem item = new BillItem();
+		item.setPrice(new BigDecimal("110"));
+		item.setWeeklyPricing("10,5,5,5,5,5,8");
+		System.out.println(calculatePrice(item, subscribedItem, 3));
 	}
 	
 }

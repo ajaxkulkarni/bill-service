@@ -34,6 +34,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
+import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
@@ -302,7 +303,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 				businessId = request.getBusiness().getId();
 			}
 			
-			Map<Integer, BigDecimal> priceMap = null;
+			Map<Integer, BillItem> priceMap = null;
 			if(request.getFile() != null) {
 				priceMap = BillExcelUtil.createPriceMap(request.getFile().getFileData());
 				LoggingUtil.logMessage("Price map created =>" + priceMap);
@@ -717,7 +718,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 								BillDBOrders order = new BillGenericDaoImpl(session).getEntityByKey(BillDBOrders.class, ID_ATTR, orderItem.getOrder().getId(), false);
 								order.setAmount(order.getAmount().add(difference));
 								orderItem.setAmount(newPrice);
-								LoggingUtil.logMessage("Changed value =>" + difference + " .. " + orderItem.getOrder().getId() + " amount =>" + order.getAmount());
+								LoggingUtil.logMessage("Changed value =>" + difference + " .. " + orderItem.getOrder().getId() + " amount =>" + order.getAmount() + " item amount " + orderItem.getAmount());
 							} else if(request.getItem().getCostPrice() != null) {
 								orderItem.setCostPrice(orderItem.getQuantity().multiply(request.getItem().getCostPrice()));
 							}
