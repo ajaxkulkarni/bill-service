@@ -727,6 +727,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 				}
 			}
 			tx.commit();
+			LoggingUtil.logMessage("Transaction committed ..");
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
