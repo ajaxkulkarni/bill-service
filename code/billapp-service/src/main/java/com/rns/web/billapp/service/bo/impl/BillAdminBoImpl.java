@@ -324,10 +324,10 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					if (StringUtils.equals(STATUS_DELETED, subscription.getStatus())) {
 						continue;
 					}
-					if (businessId != null && businessId != subscription.getBusiness().getId()) {
+					if (businessId != null && businessId.intValue() != subscription.getBusiness().getId().intValue()) {
 						continue;
 					}
-					if(request.getUser() != null && request.getUser().getId() != null && request.getUser().getId() != subscription.getId()) {
+					if(request.getUser() != null && request.getUser().getId() != null && request.getUser().getId().intValue() != subscription.getId().intValue()) {
 						continue;
 					}
 					BillDBInvoice dbInvoice = new BillInvoiceDaoImpl(session).getInvoiceForMonth(subscription.getId(), month, year);

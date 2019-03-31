@@ -759,7 +759,7 @@ public class BillExcelUtil {
 					}
 					BillItem item = new BillItem();
 					item.setPrice(amount);
-					item.setWeekDays(days);
+					item.setWeeklyPricing(days);
 					priceMap.put(new Double(row.getCell(0).getNumericCellValue()).intValue(), item);
 				}
 			}
@@ -783,7 +783,7 @@ public class BillExcelUtil {
 					}
 					BillDBOrderItems orderItem = (BillDBOrderItems) subRow[2];
 					BillDBSubscription orderItemSub = (BillDBSubscription) subRow[3];
-					BillDBItemSubscription subscribedItem = (BillDBItemSubscription) subRow[4];
+					BillDBItemSubscription subscribedItem = orderItem.getSubscribedItem();
 					
 					if (orderItemSub.getId().intValue() == subscription.getId().intValue()) {
 						if (orderItem.getBusinessItem() != null && orderItem.getBusinessItem().getParent() != null
@@ -824,7 +824,7 @@ public class BillExcelUtil {
 		if(subscribedItem != null && StringUtils.isNotBlank(subscribedItem.getWeekDays())) {
 			String[] subscribedDays = StringUtils.split(subscribedItem.getWeekDays(), ",");
 			String[] daysPrice = StringUtils.split(item.getWeeklyPricing(), ",");
-			if(subscribedDays.length < 7) {
+			if(subscribedDays.length < 7 && ArrayUtils.isNotEmpty(daysPrice)) {
 				LoggingUtil.logMessage("Found specific days for sub item => " + subscribedItem.getId());
 				BigDecimal price = BigDecimal.ZERO;
 				month = month - 1;
