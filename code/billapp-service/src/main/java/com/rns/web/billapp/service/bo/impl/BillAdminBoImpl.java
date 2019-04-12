@@ -496,6 +496,10 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						user.setPhone((String) row[2]);
 						BillBusiness business = new BillBusiness();
 						business.setName((String) row[3]);
+						business.setType((String) row[9]);
+						if(StringUtils.equals(ACCESS_DISTRIBUTOR, business.getType())) {
+							continue;
+						}
 						user.setCurrentBusiness(business);
 						summary.setCustomerCount((BigInteger) row[4]);
 						BillInvoice currentInvoice = new BillInvoice();
