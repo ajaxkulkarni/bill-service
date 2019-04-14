@@ -23,4 +23,5 @@ public interface BillAdminBo {
 	BillServiceResponse getTransactions(BillServiceRequest request);
 	BillServiceResponse updateLocations(BillServiceRequest request);
 	BillServiceResponse sendNotifications(BillServiceRequest request);
+	BillServiceResponse notifyCustomers(BillServiceRequest request);
 }

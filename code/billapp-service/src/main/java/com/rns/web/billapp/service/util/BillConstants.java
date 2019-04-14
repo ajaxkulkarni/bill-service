@@ -119,6 +119,7 @@ public interface BillConstants {
 	String MAIL_TYPE_COUPON_REDEEMED = "CouponRedeemed";
 	String MAIL_TYPE_COUPON_REDEEMED_ADMIN = "CouponRedeemedAdmin";
 	String MAIL_TYPE_COUPON_REDEEMED_BUSINESS = "CouponRedeemedBusiness";
+	String MAIL_TYPE_SCHEME_PROMOTION = "SchemePromotion";
 	String MAIL_TYPE_GENERIC = "GenericEmail";
 
 	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };

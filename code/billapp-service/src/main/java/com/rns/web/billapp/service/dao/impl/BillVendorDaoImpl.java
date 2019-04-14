@@ -123,7 +123,11 @@ public class BillVendorDaoImpl {
 	
 	public List<BillDBUserBusiness> getBusinessesByType(String type, List<BillDBLocation> locations, List<BillDBItemBusiness> items) {
 		Criteria criteria = session.createCriteria(BillDBUserBusiness.class);
-		criteria.add(Restrictions.eq("type", type));
+		if(StringUtils.contains(type, "!")) {
+			criteria.add(Restrictions.or(Restrictions.isNull("type"), Restrictions.ne("type", StringUtils.removeStart(type, "!"))));
+		} else {
+			criteria.add(Restrictions.eq("type", type));
+		}
 		criteria.createCriteria("user");
 		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
 		List<Integer> list = new ArrayList<Integer>();

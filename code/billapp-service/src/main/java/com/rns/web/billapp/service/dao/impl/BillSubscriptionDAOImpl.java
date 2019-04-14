@@ -7,16 +7,21 @@ import org.apache.commons.collections.CollectionUtils;
 import org.hibernate.Criteria;
 import org.hibernate.FetchMode;
 import org.hibernate.Session;
+import org.hibernate.criterion.Criterion;
+import org.hibernate.criterion.Distinct;
 import org.hibernate.criterion.Order;
+import org.hibernate.criterion.ProjectionList;
+import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.SimpleExpression;
 import org.hibernate.sql.JoinType;
+import org.hibernate.transform.DistinctResultTransformer;
 
 import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.util.BillConstants;
-import com.rns.web.billapp.service.util.CommonUtils;
 
 public class BillSubscriptionDAOImpl {
 	
@@ -107,6 +112,31 @@ public class BillSubscriptionDAOImpl {
 			criteria.createAlias("subscription", "s").add(Restrictions.eq("s.id", subscriptionId));
 		}
 		criteria.addOrder(Order.desc("orderDate"));
+		//criteria.setFetchMode("subscription", FetchMode.JOIN);
+		return criteria.list();
+	}
+	
+	public List<Object[]> getOnlinePayers(Date fromDate, Date toDate) {
+		Criteria criteria = session.createCriteria(BillDBTransactions.class)
+				.add(Restrictions.or(Restrictions.eq("status", BillConstants.INVOICE_SETTLEMENT_STATUS_SETTLED), Restrictions.eq("status", BillConstants.INVOICE_STATUS_PAID)))
+				.add(Restrictions.or(Restrictions.eqOrIsNull("paymentMedium", BillConstants.PAYMENT_MEDIUM_CASHFREE), Restrictions.eqOrIsNull("paymentMedium", BillConstants.PAYMENT_MEDIUM_ATOM), Restrictions.eqOrIsNull("paymentMedium", BillConstants.PAYMENT_MEDIUM_PAYTM)));
+		if(fromDate != null && toDate != null) {
+			criteria.add(Restrictions.ge("createdDate", fromDate))
+					.add(Restrictions.le("createdDate", toDate));
+		}
+		criteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		Criteria subscriptionCriteria = criteria.createCriteria("subscription", "sub");
+		criteria.createAlias("invoice", "inv");
+		subscriptionCriteria.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+		//subscriptionCriteria.add(DistinctResultTransformer.INSTANCE)
+		//criteria.setProjection(Projections.groupProperty("subscription.id"));
+		ProjectionList projectionList = Projections.projectionList();
+		//projectionList.add(Projections.property("id"));
+		projectionList.add(Projections.property("sub.phone"));
+		projectionList.add(Projections.property("sub.name"));
+		projectionList.add(Projections.property("sub.email"));
+		projectionList.add(Projections.property("inv.id"));
+		criteria.setProjection(Projections.distinct(projectionList));
 		//criteria.setFetchMode("subscription", FetchMode.JOIN);
 		return criteria.list();
 	}

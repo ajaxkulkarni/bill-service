@@ -401,4 +401,12 @@ public class BillAdminController {
 		return businessBo.rewardBusinessReferral(request);
 	}
 	
+	@POST
+	@Path("/notifyCustomers")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse notifyCustomers(BillServiceRequest request) {
+		return adminBo.notifyCustomers(request);
+	}
+	
 }

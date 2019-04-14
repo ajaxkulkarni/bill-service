@@ -998,7 +998,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					currentInvoice.getPaymentId(), false, null, null);
 			if(CollectionUtils.isNotEmpty(existingTransctions)) {
 				for(BillDBTransactions existingTransaction: existingTransctions) {
-					if (existingTransaction != null && (StringUtils.equals(INVOICE_STATUS_PAID, existingTransaction.getStatus()) || StringUtils.equals(INVOICE_SETTLEMENT_STATUS_SETTLED, existingTransaction.getStatus()))) {
+					if (existingTransaction != null && (StringUtils.equals(INVOICE_STATUS_PAID, existingTransaction.getStatus()) || StringUtils.equals(INVOICE_SETTLEMENT_STATUS_SETTLED, existingTransaction.getStatus()) || StringUtils.equals(INVOICE_SETTLEMENT_STATUS_INITIATED, existingTransaction.getStatus()))) {
 						//To avoid multiple hits from the server. In case of pending payment, multiple hits are allowed
 						LoggingUtil.logMessage("Already transacted with this invoice .." + currentInvoice.getId() + " PID " + currentInvoice.getPaymentId() + " txn "
 								+ existingTransaction.getId() + " status " + existingTransaction.getStatus() + " current status " + currentInvoice.getStatus());
@@ -1982,8 +1982,12 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				response.setResponse(ERROR_CODE_GENERIC, "Please setup locations in your profile!");
 				return response;
 			}
+			String businessType = ACCESS_DISTRIBUTOR;
+			if(StringUtils.equals(ACCESS_DISTRIBUTOR, userBusiness.getType())) {
+				businessType = "!" + ACCESS_DISTRIBUTOR;
+			}
 			List<BillDBItemBusiness> items = dao.getEntitiesByKey(BillDBItemBusiness.class, "business.id", request.getBusiness().getId(), true, null, null);
-			List<BillDBUserBusiness> businessesByType = new BillVendorDaoImpl(session).getBusinessesByType(ACCESS_DISTRIBUTOR, new ArrayList<BillDBLocation>(userBusiness.getLocations()),  items);
+			List<BillDBUserBusiness> businessesByType = new BillVendorDaoImpl(session).getBusinessesByType(businessType, new ArrayList<BillDBLocation>(userBusiness.getLocations()),  items);
 			List<BillUser> businesses = new ArrayList<BillUser>();
 			if(CollectionUtils.isEmpty(businessesByType)) {
 				response.setResponse(ERROR_CODE_GENERIC, "Please contact our team to enable this feature for your location. Once enabled you will be able to track and pay your purchase online.");
@@ -1993,10 +1997,19 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				for(BillDBUserBusiness business: businessesByType) {
 					BillBusiness currentBusiness = BillDataConverter.getBusiness(business);
 					BillUser user = currentBusiness.getOwner();
-					//Load financial for UPI transfer
-					BillDataConverter.setUserFinancials(response, session, business.getUser(), user, new NullAwareBeanUtils());
-					//Get total pending for this business
-					BigDecimal sum = (BigDecimal) new BillInvoiceDaoImpl(session).getTotalPendingForBusiness(business.getId(), request.getBusiness().getId(), null);
+					Integer toBusinessId = business.getId();
+					Integer fromBusinessId = request.getBusiness().getId();
+					//If request is from the distributor
+					if(StringUtils.equals(ACCESS_DISTRIBUTOR, userBusiness.getType())) {
+						//Get total pending for this business
+						fromBusinessId = business.getId();
+						toBusinessId = request.getBusiness().getId();
+					} else {
+						//Load financial for UPI transfer
+						BillDataConverter.setUserFinancials(response, session, business.getUser(), user, new NullAwareBeanUtils());
+					}
+					
+					BigDecimal sum = (BigDecimal) new BillInvoiceDaoImpl(session).getTotalPendingForBusiness(toBusinessId, fromBusinessId, null);
 					if(user != null) {
 						if(CollectionUtils.isNotEmpty(businesses)) {
 							boolean found = false;
@@ -2086,6 +2099,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 							if (businessItem.getParent() != null && businessItem.getParent().getId().intValue() == parentItem.getId().intValue()) {
 								distributorItem.setParentItemId(businessItem.getId());
 								found = true;
+								break;
 							}
 						}
 						if(!found) {
@@ -2141,13 +2155,13 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			price = parentItem.getPrice();
 		}
 		if (StringUtils.equals(FREQ_DAILY, parentItem.getFrequency()) && StringUtils.isNotBlank(parentItem.getWeekDays())
-				&& StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+				/*&& StringUtils.isNotBlank(parentItem.getWeeklyPricing())*/) {
 			// Calculate cost price
 			value = BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_WEEK), parentItem.getWeekDays(),
 							weeklyPricing, price);
 			
 		} else if ((StringUtils.equals(FREQ_WEEKLY, parentItem.getFrequency()) || StringUtils.equals(FREQ_MONTHLY, parentItem.getFrequency()))
-				&& StringUtils.isNotBlank(parentItem.getMonthDays()) && StringUtils.isNotBlank(parentItem.getWeeklyPricing())) {
+				&& StringUtils.isNotBlank(parentItem.getMonthDays()) /*&& StringUtils.isNotBlank(parentItem.getWeeklyPricing())*/) {
 			// Calculate cost price
 			value = BillRuleEngine.calculatePricing(cal.get(Calendar.DAY_OF_MONTH), parentItem.getMonthDays(),
 							weeklyPricing, price);

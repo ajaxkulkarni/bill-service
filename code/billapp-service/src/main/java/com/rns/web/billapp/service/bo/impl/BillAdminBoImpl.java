@@ -28,13 +28,13 @@ import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillNotification;
+import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemParent;
-import com.rns.web.billapp.service.dao.domain.BillDBItemSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
@@ -49,6 +49,8 @@ import com.rns.web.billapp.service.dao.impl.BillAdminDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillOrderDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillSchemesDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillSubscriptionDAOImpl;
 import com.rns.web.billapp.service.dao.impl.BillTransactionsDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
@@ -59,6 +61,7 @@ import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillExcelUtil;
 import com.rns.web.billapp.service.util.BillMailUtil;
+import com.rns.web.billapp.service.util.BillMessageBroadcaster;
 import com.rns.web.billapp.service.util.BillPropertyUtil;
 import com.rns.web.billapp.service.util.BillRuleEngine;
 import com.rns.web.billapp.service.util.BillSMSUtil;
@@ -835,6 +838,68 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse notifyCustomers(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		Session session = null;		
+		try {
+			session = this.sessionFactory.openSession();
+			BillNotification notification = request.getNotification();
+			if(StringUtils.equals("SCHEME_NOTIFY", request.getRequestType())) {
+				//Get scheme details
+				BillDBSchemes schemes = new BillGenericDaoImpl(session).getEntityByKey(BillDBSchemes.class, ID_ATTR, request.getScheme().getId(), true);
+				if(schemes == null) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_SCHEME_NOT_FOUND);
+					return response;
+				}
+				if (schemes.getValidFrom() != null && schemes.getValidFrom().compareTo(new Date()) > 0) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_SCHEME_NOT_STARTED);
+					return response;
+				}
+				if (schemes.getValidTill() != null && schemes.getValidTill().compareTo(new Date()) < 0) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_SCHEME_EXPIRED);
+					return response;
+				}
+				BillScheme scheme = new BillScheme();
+				new NullAwareBeanUtils().copyProperties(scheme, schemes);
+				BillBusiness currentBusiness = BillDataConverter.getBusiness(schemes.getBusiness());
+				//Notify the (paying) customers about a new scheme
+				List<Object[]> onlinePayers = new BillSubscriptionDAOImpl(session).getOnlinePayers(null, null);
+				if(CollectionUtils.isNotEmpty(onlinePayers)) {
+					System.out.println(onlinePayers.size());
+					List<BillUser> users = new ArrayList<BillUser>();
+					for(Object[] tx: onlinePayers) {
+						System.out.println(tx[0] + ":" + tx[1] + ":" + tx[2] + ":" + tx[3]);
+						BillUser user = new BillUser();
+						user.setPhone(CommonUtils.getString(tx[0]));
+						user.setName(CommonUtils.getString(tx[1]));
+						user.setEmail(CommonUtils.getString(tx[2]));
+						if(notification != null && !StringUtils.equals(notification.getRecepients(), user.getEmail())) {
+							continue;
+						}
+						BillInvoice invoice = new BillInvoice();
+						invoice.setId(CommonUtils.getValue(tx[3], Integer.class));
+						invoice.setPaymentUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + invoice.getId());
+						invoice.setShortUrl(BillPropertyUtil.getProperty(BillPropertyUtil.PAYMENT_RESULT) + invoice.getId());
+						user.setCurrentInvoice(invoice);
+						user.setCurrentBusiness(currentBusiness);
+						users.add(user);
+					}
+					BillMessageBroadcaster broadcaster = new BillMessageBroadcaster(users, MAIL_TYPE_SCHEME_PROMOTION, REQUEST_TYPE_EMAIL);
+					broadcaster.setScheme(scheme);
+					broadcaster.setSubject(scheme.getSchemeName());
+					executor.execute(broadcaster);
+				}
+			}
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
 		} finally {
 			CommonUtils.closeSession(session);
 		}

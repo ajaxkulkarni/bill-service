@@ -492,6 +492,7 @@ public class BillMailUtil implements BillConstants, Runnable {
 			put(MAIL_TYPE_COUPON_REDEEMED, "scheme_redeemed.html");
 			put(MAIL_TYPE_COUPON_REDEEMED_ADMIN, "scheme_redeemed_admin.html");
 			put(MAIL_TYPE_COUPON_REDEEMED_BUSINESS, "scheme_redeemed_business.html");
+			put(MAIL_TYPE_SCHEME_PROMOTION, "scheme_promotion.html");
 			put(MAIL_TYPE_GENERIC, "generic.html");
 		}
 	});

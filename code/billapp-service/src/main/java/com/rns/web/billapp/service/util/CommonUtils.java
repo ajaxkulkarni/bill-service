@@ -323,6 +323,20 @@ public class CommonUtils {
 		return BigDecimal.ZERO;
 	}
 	
+	public static String getString(Object value) {
+		if(value != null) {
+			return value.toString();
+		}
+		return null;
+	}
+	
+	public static <T> T getValue(Object value, Class<T> type) {
+		if(value != null) {
+			return (T) value;
+		}
+		return null;
+	}
+	
 	public static BigDecimal formatDecimal(BigDecimal value) {
 		if(value == null) {
 			return value;

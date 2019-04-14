@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 
 public class BillMessageBroadcaster implements Runnable {
@@ -12,9 +13,15 @@ public class BillMessageBroadcaster implements Runnable {
 	private List<BillUser> users;
 	private String messageType;
 	private String requestType;
+	private BillScheme scheme;
+	private String subject;
 
 	public BillMessageBroadcaster() {
 
+	}
+	
+	public void setScheme(BillScheme scheme) {
+		this.scheme = scheme;
 	}
 
 	public BillMessageBroadcaster(List<BillUser> receivers, String type, String request) {
@@ -33,6 +40,8 @@ public class BillMessageBroadcaster implements Runnable {
 						BillMailUtil mailUtil = new BillMailUtil(messageType);
 						mailUtil.setUser(customer);
 						mailUtil.setInvoice(customer.getCurrentInvoice());
+						mailUtil.setSelectedScheme(scheme);
+						mailUtil.setMailSubject(subject);
 						mailUtil.sendMail();
 					} else {
 						BillSMSUtil.sendSMS(customer, customer.getCurrentInvoice(), messageType, null);
@@ -44,6 +53,14 @@ public class BillMessageBroadcaster implements Runnable {
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		}
+	}
+
+	public String getSubject() {
+		return subject;
+	}
+
+	public void setSubject(String subject) {
+		this.subject = subject;
 	}
 
 }
