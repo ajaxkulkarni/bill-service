@@ -185,6 +185,7 @@ public class BillSMSUtil implements BillConstants {
 			put(MAIL_TYPE_COUPON_REDEEMED_BUSINESS, "Hi {name}! A customer {customerName} redeemed the offer for {schemeName}.\nCoupon code - {coupon}\nContact - {customerPhone} | {customerEmail}");
 			put(MAIL_TYPE_COUPON_REDEEMED_ADMIN, "Hi {name}! A customer {customerName} redeemed the offer for {schemeName}.\nCongratulations! You have won reward of Rs. {vendorCommission} !The reward amount will be settled into your back account within 1-2 days.");
 			put(MAIL_TYPE_GENERIC, "{message}");
+			put(MAIL_TYPE_SCHEME_PROMOTION, "{schemeName}.\nCheck out this offer now - {offersUrl}\nYou are getting this SMS because you paid your bill online using PayPerBill.PayPerBill provides exciting offers for the customers every month.");
 		}
 	});
 

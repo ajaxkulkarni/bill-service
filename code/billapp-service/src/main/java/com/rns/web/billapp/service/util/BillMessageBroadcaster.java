@@ -44,7 +44,7 @@ public class BillMessageBroadcaster implements Runnable {
 						mailUtil.setMailSubject(subject);
 						mailUtil.sendMail();
 					} else {
-						BillSMSUtil.sendSMS(customer, customer.getCurrentInvoice(), messageType, null);
+						BillSMSUtil.sendSMS(customer, customer.getCurrentInvoice(), messageType, scheme);
 					}
 					count++;
 				}

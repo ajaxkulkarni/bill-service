@@ -14,6 +14,7 @@ public class BillNotification {
 	private String subject;
 	private String recepients;
 	private String text;
+	private String channel;
 	
 	public String getSubject() {
 		return subject;
@@ -32,6 +33,12 @@ public class BillNotification {
 	}
 	public void setText(String text) {
 		this.text = text;
+	}
+	public String getChannel() {
+		return channel;
+	}
+	public void setChannel(String channel) {
+		this.channel = channel;
 	}
 	
 }

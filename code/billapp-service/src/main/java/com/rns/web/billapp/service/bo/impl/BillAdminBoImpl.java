@@ -880,8 +880,13 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						user.setPhone(CommonUtils.getString(tx[0]));
 						user.setName(CommonUtils.getString(tx[1]));
 						user.setEmail(CommonUtils.getString(tx[2]));
-						if(notification != null && !StringUtils.equals(notification.getRecepients(), user.getEmail())) {
-							continue;
+						if(notification != null) {
+							if(StringUtils.equals(REQUEST_TYPE_EMAIL, notification.getChannel()) && !StringUtils.equals(notification.getRecepients(), user.getEmail())) {
+								continue;
+							} else if (!CommonUtils.comparePhoneNumbers(notification.getRecepients(), user.getPhone())) {
+								continue;
+							}
+							
 						}
 						BillInvoice invoice = new BillInvoice();
 						invoice.setId(CommonUtils.getValue(tx[3], Integer.class));
@@ -891,7 +896,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						user.setCurrentBusiness(currentBusiness);
 						users.add(user);
 					}
-					BillMessageBroadcaster broadcaster = new BillMessageBroadcaster(users, MAIL_TYPE_SCHEME_PROMOTION, REQUEST_TYPE_EMAIL);
+					BillMessageBroadcaster broadcaster = new BillMessageBroadcaster(users, MAIL_TYPE_SCHEME_PROMOTION, notification.getChannel());
 					broadcaster.setScheme(scheme);
 					broadcaster.setSubject(scheme.getSchemeName());
 					executor.execute(broadcaster);
