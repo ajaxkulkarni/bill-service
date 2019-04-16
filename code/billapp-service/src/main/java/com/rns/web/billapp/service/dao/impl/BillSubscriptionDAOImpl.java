@@ -10,6 +10,7 @@ import org.hibernate.Session;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.Distinct;
 import org.hibernate.criterion.Order;
+import org.hibernate.criterion.Projection;
 import org.hibernate.criterion.ProjectionList;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
@@ -136,7 +137,11 @@ public class BillSubscriptionDAOImpl {
 		projectionList.add(Projections.property("sub.name"));
 		projectionList.add(Projections.property("sub.email"));
 		projectionList.add(Projections.property("inv.id"));
-		criteria.setProjection(Projections.distinct(projectionList));
+		projectionList.add(Projections.groupProperty("sub.id"));
+		/*Projection mainProjectionList = Projections.projectionList().add(Projections.distinct(projectionList))
+				.add(Projections.property("inv.id"));*/
+		
+		criteria.setProjection(projectionList);
 		//criteria.setFetchMode("subscription", FetchMode.JOIN);
 		return criteria.list();
 	}
