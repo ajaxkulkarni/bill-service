@@ -875,7 +875,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					System.out.println(onlinePayers.size());
 					List<BillUser> users = new ArrayList<BillUser>();
 					for(Object[] tx: onlinePayers) {
-						System.out.println(tx[0] + ":" + tx[1] + ":" + tx[2] + ":" + tx[3]);
+						LoggingUtil.logMessage(tx[0] + ":" + tx[1] + ":" + tx[2] + ":" + tx[3], LoggingUtil.smsLogger);
 						BillUser user = new BillUser();
 						user.setPhone(CommonUtils.getString(tx[0]));
 						user.setName(CommonUtils.getString(tx[1]));
