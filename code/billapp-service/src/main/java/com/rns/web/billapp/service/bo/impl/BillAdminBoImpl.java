@@ -880,8 +880,8 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						user.setPhone(CommonUtils.getString(tx[0]));
 						user.setName(CommonUtils.getString(tx[1]));
 						user.setEmail(CommonUtils.getString(tx[2]));
-						if(notification != null) {
-							if(StringUtils.equals(REQUEST_TYPE_EMAIL, notification.getChannel()) && !StringUtils.equals(notification.getRecepients(), user.getEmail())) {
+						if(notification != null && StringUtils.isNotBlank(notification.getRecepients())) {
+							if(notification.getChannel() != null && StringUtils.equals(REQUEST_TYPE_EMAIL, notification.getChannel()) && !StringUtils.equals(notification.getRecepients(), user.getEmail())) {
 								continue;
 							} else if (!CommonUtils.comparePhoneNumbers(notification.getRecepients(), user.getPhone())) {
 								continue;

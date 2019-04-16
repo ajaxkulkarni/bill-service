@@ -347,6 +347,9 @@ public class CommonUtils {
 	}
 	
 	public static boolean comparePhoneNumbers(String ph1, String ph2) {
+		if(StringUtils.isBlank(ph2) || StringUtils.isBlank(ph1)) {
+			return false;
+		}
 		String phone1 = new String(StringUtils.removeStart(StringUtils.replacePattern(ph1, "\\s+",""), "+91"));
 		String phone2 = new String(StringUtils.removeStart(StringUtils.replacePattern(ph2, "\\s+",""), "+91"));
 		return StringUtils.equals(phone1, phone2);

@@ -194,6 +194,7 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 						scheme.setSchemeBusiness(BillDataConverter.getBusinessBasic(offer.getBusiness()));
 						schemes.add(scheme);
 					}
+					LoggingUtil.logMessage("Loading schemes for .. " + request.getInvoice().getId());
 					response.setSchemes(schemes);
 				}
 			}
