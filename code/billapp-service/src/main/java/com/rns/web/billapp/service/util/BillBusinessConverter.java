@@ -110,7 +110,21 @@ public class BillBusinessConverter {
 		if(dbItem == null) {
 			dbItem = new BillDBItemBusiness();
 		} 
+		saveBusinessItem(item, session, business, notNullBean, dbItem);
+		if(item.getImage() != null) {
+			updateItemImage(item, dbItem);
+		}
+	}
+
+	public static void saveBusinessItem(BillItem item, Session session, BillBusiness business, BeanUtilsBean notNullBean, BillDBItemBusiness dbItem)
+			throws IllegalAccessException, InvocationTargetException {
 		notNullBean.copyProperties(dbItem, item);
+		//Set days if only frequency is set
+		if(StringUtils.isNotBlank(dbItem.getFrequency()) ) {
+			if(StringUtils.equals(dbItem.getFrequency(), BillConstants.FREQ_MONTHLY) && StringUtils.isBlank(dbItem.getMonthDays())) {
+				dbItem.setMonthDays("1");
+			}
+		}
 		if(item.getParentItem() != null) {
 			BillDBItemParent parent = new BillDBItemParent();
 			parent.setId(item.getParentItem().getId());
@@ -125,9 +139,6 @@ public class BillBusinessConverter {
 			dbItem.setStatus(BillConstants.STATUS_ACTIVE);
 			dbItem.setCreatedDate(new Date());
 			session.persist(dbItem);
-		}
-		if(item.getImage() != null) {
-			updateItemImage(item, dbItem);
 		}
 	}
 	

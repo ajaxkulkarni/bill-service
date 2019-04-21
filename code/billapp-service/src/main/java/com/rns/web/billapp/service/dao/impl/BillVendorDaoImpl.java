@@ -23,6 +23,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBLocation;
 import com.rns.web.billapp.service.dao.domain.BillDBOrders;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
+import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.CommonUtils;
 
 public class BillVendorDaoImpl {
@@ -56,7 +57,7 @@ public class BillVendorDaoImpl {
 		Criteria subscriptionCriteria = criteria.createCriteria("subscriptions", JoinType.INNER_JOIN).add(BillGenericDaoImpl.activeCriteria());
 		Criteria businessItemCriteria = subscriptionCriteria.createCriteria("businessItem", JoinType.LEFT_OUTER_JOIN).add(BillGenericDaoImpl.activeCriteria());
 		
-		Criteria parentItemCriteria = businessItemCriteria.createCriteria("parent", JoinType.LEFT_OUTER_JOIN).add(BillGenericDaoImpl.activeCriteria());
+		Criteria parentItemCriteria = businessItemCriteria.createCriteria("parent", JoinType.LEFT_OUTER_JOIN).add(Restrictions.or(Restrictions.isNull("status"), BillGenericDaoImpl.activeCriteria()));
 		/*criteria.setFetchMode("subscriptions", FetchMode.JOIN);
 		criteria.setFetchMode("subscriptions.businessItem", FetchMode.JOIN);
 		criteria.setFetchMode("subscriptions.businessItem.parent", FetchMode.JOIN);*/

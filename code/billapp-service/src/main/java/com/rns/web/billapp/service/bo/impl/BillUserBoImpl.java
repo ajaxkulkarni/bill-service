@@ -129,12 +129,28 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillDBUser dbUser = new BillDBUser();
 					BeanUtils.copyProperties(dbUser, user);
 					dbUser.setCreatedDate(new Date());
-					dbUser.setStatus(STATUS_PENDING);
+					//dbUser.setStatus(STATUS_PENDING);//TODO change later if required
+					dbUser.setStatus(STATUS_ACTIVE);//TODO change later if required
 					session.persist(dbUser);
 					updateUserFiles(user, dbUser);
 					BillBusinessConverter.updateBusinessDetails(user, dao, dbUser);
 					BillPaymentCredentials instaResponse = BillPaymentUtil.createNewUser(user, null);
 					BillBusinessConverter.setPaymentCredentials(dbUser, instaResponse);
+					//Add all parent items (Newspapers) to the profile as default //TODO can be changed later
+					if(user != null && user.getCurrentBusiness() != null && user.getCurrentBusiness().getBusinessSector() != null) {
+						List<BillDBItemParent> parentItems = dao.getEntitiesByKey(BillDBItemParent.class, "sector.id", user.getCurrentBusiness().getBusinessSector().getId(), true, "name", "asc");
+						if(CollectionUtils.isNotEmpty(parentItems)) {
+							LoggingUtil.logMessage("Adding " + parentItems.size() + " items to the profile ..");
+							for(BillDBItemParent parent: parentItems) {
+								BillItem item = new BillItem();
+								BillItem parentItem = new BillItem();
+								parentItem.setId(parent.getId());
+								item.setParentItem(parentItem);
+								BillBusinessConverter.saveBusinessItem(item, session, user.getCurrentBusiness(), new NullAwareBeanUtils(), new BillDBItemBusiness());
+							}
+						}
+						
+					}
 					// New user ; send email and SMS if NOT distributor
 					if (user.getCurrentBusiness() != null && StringUtils.equals(ACCESS_DISTRIBUTOR, user.getCurrentBusiness().getType())) {
 						// Do not send email/SMS as this is mostly added by
