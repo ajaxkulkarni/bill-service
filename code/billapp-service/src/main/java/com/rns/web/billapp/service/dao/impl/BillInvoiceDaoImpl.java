@@ -7,7 +7,6 @@ import java.util.List;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Criteria;
-import org.hibernate.FetchMode;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.criterion.Order;
@@ -20,7 +19,6 @@ import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBBusinessInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
-import com.rns.web.billapp.service.dao.domain.BillDBOrderItems;
 import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.util.BillConstants;
 import com.rns.web.billapp.service.util.CommonUtils;
@@ -325,6 +323,35 @@ public class BillInvoiceDaoImpl {
 		}
 		criteria.setProjection(Projections.sum("amount"));
 		return criteria.uniqueResult();
+	}
+	
+	
+	public int getTotalPendingCustomers(Integer businessId) {
+		//AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) 
+		/*Criteria invoiceCriteria = session.createCriteria(BillDBInvoice.class);
+		invoiceCriteria.add(Restrictions.ne("status", BillConstants.INVOICE_STATUS_PAID));
+		Criteria subscriptionCriteria = invoiceCriteria.createCriteria("subscription", JoinType.LEFT_OUTER_JOIN);
+		subscriptionCriteria.add(Restrictions.ne("status", BillConstants.STATUS_DELETED));
+		subscriptionCriteria.add(Restrictions.eq("business.id", businessId));
+		//subscriptionCriteria.setProjection(Projections.groupProperty("id"));
+		ProjectionList projections = Projections.projectionList();
+		projections.add(Projections.groupProperty("subscription.id"));
+		projections.add(Projections.rowCount());
+		invoiceCriteria.setProjection(projections);
+		
+		
+		return (Long) invoiceCriteria.uniqueResult();*/
+		
+		String queryString = "select count(*), invoice.subscription.id from BillDBInvoice invoice where invoice.status!=:paid AND invoice.subscription.status!=:disabled AND invoice.subscription.business.id=:businessId group by invoice.subscription.id";
+		Query query = session.createQuery(queryString);
+		query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
+		query.setInteger("businessId", businessId);
+		query.setString("disabled", BillConstants.STATUS_DELETED);
+		List<Object[]> list = query.list();
+		if(CollectionUtils.isNotEmpty(list)) {
+			return list.size();
+		}
+		return 0;
 	}
 	
 	/*public int updateSettlement(Integer businessId, String status, String oldStatus) {

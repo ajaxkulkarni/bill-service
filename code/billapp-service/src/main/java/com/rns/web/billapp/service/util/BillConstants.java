@@ -1,5 +1,12 @@
 package com.rns.web.billapp.service.util;
 
+import java.math.BigDecimal;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+
 public interface BillConstants {
 
 	String ROOT_FOLDER_LOCATION = "/home/service/BillData/";
@@ -123,4 +130,12 @@ public interface BillConstants {
 	String MAIL_TYPE_GENERIC = "GenericEmail";
 
 	String[] MONTHS = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+
+	static Map<BigDecimal, String> suffixes = Collections.unmodifiableMap(new HashMap<BigDecimal, String>() {
+		{
+			put(new BigDecimal(1000), "k");
+			put(new BigDecimal(1000000), "M");
+			put(new BigDecimal(1000000000), "G");
+		}
+	});
 }

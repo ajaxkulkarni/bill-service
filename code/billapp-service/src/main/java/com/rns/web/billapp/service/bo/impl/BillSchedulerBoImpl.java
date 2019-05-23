@@ -179,9 +179,10 @@ public class BillSchedulerBoImpl implements BillSchedulerBo, BillConstants, Sche
 				} else if(itemSub.getBusinessItem() != null && itemSub.getBusinessItem().getParent() != null && weekDayNotPresent(cal, itemSub.getBusinessItem().getParent().getWeekDays())) {
 					//Not a delivery day for the parent item
 					item.setQuantity(BigDecimal.ZERO);
-				} else if(!BillRuleEngine.isDelivery(logs, itemSub)) {
+				} else {
 					//Holiday for customer / vendor / parent Item
-					item.setQuantity(BigDecimal.ZERO);
+					//Changes made for temporary quantity change for milk vendors etc -- 22/04/19
+					item.setQuantity(BillRuleEngine.getDeliveryQuantity(logs, itemSub));
 				}
 				if(item.getQuantity() != null && item.getQuantity().equals(BigDecimal.ZERO)) {
 					noDeliveries++;

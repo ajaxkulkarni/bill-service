@@ -33,6 +33,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.hibernate.Session;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+import com.mysql.jdbc.Util;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
@@ -122,10 +123,10 @@ public class BillExcelUtil {
 					BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
 					if (row.getCell(colPhone) != null) {
 						String phone = dataFormatter.formatCellValue(row.getCell(colPhone));
+						phone = CommonUtils.trimPhoneNumber(phone);
 						if (StringUtils.isBlank(phone)) {
 							continue;
 						}
-
 						BillDBSubscription dbSubscription = new BillSubscriptionDAOImpl(session).getActiveSubscription(phone, business.getId());
 						if (dbSubscription != null) {
 							//TODO remove later?
@@ -767,11 +768,11 @@ public class BillExcelUtil {
 		return priceMap;
 	}
 	
-	public static void createInvoiceFromReference(Map<Integer, BillItem> priceMap, Session session, BillDBSubscription subscription,
+	public static boolean createInvoiceFromReference(Map<Integer, BillItem> priceMap, Session session, BillDBSubscription subscription,
 			List<Object[]> orderItems, BillDBInvoice dbInvoice, Integer month)
 			throws InvalidFormatException, IOException, IllegalAccessException, InvocationTargetException {
 		if(CollectionUtils.isEmpty(priceMap.keySet())) {
-			return;
+			return false;
 		}
 		BigDecimal quantity = new BigDecimal(CommonUtils.getMonthDays(month));
 		BigDecimal total = BigDecimal.ZERO;
@@ -784,6 +785,11 @@ public class BillExcelUtil {
 					BillDBOrderItems orderItem = (BillDBOrderItems) subRow[2];
 					BillDBSubscription orderItemSub = (BillDBSubscription) subRow[3];
 					BillDBItemSubscription subscribedItem = orderItem.getSubscribedItem();
+					
+					if(orderItem.getBusinessItem() != null && orderItem.getBusinessItem().getParent() == null) {
+						//no parent so return
+						return false;
+					}
 					
 					if (orderItemSub.getId().intValue() == subscription.getId().intValue()) {
 						if (orderItem.getBusinessItem() != null && orderItem.getBusinessItem().getParent() != null
@@ -815,6 +821,7 @@ public class BillExcelUtil {
 		}
 		dbInvoice.setAmount(total);
 		System.out.println(" .......... ");
+		return true;
 	}
 
 	private static BigDecimal calculatePrice(BillItem item, BillDBItemSubscription subscribedItem, Integer month) {

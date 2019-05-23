@@ -4,15 +4,24 @@ import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.apache.poi.util.ArrayUtil;
 import org.hibernate.Session;
 
+import com.rns.web.billapp.service.bo.domain.BillAdminDashboard;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
 import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
@@ -39,7 +48,9 @@ import com.rns.web.billapp.service.dao.domain.BillDBTransactions;
 import com.rns.web.billapp.service.dao.domain.BillDBUser;
 import com.rns.web.billapp.service.dao.domain.BillDBUserBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
+import com.rns.web.billapp.service.dao.domain.BillMyCriteria;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
+import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillVendorDaoImpl;
 import com.rns.web.billapp.service.domain.BillFile;
 import com.rns.web.billapp.service.domain.BillServiceResponse;
@@ -70,7 +81,80 @@ public class BillDataConverter implements BillConstants {
 			user.setCurrentBusiness(business);
 		}
 		setUserFinancials(response, session, dbUser, user, nullBeans);
+		
 		return user;
+	}
+	
+	public static BillAdminDashboard loadUserStats(BillUser user, Session session) {
+		try {
+			// Load the dashboard stats
+			if (user.getCurrentBusiness() != null) {
+				BillAdminDashboard dashboard = new BillAdminDashboard();
+				
+				
+				List<BillMyCriteria> criteriaList = new ArrayList<BillMyCriteria>();
+				
+				Map<String, Object> keys = new HashMap<String, Object>();
+				keys.put("business.id", user.getCurrentBusiness().getId());
+				criteriaList.add(new BillMyCriteria("subscription", keys));
+				
+				Map<String, Object> restrictions = new HashMap<String, Object>();
+				BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
+				//restrictions.put("business.id", user.getCurrentBusiness().getId());
+				restrictions.put("paymentType", PAYMENT_ONLINE);
+				restrictions.put("status", PAYMENT_STATUS_CREDIT);
+				Long totalOnlinePayments = (Long) billGenericDaoImpl.getSum(BillDBInvoice.class, "id", restrictions, null, null, "count", null, criteriaList);
+				Long timeSaved = totalOnlinePayments * 5 * 60000; // 5 minutes saved
+																	// each invoice
+				Long minutes = TimeUnit.MILLISECONDS.toMinutes(timeSaved);
+				Long hours = TimeUnit.MILLISECONDS.toHours(timeSaved);
+				Long days = TimeUnit.MILLISECONDS.toDays(timeSaved);
+				String time = "";
+				if (days > 0) {
+					hours = hours % 24;
+					time = days + " d" + hours + " hrs";
+				} else if (hours > 0) {
+					minutes = minutes % 60;
+					time = hours + " hrs" + minutes + " min";
+				} else if (minutes > 0) {
+					time = minutes + " min";
+				}
+				dashboard.setTimeSaved(time);
+				if (totalOnlinePayments != null) {
+					dashboard.setMoneySaved(CommonUtils.format(new BigDecimal(totalOnlinePayments * 5))); // 5 rs petrol per payment
+				}
+
+				restrictions.remove("paymentType");
+				// Total collection since the start
+				BigDecimal totalPaid = (BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, null, null, "sum", null, criteriaList);
+				dashboard.setTotalCollection(CommonUtils.format(totalPaid));
+				// Collection this month
+				Integer month = CommonUtils.getCalendarValue(new Date(), Calendar.MONTH);
+				Integer year = CommonUtils.getCalendarValue(new Date(), Calendar.YEAR);
+				Date fromDate = CommonUtils.getMonthFirstDate(month, year);
+				Date toDate = CommonUtils.getMonthLastDate(month, year);
+
+				BigDecimal collectionThisMonth = (BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, fromDate, toDate, "sum", "paidDate",
+						criteriaList);
+				dashboard.setMonthlyCollection(CommonUtils.format(collectionThisMonth));
+
+				// Total pending invoices
+				dashboard.setPendingInvoices(Long.valueOf(new BillInvoiceDaoImpl(session).getTotalPendingCustomers(user.getCurrentBusiness().getId())));
+
+				//Pending amount
+				restrictions.put("status", BillConstants.INVOICE_STATUS_PENDING);
+				dashboard.setPendingTotal(CommonUtils.format((BigDecimal) billGenericDaoImpl.getSum(BillDBInvoice.class, "amount", restrictions, null, null, "sum", null, criteriaList)));
+				
+				restrictions.clear();
+				restrictions.put("business.id", user.getCurrentBusiness().getId());
+				restrictions.put("status", STATUS_ACTIVE);
+				dashboard.setTotalCustomers((Long) billGenericDaoImpl.getSum(BillDBSubscription.class, "id", restrictions, null, null, "count", null, null));
+				return dashboard;
+			}
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+		return null;
 	}
 
 	public static void setUserFinancials(BillServiceResponse response, Session session, BillDBUser dbUser, BillUser user, NullAwareBeanUtils nullBeans)

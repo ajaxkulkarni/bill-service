@@ -676,6 +676,8 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				}
 			}
 
+			response.setDashboard(BillDataConverter.loadUserStats(user, session));
+			
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
@@ -1030,6 +1032,10 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			BillDBInvoice invoice = new BillGenericDaoImpl(session).getEntityByKey(BillDBInvoice.class, ID_ATTR, currentInvoice.getId(), false);
 			if(invoice == null) {
 				LoggingUtil.logMessage("Could not find any invoice for ID => " + currentInvoice.getId());
+				return response;
+			}
+			if(StringUtils.equals(invoice.getStatus(), INVOICE_STATUS_PAID)) {
+				LoggingUtil.logMessage("Cannot update already paid invoice for ID => " + currentInvoice.getId());
 				return response;
 			}
 			invoice.setPaymentRequestId(currentInvoice.getPaymentRequestId());

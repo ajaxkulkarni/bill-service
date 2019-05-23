@@ -32,6 +32,11 @@ public class BillAdminDashboard {
 	private BigDecimal offlinePaid;
 	private List<BillBusinessSummary> summary;
 	private BigDecimal totalProfit;
+	private String timeSaved;
+	private String moneySaved;
+	private String totalCollection;
+	private String monthlyCollection;
+	private String pendingTotal;
 	
 	public Long getPendingInvoices() {
 		return pendingInvoices;
@@ -134,6 +139,36 @@ public class BillAdminDashboard {
 	}
 	public void setTotalProfit(BigDecimal totalProfit) {
 		this.totalProfit = totalProfit;
+	}
+	public String getTimeSaved() {
+		return timeSaved;
+	}
+	public void setTimeSaved(String timeSaved) {
+		this.timeSaved = timeSaved;
+	}
+	public String getMoneySaved() {
+		return moneySaved;
+	}
+	public void setMoneySaved(String moneySaved) {
+		this.moneySaved = moneySaved;
+	}
+	public String getTotalCollection() {
+		return totalCollection;
+	}
+	public void setTotalCollection(String totalCollection) {
+		this.totalCollection = totalCollection;
+	}
+	public String getMonthlyCollection() {
+		return monthlyCollection;
+	}
+	public void setMonthlyCollection(String monthlyCollection) {
+		this.monthlyCollection = monthlyCollection;
+	}
+	public String getPendingTotal() {
+		return pendingTotal;
+	}
+	public void setPendingTotal(String pendingTotal) {
+		this.pendingTotal = pendingTotal;
 	}
 	
 

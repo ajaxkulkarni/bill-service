@@ -11,16 +11,20 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Session;
 
@@ -403,4 +407,38 @@ public class CommonUtils {
 		cal.set(Calendar.MONTH, month - 1);
 		return cal.getActualMaximum(Calendar.DAY_OF_MONTH);
 	}
+	
+	private static final NavigableMap<BigDecimal, String> suffixes = new TreeMap<BigDecimal, String> ();
+	static {
+	  suffixes.put(new BigDecimal(1000), "k");
+	  suffixes.put(new BigDecimal(1000000), "M");
+	  suffixes.put(new BigDecimal(1000000000), "G");
+	}
+	
+	public static String format(BigDecimal value) {
+		// Long.MIN_VALUE == -Long.MIN_VALUE so we need an adjustment here
+		String formatted = "";
+		try {
+			if(value == null) {
+				return "0";
+			}
+			if (value.compareTo(new BigDecimal(1000)) < 0) {
+				return value.toString();
+			}
+
+			Entry<BigDecimal, String> e = suffixes.floorEntry(value);
+
+			BigDecimal[] divisionValues = value.divideAndRemainder(e.getKey());
+			BigDecimal remainder = divisionValues[1].divide(e.getKey());
+			BigDecimal finalValue = divisionValues[0].add(remainder);
+			finalValue = finalValue.setScale(2, RoundingMode.HALF_UP);
+			formatted = finalValue.stripTrailingZeros().toPlainString() + e.getValue();
+				
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+		
+		return formatted;
+	}
+	
 }

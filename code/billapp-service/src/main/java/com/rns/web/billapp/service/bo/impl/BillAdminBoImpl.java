@@ -357,8 +357,12 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						}
 						//Customer is registered after month's first date.. so calculate invoice by excel sheet
 						LoggingUtil.logMessage("Calculating by excel for subscription " + subscription + " of business " + subscription.getBusiness().getId());
-						BillExcelUtil.createInvoiceFromReference(priceMap, session, subscription, orderItemsResult, dbInvoice, month);
-					} else if (CollectionUtils.isNotEmpty(orderItemsResult)) {
+						boolean invoiceCreated = BillExcelUtil.createInvoiceFromReference(priceMap, session, subscription, orderItemsResult, dbInvoice, month);
+						if(invoiceCreated) {
+							continue;
+						}
+					} 
+					if (CollectionUtils.isNotEmpty(orderItemsResult)) {
 						for (Object[] subRow : orderItemsResult) {
 							if (ArrayUtils.isEmpty(subRow)) {
 								continue;
