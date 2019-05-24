@@ -166,7 +166,7 @@ public class BillBusinessConverter {
 				}
 				invoiceItem.setPrice(item.getPrice());
 				invoiceItem.setQuantity(item.getQuantity());
-				if(!hasSubscribedItem && StringUtils.isNotBlank(item.getStatus())) {
+				if(/*!hasSubscribedItem &&*/ StringUtils.isNotBlank(item.getStatus())) {
 					invoiceItem.setStatus(item.getStatus()); //Delete invoice item
 				}
 				if(invoiceItem.getId() == null) {

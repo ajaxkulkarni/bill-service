@@ -88,7 +88,7 @@ public class BillDataConverter implements BillConstants {
 	public static BillAdminDashboard loadUserStats(BillUser user, Session session) {
 		try {
 			// Load the dashboard stats
-			if (user.getCurrentBusiness() != null) {
+			if (user != null && user.getCurrentBusiness() != null) {
 				BillAdminDashboard dashboard = new BillAdminDashboard();
 				
 				

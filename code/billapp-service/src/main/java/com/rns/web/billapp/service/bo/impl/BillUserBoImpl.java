@@ -649,33 +649,46 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 		try {
 			session = this.sessionFactory.openSession();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			BillDBUser dbUser = dao.getEntityByKey(BillDBUser.class, USER_DB_ATTR_PHONE, requestUser.getPhone(), false);
-			if (dbUser == null || StringUtils.equals(STATUS_DELETED, dbUser.getStatus())) {
-				response.setResponse(ERROR_CODE_GENERIC, ERROR_NO_USER);
-				return response;
-			}
-			if (StringUtils.equals(STATUS_PENDING, dbUser.getStatus())) {
-				response.setResponse(ERROR_NOT_APPROVED, ERROR_USER_NOT_APPROVED);
-				return response;
-			}
-			BillUser user = BillDataConverter.getUserProfile(response, session, dbUser);
-			response.setUser(user);
-			
-			//Store the device ID if not stored
-			if(StringUtils.isNotBlank(requestUser.getDeviceId())) {
-				BillDBDevices devices = dao.getEntityByKey(BillDBDevices.class, "token", requestUser.getDeviceId(), true);
-				if(devices == null) {
-					Transaction tx = session.beginTransaction();
-					devices = new BillDBDevices();
-					devices.setToken(requestUser.getDeviceId());
-					devices.setUser(dbUser);
-					devices.setCreatedDate(new Date());
-					devices.setStatus(STATUS_ACTIVE);
-					session.persist(devices);
-					tx.commit();
+			BillUser user = null;
+			if(!StringUtils.equalsIgnoreCase("DASHBOARD", request.getRequestType())) {
+				BillDBUser dbUser = dao.getEntityByKey(BillDBUser.class, USER_DB_ATTR_PHONE, requestUser.getPhone(), false);
+				if (dbUser == null || StringUtils.equals(STATUS_DELETED, dbUser.getStatus())) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_NO_USER);
+					return response;
+				}
+				if (StringUtils.equals(STATUS_PENDING, dbUser.getStatus())) {
+					response.setResponse(ERROR_NOT_APPROVED, ERROR_USER_NOT_APPROVED);
+					return response;
+				}
+				user = BillDataConverter.getUserProfile(response, session, dbUser);
+				response.setUser(user);
+				
+				//Store the device ID if not stored
+				if(StringUtils.isNotBlank(requestUser.getDeviceId())) {
+					BillDBDevices devices = dao.getEntityByKey(BillDBDevices.class, "token", requestUser.getDeviceId(), true);
+					if(devices == null) {
+						Transaction tx = session.beginTransaction();
+						devices = new BillDBDevices();
+						devices.setToken(requestUser.getDeviceId());
+						devices.setUser(dbUser);
+						devices.setCreatedDate(new Date());
+						devices.setStatus(STATUS_ACTIVE);
+						session.persist(devices);
+						tx.commit();
+					}
+				}
+			} else {
+				if(request.getBusiness() != null) {
+					user = new BillUser();
+					BillDBUserBusiness business = dao.getEntityByKey(BillDBUserBusiness.class, "id", request.getBusiness().getId(), true);
+					if(business != null) {
+						BillBusiness currBusiness = new BillBusiness();
+						currBusiness.setId(business.getId());
+						user.setCurrentBusiness(currBusiness);
+					}
 				}
 			}
-
+			
 			response.setDashboard(BillDataConverter.loadUserStats(user, session));
 			
 		} catch (Exception e) {
