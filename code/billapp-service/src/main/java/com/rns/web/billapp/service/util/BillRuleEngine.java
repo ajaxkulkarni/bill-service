@@ -63,6 +63,39 @@ public class BillRuleEngine {
 		return BigDecimal.ZERO;
 	}
 
+	public static boolean isDelivery(List<BillUserLog> logs, BillDBItemSubscription subscription) {
+		if(CollectionUtils.isEmpty(logs)) {
+			return true;
+		}
+		if(subscription == null) {
+			return false;
+		}
+		//int noOrder = 0;	
+		for(BillUserLog log: logs) {
+			if(subscription.getBusinessItem() != null && subscription.getBusinessItem().getParent() != null && log.getParentItemId() == subscription.getBusinessItem().getParent().getId()) {
+				//Parent Item holiday
+				return isOrder(log);
+			} else if (log.getSubscriptionId() == null && subscription.getBusinessItem() != null && subscription.getBusinessItem().getId() == log.getBusinessItemId()) {
+				//Business Item holiday
+				return isOrder(log);
+			} else if (log.getSubscriptionId() != null && subscription.getSubscription() != null && log.getSubscriptionId().intValue() == subscription.getSubscription().getId().intValue()
+					&& subscription.getBusinessItem() != null && subscription.getBusinessItem().getId() == log.getBusinessItemId()) {
+				//Customer holiday
+				return isOrder(log);
+			}
+		}
+		/*if(noOrder == currentSubscription.getItems().size()) {
+			return false;
+		}*/
+		return true;
+	}
+
+	private static boolean isOrder(BillUserLog log) {
+		if(log.getQuantityChange() != null && BigDecimal.ZERO.equals(log.getQuantityChange())) {
+			return false;
+		}
+		return true;
+	}
 
 	private static BigDecimal getOrderQuantity(BillUserLog log) {
 		if(log.getQuantityChange() != null) {
