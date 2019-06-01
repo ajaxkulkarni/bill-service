@@ -60,9 +60,10 @@ public class BillInvoiceDaoImpl {
 		 Criteria criteria = session.createCriteria(BillDBItemInvoice.class)
 				 .add(Restrictions.eq("invoice.id", invoiceId))
 				 .add(Restrictions.eq("subscribedItem.id", subscribedItemId));
-       Object result = criteria.uniqueResult();
+	   criteria.setMaxResults(1);
+       List<BillDBItemInvoice> result = criteria.list();
        if(result != null) {
-      	 return (BillDBItemInvoice) result;
+      	 return result.get(0);
        }
        return null;
 	}
