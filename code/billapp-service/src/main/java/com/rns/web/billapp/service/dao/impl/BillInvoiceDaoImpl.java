@@ -62,7 +62,7 @@ public class BillInvoiceDaoImpl {
 				 .add(Restrictions.eq("subscribedItem.id", subscribedItemId));
 	   criteria.setMaxResults(1);
        List<BillDBItemInvoice> result = criteria.list();
-       if(result != null) {
+       if(CollectionUtils.isNotEmpty(result)) {
       	 return result.get(0);
        }
        return null;
