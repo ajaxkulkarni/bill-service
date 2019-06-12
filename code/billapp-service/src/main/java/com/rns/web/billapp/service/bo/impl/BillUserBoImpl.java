@@ -2059,8 +2059,11 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 							}
 						}
 						currentBusiness.setOwner(null);
-						List<BillItem> businessItems = BillDataConverter.getBusinessItems(new ArrayList<BillDBItemBusiness>(business.getBusinessItems()));
-						currentBusiness.setItems(businessItems);
+						if(!StringUtils.equals(ACCESS_DISTRIBUTOR, userBusiness.getType())) {
+							//Load items only for distributor list. Not for vendor list
+							List<BillItem> businessItems = BillDataConverter.getBusinessItems(new ArrayList<BillDBItemBusiness>(business.getBusinessItems()));
+							currentBusiness.setItems(businessItems);
+						}
 						BillInvoice currentInvoice = new BillInvoice();
 						currentInvoice.setPayable(sum);
 						user.setCurrentInvoice(currentInvoice);
