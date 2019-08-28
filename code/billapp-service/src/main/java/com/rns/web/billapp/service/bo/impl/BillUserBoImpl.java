@@ -137,7 +137,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 					BillPaymentCredentials instaResponse = BillPaymentUtil.createNewUser(user, null);
 					BillBusinessConverter.setPaymentCredentials(dbUser, instaResponse);
 					//Add all parent items (Newspapers) to the profile as default //TODO can be changed later
-					if(user != null && user.getCurrentBusiness() != null && user.getCurrentBusiness().getBusinessSector() != null) {
+					if(user != null && user.getCurrentBusiness() != null && user.getCurrentBusiness().getBusinessSector() != null && !StringUtils.equals(ACCESS_DISTRIBUTOR, user.getCurrentBusiness().getType())) {
 						List<BillDBItemParent> parentItems = dao.getEntitiesByKey(BillDBItemParent.class, "sector.id", user.getCurrentBusiness().getBusinessSector().getId(), true, "name", "asc");
 						if(CollectionUtils.isNotEmpty(parentItems)) {
 							LoggingUtil.logMessage("Adding " + parentItems.size() + " items to the profile ..");
@@ -1891,6 +1891,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 						businessInvoice.setPaidDate(new Date());
 						//TODO add to transactions
 						//TODO notify users
+						//BillSMSUtil.sendSMS(user, invoice, type, selectedScheme);
 					}
 					updateBusinessInvoice(session, currentInvoice, businessInvoice);
 				}
