@@ -96,6 +96,7 @@ public class BillDataConverter implements BillConstants {
 				
 				Map<String, Object> keys = new HashMap<String, Object>();
 				keys.put("business.id", user.getCurrentBusiness().getId());
+				keys.put("status", STATUS_ACTIVE);
 				criteriaList.add(new BillMyCriteria("subscription", keys));
 				
 				Map<String, Object> restrictions = new HashMap<String, Object>();
