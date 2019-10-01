@@ -343,9 +343,10 @@ public class BillInvoiceDaoImpl {
 		
 		return (Long) invoiceCriteria.uniqueResult();*/
 		
-		String queryString = "select count(*), invoice.subscription.id from BillDBInvoice invoice where invoice.status!=:paid AND invoice.subscription.status!=:disabled AND invoice.subscription.business.id=:businessId group by invoice.subscription.id";
+		String queryString = "select count(*), invoice.subscription.id from BillDBInvoice invoice where invoice.status!=:paid AND invoice.status!=:deleted AND invoice.subscription.status!=:disabled AND invoice.subscription.business.id=:businessId group by invoice.subscription.id";
 		Query query = session.createQuery(queryString);
 		query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
+		query.setString("deleted", BillConstants.INVOICE_STATUS_DELETED);
 		query.setInteger("businessId", businessId);
 		query.setString("disabled", BillConstants.STATUS_DELETED);
 		List<Object[]> list = query.list();
