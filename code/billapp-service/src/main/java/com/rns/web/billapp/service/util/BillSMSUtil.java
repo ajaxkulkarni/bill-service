@@ -29,7 +29,7 @@ import net.swisstech.bitly.model.v3.ShortenResponse;
 public class BillSMSUtil implements BillConstants {
 	
 	private static final String SMS_COSMETIC_SEPARATOR = " ---------------- ";
-	private static final String SMS_URL = "http://api.msg91.com/api/sendhttp.php?sender=PAYBIL&route=4&mobiles={mobiles}&authkey=193344AsiDSe0j5a5db681&country=0&message={message}";
+	private static final String SMS_URL = "http://api.msg91.com/api/sendhttp.php?country=91&sender=PAYBIL&route=4&mobiles={mobiles}&authkey=193344AsiDSe0j5a5db681&country=0&message={message}";
 	private static final String ADMIN_PHONES = "9923283604,9623736773";
 	
 	private BillUser customer;
@@ -61,7 +61,7 @@ public class BillSMSUtil implements BillConstants {
 			if(user.getPhone() != null && user.getPhone().length() != 10) {
 				phone = CommonUtils.trimPhoneNumber(user.getPhone());
 			}
-			LoggingUtil.logMessage("Sending SMS to phone number => " + phone, LoggingUtil.smsLogger);
+			LoggingUtil.logMessage("Sending SMS to phone number => " + phone + " with URL " + smsUrl, LoggingUtil.smsLogger);
 			smsUrl = StringUtils.replace(smsUrl, "{mobiles}", phone);
 		}
 		
