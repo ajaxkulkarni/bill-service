@@ -61,7 +61,8 @@ public class BillPropertyUtil {
 	public static final String FCM_URL = "fcm.url";
 	public static final String FCM_SERVER_KEY = "fcm.key";
 	
-	
+	//SMS
+	public static final String SMS_AUTH_KEY = "sms.auth.key";
 	//Emails
 	public static final String MAIL_HOST = "mail.host";
 	public static final String MAIL_ID = "mail.from";
