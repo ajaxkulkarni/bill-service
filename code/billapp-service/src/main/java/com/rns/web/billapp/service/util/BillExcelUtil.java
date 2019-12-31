@@ -824,6 +824,7 @@ public class BillExcelUtil {
 		return true;
 	}
 
+	
 	private static BigDecimal calculatePrice(BillItem item, BillDBItemSubscription subscribedItem, Integer month) {
 		if(subscribedItem != null && subscribedItem.getPrice() != null) {
 			return subscribedItem.getPrice(); //Scheme
@@ -846,12 +847,12 @@ public class BillExcelUtil {
 					instance.set(Calendar.MONTH, month);
 					instance.set(Calendar.DAY_OF_WEEK, dayVal);
 					instance.set(Calendar.DAY_OF_WEEK_IN_MONTH, 1);
-					int monthVal = -1;
+					int monthVal = month;
 					System.out.println("Date:" + instance.getTime());
-					while(monthVal <= month) {
+					while(monthVal == month) {
 						monthVal = instance.get(Calendar.MONTH); 
 						if(monthVal == month) {
-							System.out.println("Date:" + instance.getTime() + " month val " + monthVal);
+							LoggingUtil.logMessage("Date:" + instance.getTime() + " month val " + monthVal);
 							count++;
 						}
 						instance.add(Calendar.DAY_OF_MONTH, 7);
@@ -870,12 +871,18 @@ public class BillExcelUtil {
 	}
 	
 	public static void main(String[] args) {
-		BillDBItemSubscription subscribedItem = new BillDBItemSubscription();
+		/*BillDBItemSubscription subscribedItem = new BillDBItemSubscription();
 		//subscribedItem.setWeekDays("1,2,3,4,5,6,");
 		BillItem item = new BillItem();
 		item.setPrice(new BigDecimal("110"));
 		item.setWeeklyPricing("10,5,5,5,5,5,8");
-		System.out.println(calculatePrice(item, subscribedItem, 3));
+		System.out.println(calculatePrice(item, subscribedItem, 3));*/
+		
+		BillItem item = new BillItem();
+		BillDBItemSubscription subscribedItem = new BillDBItemSubscription();
+		subscribedItem.setWeekDays("1,3");
+		item.setWeeklyPricing("5,15,4,5,5,5,5");
+		calculatePrice(item, subscribedItem, 3);
 	}
 	
 }
