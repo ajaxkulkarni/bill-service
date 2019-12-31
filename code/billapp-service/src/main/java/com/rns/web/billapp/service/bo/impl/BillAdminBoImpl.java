@@ -317,6 +317,12 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 			
 			LoggingUtil.logMessage(" ### Invoice generation started for " + fromDate + " to " + toDate + " business " + businessId);
 			
+			int batchSize = 100;
+			String batchValue = BillPropertyUtil.getProperty(BillPropertyUtil.BATCH_SIZE);
+			if(StringUtils.isNotBlank(batchValue)) {
+				batchSize = new Integer(batchValue);
+			}
+			int count = 0;
 			if (CollectionUtils.isNotEmpty(result)) {
 				for (Object[] row : result) {
 					if (ArrayUtils.isEmpty(row)) {
@@ -422,6 +428,12 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 							user.getCurrentInvoice().setPayable(user.getCurrentInvoice().getAmount().add(BigDecimal.ONE));
 						}
 					}*/
+					count++;
+					if(count % batchSize == 0) {
+						session.flush();
+						session.clear();
+					}
+					LoggingUtil.logMessage("Batch transaction committed after " + count);
 				}
 			}
 
@@ -907,6 +919,104 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					executor.execute(broadcaster);
 				}
 			}
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse addTransaction(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		Session session = null;		
+		try {
+			session = this.sessionFactory.openSession();
+			Transaction tx = session.beginTransaction();
+			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
+			if(request.getBusiness() != null && request.getBusiness().getOwner() != null && StringUtils.isNotBlank(request.getBusiness().getOwner().getPhone())) {
+				BillDBUser dbUser = dao.getEntityByKey(BillDBUser.class, USER_DB_ATTR_PHONE, request.getBusiness().getOwner().getPhone(), false);
+				if (dbUser == null || StringUtils.equals(STATUS_DELETED, dbUser.getStatus())) {
+					response.setResponse(ERROR_CODE_GENERIC, ERROR_NO_USER);
+					return response;
+				}
+				if (StringUtils.equals(STATUS_PENDING, dbUser.getStatus())) {
+					response.setResponse(ERROR_NOT_APPROVED, ERROR_USER_NOT_APPROVED);
+					return response;
+				}
+				//FInd the business
+				List<BillDBUserBusiness> businesses = new BillVendorDaoImpl(session).getUserBusinesses(dbUser.getId());
+				if (CollectionUtils.isEmpty(businesses)) {
+					response.setWarningCode(WARNING_CODE_1);
+					response.setWarningText(WARNING_NO_BUSINESS);
+				} else {
+					BillDBInvoice invoice = null;
+					BillDBUserBusiness business = businesses.get(0);
+					if(request.getInvoice() != null && request.getInvoice().getAmount() != null) {
+						if(request.getUser() != null) {
+							BillDBSubscription sub = new BillVendorDaoImpl(session).getCustomerByPhone(business.getId(), request.getUser().getPhone());
+							if(sub == null) {
+								sub = new BillDBSubscription();
+								sub.setCreatedDate(new Date());
+								sub.setStatus(STATUS_ACTIVE);
+								new NullAwareBeanUtils().copyProperties(sub, request.getUser());
+								sub.setBusiness(business);
+								session.persist(sub);
+							}
+							if(request.getInvoice().getPaymentId() != null) {
+								//Find existing invoice
+								invoice = dao.getEntityByKey(BillDBInvoice.class, "paymentId", request.getInvoice().getPaymentId(), false);
+								if(invoice == null) {
+									invoice = new BillDBInvoice();
+									new NullAwareBeanUtils().copyProperties(invoice, request.getInvoice());
+									invoice.setSubscription(sub);
+									invoice.setComments("Edofox payment");
+									invoice.setInvoiceDate(new Date());
+									invoice.setCreatedDate(new Date());
+									invoice.setStatus(INVOICE_STATUS_PAID);
+									invoice.setPaidAmount(request.getInvoice().getAmount());
+									invoice.setPaymentMedium(PAYMENT_MEDIUM_CASHFREE);
+									invoice.setPaymentMode(PAYMENT_ONLINE);
+									session.persist(invoice);
+								}
+								//Find existing trasactions
+								List<BillDBTransactions> existingTransctions = new BillGenericDaoImpl(session).getEntitiesByKey(BillDBTransactions.class, "paymentId",
+										request.getInvoice().getPaymentId(), false, null, null);
+								if(CollectionUtils.isNotEmpty(existingTransctions)) {
+									if(CollectionUtils.isNotEmpty(existingTransctions)) {
+										for(BillDBTransactions existingTransaction: existingTransctions) {
+											if (existingTransaction != null && (StringUtils.equals(INVOICE_STATUS_PAID, existingTransaction.getStatus()) || StringUtils.equals(INVOICE_SETTLEMENT_STATUS_SETTLED, existingTransaction.getStatus()) || StringUtils.equals(INVOICE_SETTLEMENT_STATUS_INITIATED, existingTransaction.getStatus()))) {
+												//To avoid multiple hits from the server. In case of pending payment, multiple hits are allowed
+												LoggingUtil.logMessage("Already transacted with this invoice .." + request.getInvoice().getPaymentId() + " txn "
+														+ existingTransaction.getId() + " status " + existingTransaction.getStatus());
+												return response;
+											}
+										}
+									}
+								}
+							}
+							BillDBSchemes scheme = new BillGenericDaoImpl(session).getEntityByKey(BillDBSchemes.class, "business.id", business.getId(), false);
+							if(scheme != null && scheme.getVendorCommission() != null) {
+								request.getInvoice().setAmount(request.getInvoice().getAmount().multiply(scheme.getVendorCommission().divide(new BigDecimal(100))));
+							}
+							
+							BillDBTransactions transactions = new BillDBTransactions();
+							new NullAwareBeanUtils().copyProperties(transactions, request.getInvoice());
+							transactions.setCreatedDate(new Date());
+							transactions.setComments("Edofox payment");
+							transactions.setBusiness(business);
+							transactions.setSubscription(sub);
+							transactions.setStatus(INVOICE_STATUS_PAID);
+							transactions.setPaymentMedium(PAYMENT_MEDIUM_CASHFREE);
+							transactions.setPaymentMode(PAYMENT_ONLINE);
+							transactions.setInvoice(invoice);
+							session.persist(transactions);
+						}
+					}
+				}
+			}
+			tx.commit();
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);

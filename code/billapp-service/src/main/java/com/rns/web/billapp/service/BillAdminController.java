@@ -409,4 +409,37 @@ public class BillAdminController {
 		return adminBo.notifyCustomers(request);
 	}
 	
+	@POST
+	@Path("/addTransaction")
+	@Consumes(MediaType.MULTIPART_FORM_DATA)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse addTransaction(
+		@FormDataParam("businessPhone") String businessPhone, @FormDataParam("customerPhone") String customerPhone, 
+		@FormDataParam("customerEmail") String customerEmail, @FormDataParam("customerName") String customerName,
+		@FormDataParam("amount") BigDecimal amount, @FormDataParam("paymentId") String paymentId
+		) {
+		BillServiceResponse response = new BillServiceResponse();
+		try {
+			BillServiceRequest request = new BillServiceRequest();
+			BillBusiness business = new BillBusiness();
+			BillUser owner = new BillUser();
+			owner.setPhone(businessPhone);
+			business.setOwner(owner);
+			BillInvoice invoice = new BillInvoice();
+			invoice.setPaymentId(paymentId);
+			invoice.setAmount(amount);
+			BillUser customer = new BillUser();
+			customer.setPhone(customerPhone);
+			customer.setName(customerName);
+			customer.setEmail(customerEmail);
+			request.setUser(customer);
+			request.setBusiness(business);
+			request.setInvoice(invoice);
+			return adminBo.addTransaction(request);
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		}
+		return response;
+	}
+	
 }

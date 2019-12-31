@@ -71,6 +71,7 @@ public class BillPropertyUtil {
 	//
 	public static final String MAIL_AUTH = "true";
 	public static final String MAIL_PORT = "mail.port";//"587";//"465";// "587";
+	public static final String BATCH_SIZE = "batch.size";
 	
 	
 	public static String getProperty(String name) {
