@@ -430,13 +430,10 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					}*/
 					count++;
 					if(count % batchSize == 0) {
-						session.flush();
-						session.clear();
+						tx.commit();
 						LoggingUtil.logMessage("Batch transaction committed after " + count);
-						//if(!session.isConnected()) {
-						CommonUtils.closeSession(session);
-						session = this.sessionFactory.openSession();
-						LoggingUtil.logMessage("Opened a new session ..");
+						tx = session.beginTransaction();
+						LoggingUtil.logMessage("Started a new transaction ..");
 						//}
 					}
 					
