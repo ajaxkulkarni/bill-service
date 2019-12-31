@@ -433,11 +433,11 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 						session.flush();
 						session.clear();
 						LoggingUtil.logMessage("Batch transaction committed after " + count);
-						if(!session.isConnected()) {
-							CommonUtils.closeSession(session);
-							session = this.sessionFactory.openSession();
-							LoggingUtil.logMessage("Opened a new session ..");
-						}
+						//if(!session.isConnected()) {
+						CommonUtils.closeSession(session);
+						session = this.sessionFactory.openSession();
+						LoggingUtil.logMessage("Opened a new session ..");
+						//}
 					}
 					
 				}
