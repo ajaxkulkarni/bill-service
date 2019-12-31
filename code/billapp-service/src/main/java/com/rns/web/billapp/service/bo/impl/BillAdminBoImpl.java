@@ -328,10 +328,6 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 					if (ArrayUtils.isEmpty(row)) {
 						continue;
 					}
-					if(count < 6800) {
-						count++;
-						continue;
-					}
 					BigDecimal total = (BigDecimal) row[0];
 					BillDBSubscription subscription = (BillDBSubscription) row[1];
 					LoggingUtil.logMessage("Generating invoice for " + subscription.getName() + " ID " + subscription.getId());
