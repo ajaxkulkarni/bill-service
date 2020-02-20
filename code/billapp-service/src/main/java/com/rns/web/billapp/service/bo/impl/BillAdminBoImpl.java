@@ -1040,14 +1040,19 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 				LoggingUtil.logMessage("Getting data for month " + request.getInvoice().getMonth() + " and " + request.getInvoice().getYear());
 				Date date1 = CommonUtils.getMonthFirstDate(request.getInvoice().getMonth(), request.getInvoice().getYear());
 				String startDate = CommonUtils.convertDate(date1);
-				Date date2 = CommonUtils.getMonthLastDate(request.getInvoice().getMonth(), request.getInvoice().getYear());
+				Date date2 = CommonUtils.getMonthFirstDate(request.getInvoice().getMonth() + 1, request.getInvoice().getYear());
 				int dayBuffer = 0;
 				if(new Date().getTime() < date2.getTime()) {
 					date2 = new Date();
 					//dayBuffer = 1;
 				}
 				String endDate = CommonUtils.convertDate(date2);
-				Long noOfDays = CommonUtils.noOfDays(date2, date1) - dayBuffer;
+				Long noOfDays = null;
+				if(request.getInvoice().getPaymentAttempt() != null) {
+					noOfDays = new Long(request.getInvoice().getPaymentAttempt());
+				} else {
+					noOfDays = CommonUtils.noOfDays(date2, date1) - dayBuffer;
+				}
 				LoggingUtil.logMessage("No of days is - " + noOfDays.intValue() + " calculating from " + startDate + " to " + endDate);
 				List<Object[]> monthlyBillData = new BillAdminDaoImpl(session).getMonthlyBillData(noOfDays.intValue(), startDate, endDate);
 				if(CollectionUtils.isNotEmpty(monthlyBillData)) {

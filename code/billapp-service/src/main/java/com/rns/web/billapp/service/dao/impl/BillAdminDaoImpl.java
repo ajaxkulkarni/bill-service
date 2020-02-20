@@ -52,7 +52,7 @@ public class BillAdminDaoImpl {
 		String queryString = "select count(*) , q.billTotal, q.parent_name , q.parent_id from (" +
  "select count(*) as orderCnt,sum(order_items.amount) as billTotal,item_parent.name as parent_name, item_parent.id as parent_id,order_items.subscribed_item_id from order_items join business_items on order_items.business_item_id = business_items.id " +
  "join item_parent on business_items.item_parent = item_parent.id " +
- "where order_items.created_date > :startDate AND order_items.created_date <= :endDate AND order_items.amount > 0 " + 
+ "where order_items.created_date > :startDate AND order_items.created_date < :endDate AND order_items.amount > 0 " + 
  "group by item_parent.id,order_items.subscribed_item_id having count(*) > :days) as q group by parent_id, billTotal";
 
 		Query query = session.createSQLQuery(queryString);
