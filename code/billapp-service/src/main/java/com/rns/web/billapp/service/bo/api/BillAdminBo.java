@@ -25,4 +25,6 @@ public interface BillAdminBo {
 	BillServiceResponse sendNotifications(BillServiceRequest request);
 	BillServiceResponse notifyCustomers(BillServiceRequest request);
 	BillServiceResponse addTransaction(BillServiceRequest request);
+	BillServiceResponse getMonthlyData(BillServiceRequest request);
+	
 }

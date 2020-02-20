@@ -15,6 +15,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -1021,6 +1022,72 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 				}
 			}
 			tx.commit();
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return response;
+	}
+
+	public BillServiceResponse getMonthlyData(BillServiceRequest request) {
+		BillServiceResponse response = new BillServiceResponse();
+		Session session = null;		
+		try {
+			session = this.sessionFactory.openSession();
+			if(request.getInvoice() != null) {
+				LoggingUtil.logMessage("Getting data for month " + request.getInvoice().getMonth() + " and " + request.getInvoice().getYear());
+				Date date1 = CommonUtils.getMonthFirstDate(request.getInvoice().getMonth(), request.getInvoice().getYear());
+				String startDate = CommonUtils.convertDate(date1);
+				Date date2 = CommonUtils.getMonthLastDate(request.getInvoice().getMonth(), request.getInvoice().getYear());
+				int dayBuffer = 0;
+				if(new Date().getTime() < date2.getTime()) {
+					date2 = new Date();
+					//dayBuffer = 1;
+				}
+				String endDate = CommonUtils.convertDate(date2);
+				Long noOfDays = CommonUtils.noOfDays(date2, date1) - dayBuffer;
+				LoggingUtil.logMessage("No of days is - " + noOfDays.intValue() + " calculating from " + startDate + " to " + endDate);
+				List<Object[]> monthlyBillData = new BillAdminDaoImpl(session).getMonthlyBillData(noOfDays.intValue(), startDate, endDate);
+				if(CollectionUtils.isNotEmpty(monthlyBillData)) {
+					List<BillItem> items = new ArrayList<BillItem>();
+					for(Object[] row: monthlyBillData) {
+						if(ArrayUtils.isNotEmpty(row)) {
+							Integer parentId = (Integer) row[3];
+							BigInteger quantity =  (BigInteger) row[0];
+							BigDecimal quantityDecimal = new BigDecimal(quantity);
+							if(parentId != null) {
+								boolean found = false;
+								if(CollectionUtils.isNotEmpty(items)) {
+									for(BillItem existing: items) {
+										if(existing.getParentItemId() != null && existing.getParentItemId().intValue() == parentId.intValue()) {
+											//found
+											found = true;
+											if(existing.getQuantity() != null && existing.getQuantity().compareTo(quantityDecimal) < 0) {
+												existing.setQuantity(quantityDecimal);
+											} else if (existing.getQuantity() == null) {
+												existing.setQuantity(quantityDecimal);
+											}
+											break;
+										}
+									}
+								}
+								if(!found) {
+									BillItem item = new BillItem();
+									item.setName(row[2].toString());
+									item.setParentItemId(parentId);
+									item.setQuantity(quantityDecimal);
+									item.setPrice(new BigDecimal(row[1].toString()));
+									items.add(item);
+								}
+							}
+						}
+					}
+					response.setItems(items);
+				}
+			}
+
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 			response.setResponse(ERROR_CODE_FATAL, ERROR_IN_PROCESSING);

@@ -442,4 +442,12 @@ public class BillAdminController {
 		return response;
 	}
 	
+	@POST
+	@Path("/getMonthlyBillData")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse getMonthlyBillData(BillServiceRequest request) {
+		return adminBo.getMonthlyData(request);
+	}
+	
 }
