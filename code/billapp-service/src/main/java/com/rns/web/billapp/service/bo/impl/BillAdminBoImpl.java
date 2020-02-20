@@ -1043,7 +1043,7 @@ public class BillAdminBoImpl implements BillAdminBo, BillConstants {
 				Date date2 = CommonUtils.getMonthFirstDate(request.getInvoice().getMonth() + 1, request.getInvoice().getYear());
 				int dayBuffer = 0;
 				if(new Date().getTime() < date2.getTime()) {
-					date2 = new Date();
+					date2 = DateUtils.addDays(new Date(), 1);
 					//dayBuffer = 1;
 				}
 				String endDate = CommonUtils.convertDate(date2);
