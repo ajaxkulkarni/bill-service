@@ -78,6 +78,7 @@ import com.rns.web.billapp.service.util.BillDataConverter;
 import com.rns.web.billapp.service.util.BillMailUtil;
 import com.rns.web.billapp.service.util.BillMessageBroadcaster;
 import com.rns.web.billapp.service.util.BillNameSorter;
+import com.rns.web.billapp.service.util.BillPDFUtil;
 import com.rns.web.billapp.service.util.BillPayTmStatusCheck;
 import com.rns.web.billapp.service.util.BillPaymentUtil;
 import com.rns.web.billapp.service.util.BillPropertyUtil;
@@ -2206,6 +2207,35 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 							weeklyPricing, price);
 		}
 		return value;
+	}
+
+	public FileInputStream downloadPendingInvoices(BillServiceRequest request) {
+		if (request.getBusiness() == null || request.getBusiness().getId() == null) {
+			return null;
+		}
+		Session session = null;
+		try {
+			session = this.sessionFactory.openSession();
+			BillGenericDaoImpl billGenericDaoImpl = new BillGenericDaoImpl(session);
+			BillDBUserBusiness business = billGenericDaoImpl.getEntityByKey(BillDBUserBusiness.class, ID_ATTR, request.getBusiness().getId(), true);
+			BillUser vendor = new BillUser();
+			vendor.setCurrentBusiness(BillDataConverter.getBusiness(business));
+			BillCustomerGroup group = null;
+			if(request.getCustomerGroup() != null) {
+				BillDBCustomerGroup groups = billGenericDaoImpl.getEntityByKey(BillDBCustomerGroup.class, ID_ATTR, request.getCustomerGroup().getId(), true);
+				group = new BillCustomerGroup();
+				new NullAwareBeanUtils().copyProperties(group, groups);
+			}
+			List<BillUser> users = prepareInvoiceSummary(request, session, INVOICE_STATUS_PAID);
+			BillPDFUtil pdfUtil = new BillPDFUtil(vendor, users, BillPDFUtil.PENDING_INVOICES);
+			pdfUtil.setGroup(group);
+			return pdfUtil.preparePDF();
+		} catch (Exception e) {
+			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
+		} finally {
+			CommonUtils.closeSession(session);
+		}
+		return null;
 	}
 
 }

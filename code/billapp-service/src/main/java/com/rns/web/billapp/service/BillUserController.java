@@ -35,6 +35,7 @@ import org.springframework.stereotype.Component;
 import com.ccavenue.security.AesCryptUtil;
 import com.rns.web.billapp.service.bo.api.BillUserBo;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillCustomerGroup;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillItem;
 import com.rns.web.billapp.service.bo.domain.BillUser;
@@ -633,7 +634,7 @@ public class BillUserController {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		}
 
-		return Response.temporaryRedirect(url).build();
+		return Response.ok().build();
 	}
 	
 	@GET
@@ -804,10 +805,20 @@ public class BillUserController {
 	public Response exportPdf(@PathParam("businessId") Integer businessId, @PathParam("groupId") Integer groupId,@PathParam("type") String type, @PathParam("params") String params) {
 		try {
 			LoggingUtil.logMessage("PDF request for :" + businessId);
-			FileInputStream is = new FileInputStream("/home/service/BillData/example.pdf");
+			//FileInputStream is = new FileInputStream("/home/service/BillData/example.pdf");
 			//File file = new File();
+			BillServiceRequest request = new BillServiceRequest();
+			BillBusiness business = new BillBusiness();
+			business.setId(businessId);
+			request.setBusiness(business);
+			if(groupId != null && groupId > 0) {
+				BillCustomerGroup customerGroup = new BillCustomerGroup();
+				customerGroup.setId(groupId);
+				request.setCustomerGroup(customerGroup);
+			}
+			FileInputStream is = userBo.downloadPendingInvoices(request);
 			ResponseBuilder response = Response.ok(is);
-			String fileName = "example.pdf";
+			String fileName = "pending-invoices.pdf";
 			response.header("Content-Disposition","filename=" + fileName);  
 			return response.build();
 		} catch (Exception e) {
