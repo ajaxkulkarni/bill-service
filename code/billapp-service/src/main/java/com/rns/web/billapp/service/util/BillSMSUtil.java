@@ -29,7 +29,7 @@ import net.swisstech.bitly.model.v3.ShortenResponse;
 public class BillSMSUtil implements BillConstants {
 	
 	private static final String SMS_COSMETIC_SEPARATOR = " ---------------- ";
-	private static final String SMS_URL = "http://api.msg91.com/api/sendhttp.php?country=91&sender=PAYBIL&route=4&mobiles={mobiles}&authkey={auth}&message={message}";
+	private static final String SMS_URL = "http://api.msg91.com/api/sendhttp.php?country=91&sender=MTRSFT&route=4&mobiles={mobiles}&authkey={auth}&message={message}";
 	private static final String ADMIN_PHONES = "9923283604,9623736773";
 	
 	private BillUser customer;
