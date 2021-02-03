@@ -284,8 +284,8 @@ public class BillPaymentUtil {
 				.append("date=").append(CommonUtils.convertDate(new Date(), "dd/MM/yyyy"))
 				.append("&").append("ru=").append(/* "https://paynetzuat.atomtech.in/paynetzclient/ResponseParam.jsp" */BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_REDIRECT_URL))
 				.append("&").append("signature=").append(signature_request);
-		// .append("&").append("mprod=").append(getProducts(vendor.getEmail(),
-		// amt));
+		 //.append("&").append("mprod=").append(getProducts(vendor.getEmail(),
+		 //amt));
 		
 		LoggingUtil.logMessage("Atom payment URL == " + builder.toString() + " PROD ID - " + BillPropertyUtil.getProperty(BillPropertyUtil.ATOM_PRODUCT_ID));
 		invoice.setAtomPaymentUrl(builder.toString());
