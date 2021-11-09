@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -23,6 +25,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
@@ -923,61 +927,7 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 				response.setResponse(ERROR_CODE_GENERIC, ERROR_INVOICE_NOT_FOUND);
 				return response;
 			}
-			if (dbInvoice != null && dbInvoice.getAmount() != null /*&& dbInvoice.getMonth() != null && dbInvoice.getYear() != null*/) {
-				BillDBUser vendor = null;
-				BillUser customer = new BillUser();
-				NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
-				invoice = BillDataConverter.getInvoice(beanUtils, dbInvoice);
-				BillPaymentCredentials credentials = new BillPaymentCredentials();
-				if (dbInvoice.getSubscription() != null) {
-					beanUtils.copyProperties(customer, dbInvoice.getSubscription());
-					BillBusiness business = BillDataConverter.getBusiness(dbInvoice.getSubscription().getBusiness());
-					customer.setCurrentBusiness(business);
-					vendor = dbInvoice.getSubscription().getBusiness().getUser();
-					BillDataConverter.setCredentials(vendor, credentials);
-					BillRuleEngine.calculatePayable(invoice, dbInvoice, session);
-				}
-				if (!StringUtils.equalsIgnoreCase(REQUEST_TYPE_EMAIL, request.getRequestType())) {
-					if(!StringUtils.equalsIgnoreCase("READONLY", request.getRequestType())) {
-						Integer paymentAttempt = dbInvoice.getPaymentAttempt();
-						if (paymentAttempt == null) {
-							paymentAttempt = 0;
-						}
-						paymentAttempt++;
-						dbInvoice.setPaymentAttempt(paymentAttempt);
-						BillPaymentUtil.prepareHdfcRequest(invoice, customer);
-						BillPaymentUtil.prepareCashFreeSignature(invoice, customer, paymentAttempt);
-						BillPaymentUtil.prepareAtomRequest(invoice, vendor);
-						BillPaymentUtil.preparePayTmRequest(invoice, customer, paymentAttempt);
-						// Only if InstaMojo payment request is not already
-						// generated
-						if (StringUtils.isBlank(invoice.getPaymentUrl())) {
-							BillBusinessConverter.updatePaymentURL(invoice, dbInvoice, vendor, customer, credentials);
-						}
-					} else {
-						response.setResponse(BillSMSUtil.sendSMS(customer, invoice, MAIL_TYPE_INVOICE, null));
-					}
-				} else {
-					invoice.setPaymentUrl(BillRuleEngine.preparePaymentUrl(invoice.getId()));
-					if(StringUtils.isBlank(dbInvoice.getShortUrl())) {
-						dbInvoice.setShortUrl(BillSMSUtil.shortenUrl(null, invoice.getPaymentUrl()));
-					}
-					if(dbInvoice.getNoOfReminders() == null) {
-						dbInvoice.setNoOfReminders(0);
-					}
-					dbInvoice.setNoOfReminders(dbInvoice.getNoOfReminders() + 1);
-					invoice.setShortUrl(dbInvoice.getShortUrl());
-					BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
-					mailUtil.setUser(customer);
-					mailUtil.setInvoice(invoice);
-					executor.execute(mailUtil);
-					response.setResponse(BillSMSUtil.sendSMS(customer, invoice, MAIL_TYPE_INVOICE, null));
-				}
-				response.setUser(customer);
-				response.setInvoice(invoice);
-			} else {
-				response.setResponse(ERROR_CODE_GENERIC, ERROR_INVOICE_NOT_FOUND);
-			}
+			prepareInvoiceForPayment(request, response, session, dbInvoice, executor);
 			tx.commit();
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
@@ -986,6 +936,67 @@ public class BillUserBoImpl implements BillUserBo, BillConstants {
 			CommonUtils.closeSession(session);
 		}
 		return response;
+	}
+
+	public static void prepareInvoiceForPayment(BillServiceRequest request, BillServiceResponse response, Session session, BillDBInvoice dbInvoice, ThreadPoolTaskExecutor executor)
+			throws IllegalAccessException, InvocationTargetException, NoSuchAlgorithmException, InvalidKeyException, JsonParseException, JsonMappingException,
+			IOException {
+		BillInvoice invoice = null;
+		if (dbInvoice != null && dbInvoice.getAmount() != null /*&& dbInvoice.getMonth() != null && dbInvoice.getYear() != null*/) {
+			BillDBUser vendor = null;
+			BillUser customer = new BillUser();
+			NullAwareBeanUtils beanUtils = new NullAwareBeanUtils();
+			invoice = BillDataConverter.getInvoice(beanUtils, dbInvoice);
+			BillPaymentCredentials credentials = new BillPaymentCredentials();
+			if (dbInvoice.getSubscription() != null) {
+				beanUtils.copyProperties(customer, dbInvoice.getSubscription());
+				BillBusiness business = BillDataConverter.getBusiness(dbInvoice.getSubscription().getBusiness());
+				customer.setCurrentBusiness(business);
+				vendor = dbInvoice.getSubscription().getBusiness().getUser();
+				BillDataConverter.setCredentials(vendor, credentials);
+				BillRuleEngine.calculatePayable(invoice, dbInvoice, session);
+			}
+			if (!StringUtils.equalsIgnoreCase(REQUEST_TYPE_EMAIL, request.getRequestType())) {
+				if(!StringUtils.equalsIgnoreCase("READONLY", request.getRequestType())) {
+					Integer paymentAttempt = dbInvoice.getPaymentAttempt();
+					if (paymentAttempt == null) {
+						paymentAttempt = 0;
+					}
+					paymentAttempt++;
+					dbInvoice.setPaymentAttempt(paymentAttempt);
+					BillPaymentUtil.prepareHdfcRequest(invoice, customer);
+					BillPaymentUtil.prepareCashFreeSignature(invoice, customer, paymentAttempt);
+					BillPaymentUtil.prepareAtomRequest(invoice, vendor);
+					BillPaymentUtil.preparePayTmRequest(invoice, customer, paymentAttempt);
+					// Only if InstaMojo payment request is not already
+					// generated
+					if (StringUtils.isBlank(invoice.getPaymentUrl())) {
+						BillBusinessConverter.updatePaymentURL(invoice, dbInvoice, vendor, customer, credentials);
+					}
+				} else {
+					response.setResponse(BillSMSUtil.sendSMS(customer, invoice, MAIL_TYPE_INVOICE, null));
+				}
+			} else {
+				invoice.setPaymentUrl(BillRuleEngine.preparePaymentUrl(invoice.getId()));
+				if(StringUtils.isBlank(dbInvoice.getShortUrl())) {
+					dbInvoice.setShortUrl(BillSMSUtil.shortenUrl(null, invoice.getPaymentUrl()));
+				}
+				if(dbInvoice.getNoOfReminders() == null) {
+					dbInvoice.setNoOfReminders(0);
+				}
+				dbInvoice.setNoOfReminders(dbInvoice.getNoOfReminders() + 1);
+				invoice.setShortUrl(dbInvoice.getShortUrl());
+				BillMailUtil mailUtil = new BillMailUtil(MAIL_TYPE_INVOICE);
+				mailUtil.setUser(customer);
+				mailUtil.setInvoice(invoice);
+				executor.execute(mailUtil);
+				response.setResponse(BillSMSUtil.sendSMS(customer, invoice, MAIL_TYPE_INVOICE, null));
+			}
+			response.setUser(customer);
+			response.setInvoice(invoice);
+		} else {
+			response.setResponse(ERROR_CODE_GENERIC, ERROR_INVOICE_NOT_FOUND);
+		}
 	}
 
 	public BillServiceResponse updatePaymentCredentials(BillServiceRequest request) {

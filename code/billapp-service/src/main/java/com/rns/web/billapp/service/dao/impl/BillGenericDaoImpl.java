@@ -127,5 +127,14 @@ public class BillGenericDaoImpl {
 		criteria.setProjection(Projections.max(sortKey));
 		return (Integer) criteria.uniqueResult();
 	}
+	
+	public <T> Long getCountByKey(Class<T> type, String key, Object value, boolean activeEntity) {
+		Criteria criteria = session.createCriteria(type).add(Restrictions.eq(key, value));
+		if (activeEntity) {
+			criteria.add(activeCriteria());
+		}
+		criteria.setProjection(Projections.count(key));
+		return (Long) criteria.uniqueResult();
+	}
 
 }

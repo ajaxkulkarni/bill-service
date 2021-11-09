@@ -1,10 +1,12 @@
 package com.rns.web.billapp.service.dao.impl;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.Criteria;
 import org.hibernate.Query;
@@ -15,6 +17,8 @@ import org.hibernate.criterion.Restrictions;
 import org.hibernate.criterion.SimpleExpression;
 import org.hibernate.sql.JoinType;
 
+import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBBusinessInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
@@ -363,4 +367,28 @@ public class BillInvoiceDaoImpl {
 		query.setInteger("business", businessId);
 		return query.executeUpdate();
 	}*/
+	
+	public List<BillUser> getCustomerPendingInvoices(String phone) {
+		String queryString = "select count(*), invoice.subscription.business.name from BillDBInvoice invoice where invoice.status!=:paid AND invoice.status!=:deleted AND invoice.subscription.status!=:disabled AND invoice.subscription.phone=:phone group by invoice.subscription.business.id";
+		Query query = session.createQuery(queryString);
+		query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
+		query.setString("deleted", BillConstants.INVOICE_STATUS_DELETED);
+		query.setString("phone", phone);
+		query.setString("disabled", BillConstants.STATUS_DELETED);
+		List<Object[]> list = query.list();
+		if(CollectionUtils.isNotEmpty(list)) {
+			List<BillUser> businesses = new ArrayList<BillUser>();
+			for(Object[] objArr: list) {
+				if(ArrayUtils.isNotEmpty(objArr)) {
+					BillBusiness business = new BillBusiness();
+					business.setName(objArr[1].toString());
+					BillUser user = new BillUser();
+					user.setCurrentBusiness(business);
+					businesses.add(user);
+				}
+			}
+			return businesses;
+		}
+		return null;
+	}
 }

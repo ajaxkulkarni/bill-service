@@ -11,4 +11,12 @@ public interface BillCustomerBo {
 	BillServiceResponse getAllSchemes(BillServiceRequest request); //Get all available offers
 	BillServiceResponse redeemScheme(BillServiceRequest request);
 	
+	BillServiceResponse registerCustomer(BillServiceRequest request);
+	
+	BillServiceResponse loadCustomerProfile(BillServiceRequest request);
+	BillServiceResponse loadCustomerBusinesses(BillServiceRequest request);
+	BillServiceResponse loadCustomerDashboard(BillServiceRequest request);
+	BillServiceResponse loadInvoice(BillServiceRequest request);
+	
+	
 }

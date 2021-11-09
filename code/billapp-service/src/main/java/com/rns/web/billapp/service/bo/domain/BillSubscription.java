@@ -31,6 +31,7 @@ public class BillSubscription implements Serializable {
 	private Integer billsDue;
 	private Date lastBillPaid;
 	private BillCustomerGroup group;
+	private Long businessesConnected;
 	
 	public Integer getId() {
 		return id;
@@ -97,6 +98,12 @@ public class BillSubscription implements Serializable {
 	}
 	public void setGroup(BillCustomerGroup group) {
 		this.group = group;
+	}
+	public Long getBusinessesConnected() {
+		return businessesConnected;
+	}
+	public void setBusinessesConnected(Long businessesConnected) {
+		this.businessesConnected = businessesConnected;
 	}
 	
 }

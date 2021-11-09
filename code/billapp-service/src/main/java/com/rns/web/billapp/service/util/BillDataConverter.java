@@ -34,6 +34,7 @@ import com.rns.web.billapp.service.bo.domain.BillSubscription;
 import com.rns.web.billapp.service.bo.domain.BillUser;
 import com.rns.web.billapp.service.bo.domain.BillUserLog;
 import com.rns.web.billapp.service.dao.domain.BillDBCustomerCoupons;
+import com.rns.web.billapp.service.dao.domain.BillDBCustomerProfile;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBItemBusiness;
 import com.rns.web.billapp.service.dao.domain.BillDBItemInvoice;
@@ -565,6 +566,12 @@ public class BillDataConverter implements BillConstants {
 		BillSector sector = new BillSector();
 		new NullAwareBeanUtils().copyProperties(sector, dbSec);
 		return sector;
+	}
+
+	public static BillUser getCustomerProfile(BillDBCustomerProfile billDBCustomerProfile) throws IllegalAccessException, InvocationTargetException {
+		BillUser user = new BillUser();
+		new NullAwareBeanUtils().copyProperties(user, billDBCustomerProfile);
+		return user;
 	}
 	
 }
