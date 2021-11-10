@@ -53,4 +53,36 @@ public class BillCustomerController {
 	public BillServiceResponse redeemScheme(BillServiceRequest request) {
 		return customerBo.redeemScheme(request);
 	}
+	
+	@POST
+	@Path("/loadCustomerProfile")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse loadCustomerProfile(BillServiceRequest request) {
+		return customerBo.loadCustomerProfile(request);
+	}
+	
+	@POST
+	@Path("/registerCustomer")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse registerCustomer(BillServiceRequest request) {
+		return customerBo.registerCustomer(request);
+	}
+	
+	@POST
+	@Path("/loadCustomerDashboard")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse loadCustomerDashboard(BillServiceRequest request) {
+		return customerBo.loadCustomerDashboard(request);
+	}
+	
+	@POST
+	@Path("/loadInvoice")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse loadInvoice(BillServiceRequest request) {
+		return customerBo.loadInvoice(request);
+	}
 }
