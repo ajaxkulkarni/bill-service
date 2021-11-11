@@ -284,7 +284,7 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			List<BillDBCustomerProfile> profiles = dao.getEntitiesByKey(BillDBCustomerProfile.class, "phone", request.getUser().getPhone(), true, null, null);
+			List<BillDBCustomerProfile> profiles = getCustomerByPhone(request, dao);
 			if(CollectionUtils.isEmpty(profiles)) {
 				billServiceResponse.setResponse(ERROR_NOT_FOUND, ERROR_CUSTOMER_PROFILE_NOT_FOUND);
 				return billServiceResponse;
@@ -301,6 +301,22 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 		return billServiceResponse;
 	}
 
+	private List<BillDBSubscription> getSubscriptionByPhone(BillServiceRequest request, BillGenericDaoImpl dao) {
+		List<BillDBSubscription> profiles = dao.getEntitiesByKey(BillDBSubscription.class, "phone", request.getUser().getPhone(), true, null, null);
+		if(CollectionUtils.isEmpty(profiles)) {
+			profiles = dao.getEntitiesByKey(BillDBSubscription.class, "phone", StringUtils.removeStart(request.getUser().getPhone(), "+91"), true, null, null);
+		}
+		return profiles;
+	}
+	
+	private List<BillDBCustomerProfile> getCustomerByPhone(BillServiceRequest request, BillGenericDaoImpl dao) {
+		List<BillDBCustomerProfile> profiles = dao.getEntitiesByKey(BillDBCustomerProfile.class, "phone", request.getUser().getPhone(), true, null, null);
+		if(CollectionUtils.isEmpty(profiles)) {
+			profiles = dao.getEntitiesByKey(BillDBCustomerProfile.class, "phone", StringUtils.removeStart(request.getUser().getPhone(), "+91"), true, null, null);
+		}
+		return profiles;
+	}
+
 	public BillServiceResponse loadCustomerBusinesses(BillServiceRequest request) {
 		BillServiceResponse billServiceResponse = new BillServiceResponse();
 		if(request.getUser() == null || StringUtils.isBlank(request.getUser().getPhone())) {
@@ -312,7 +328,8 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			List<BillDBSubscription> profiles = dao.getEntitiesByKey(BillDBSubscription.class, "phone", request.getUser().getPhone(), true, null, null);
+			//List<BillDBSubscription> profiles = dao.getEntitiesByKey(BillDBSubscription.class, "phone", request.getUser().getPhone(), true, null, null);
+			List<BillDBSubscription> profiles = getSubscriptionByPhone(request, dao);
 			if(CollectionUtils.isEmpty(profiles)) {
 				billServiceResponse.setResponse(ERROR_NOT_FOUND, ERROR_CUSTOMER_PROFILE_NOT_FOUND);
 				return billServiceResponse;
@@ -335,7 +352,8 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 	public BillServiceResponse loadCustomerDashboard(BillServiceRequest request) {
 		Session session = null;
 		BillServiceResponse billServiceResponse = new BillServiceResponse();
-		if(request.getUser() == null || StringUtils.isBlank(request.getUser().getPhone())) {
+		String phone = request.getUser().getPhone();
+		if(request.getUser() == null || StringUtils.isBlank(phone)) {
 			billServiceResponse.setResponse(ERROR_CODE_GENERIC, ERROR_INSUFFICIENT_FIELDS);
 			return billServiceResponse;
 		}
@@ -345,11 +363,17 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 			// Additional info for profile
 			BillSubscription currentSubscription = new BillSubscription();
 			BillGenericDaoImpl dao = new BillGenericDaoImpl(session);
-			Long noOfBusinesses = dao.getCountByKey(BillDBSubscription.class, "phone", request.getUser().getPhone(), true);
-			billServiceResponse.setUsers(new BillInvoiceDaoImpl(session).getCustomerPendingInvoices(request.getUser().getPhone()));
-			currentSubscription.setBusinessesConnected(noOfBusinesses);
-			customerDetails.setCurrentSubscription(currentSubscription);
-			billServiceResponse.setUser(customerDetails);
+			Long noOfBusinesses = dao.getCountByKey(BillDBSubscription.class, "phone", phone, true);
+			if(noOfBusinesses == null || noOfBusinesses == 0) {
+				phone = StringUtils.remove(phone, "+91");
+				noOfBusinesses = dao.getCountByKey(BillDBSubscription.class, "phone", phone, true);
+			}
+			if(noOfBusinesses != null && noOfBusinesses > 0) {
+				billServiceResponse.setUsers(new BillInvoiceDaoImpl(session).getCustomerPendingInvoices(phone));
+				currentSubscription.setBusinessesConnected(noOfBusinesses);
+				customerDetails.setCurrentSubscription(currentSubscription);
+				billServiceResponse.setUser(customerDetails);
+			}
 		} catch (Exception e) {
 			LoggingUtil.logError(ExceptionUtils.getStackTrace(e));
 		} finally {
@@ -404,6 +428,9 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 			session = this.sessionFactory.openSession();
 			//Get subscription ID from phone number first
 			BillDBSubscription dbSubscription = new BillSubscriptionDAOImpl(session).getActiveSubscription(request.getUser().getPhone(), request.getBusiness().getId());
+			if(dbSubscription == null) {
+				dbSubscription = new BillSubscriptionDAOImpl(session).getActiveSubscription(StringUtils.removeStart(request.getUser().getPhone(), "+91"), request.getBusiness().getId());
+			}
 			if(dbSubscription != null) {
 				BillInvoiceDaoImpl dao = new BillInvoiceDaoImpl(session);
 				BillDBInvoice invoice = dao.getLatestUnPaidInvoice(dbSubscription.getId());
