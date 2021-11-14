@@ -433,7 +433,7 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 			}
 			if(dbSubscription != null) {
 				BillInvoiceDaoImpl dao = new BillInvoiceDaoImpl(session);
-				BillDBInvoice invoice = dao.getLatestUnPaidInvoice(dbSubscription.getId());
+				BillDBInvoice invoice = dao.getLatestUnPaidInvoiceIgnoreMonth(dbSubscription.getId());
 				BillUserBoImpl.prepareInvoiceForPayment(request, response, session, invoice, executor);
 			} else {
 				response.setResponse(ERROR_NOT_FOUND, ERROR_INVOICE_NOT_FOUND);

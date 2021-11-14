@@ -163,6 +163,21 @@ public class BillInvoiceDaoImpl {
 		return (BillDBInvoice) list.get(0);
 	}
 	
+	public BillDBInvoice getLatestUnPaidInvoiceIgnoreMonth(Integer subscriptionId) {
+		Criteria criteria = session.createCriteria(BillDBInvoice.class)
+				 .add(Restrictions.eq("subscription.id", subscriptionId))
+				 .add(Restrictions.ne("status", BillConstants.INVOICE_STATUS_PAID))
+				 .add(invoiceNotDeleted())
+				 .add(Restrictions.or(Restrictions.isNull("month")).
+					add(Restrictions.ne("month", CommonUtils.getCalendarValue(new Date(), Calendar.MONTH))))
+				 .addOrder(Order.desc("createdDate"));
+		List list = criteria.list();
+		if(CollectionUtils.isEmpty(list)) {
+			return null;
+		}
+		return (BillDBInvoice) list.get(0);
+	}
+	
 	public List<Object[]> getCustomerInvoiceSummary(Date date, Integer businessId, Integer currentMonth, Integer currentYear, CharSequence status, Integer groupId) {
 		//AND (invoice.month!=:currentMonth OR  (invoice.month=:currentMonth AND invoice.year!=:currentYear) ) 
 		String queryString = "select sum(invoice.amount),invoice.subscription,sum(invoice.pendingBalance),sum(invoice.serviceCharge),sum(invoice.creditBalance),sum(invoice.noOfReminders) from BillDBInvoice invoice where invoice.status!=:deleted AND invoice.subscription!=:disabled AND invoice.subscription.business.id=:businessId {statusQuery} {monthQuery} {groupQuery} group by invoice.subscription.id {orderQuery}";
