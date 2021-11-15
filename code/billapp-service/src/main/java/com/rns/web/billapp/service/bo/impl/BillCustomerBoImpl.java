@@ -14,6 +14,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import com.rns.web.billapp.service.bo.api.BillCustomerBo;
 import com.rns.web.billapp.service.bo.domain.BillBusiness;
+import com.rns.web.billapp.service.bo.domain.BillFinancialDetails;
 import com.rns.web.billapp.service.bo.domain.BillInvoice;
 import com.rns.web.billapp.service.bo.domain.BillScheme;
 import com.rns.web.billapp.service.bo.domain.BillSubscription;
@@ -23,6 +24,7 @@ import com.rns.web.billapp.service.dao.domain.BillDBCustomerProfile;
 import com.rns.web.billapp.service.dao.domain.BillDBInvoice;
 import com.rns.web.billapp.service.dao.domain.BillDBSchemes;
 import com.rns.web.billapp.service.dao.domain.BillDBSubscription;
+import com.rns.web.billapp.service.dao.domain.BillDBUserFinancialDetails;
 import com.rns.web.billapp.service.dao.impl.BillGenericDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillInvoiceDaoImpl;
 import com.rns.web.billapp.service.dao.impl.BillSchemesDaoImpl;
@@ -435,6 +437,16 @@ public class BillCustomerBoImpl implements BillCustomerBo, BillConstants {
 				BillInvoiceDaoImpl dao = new BillInvoiceDaoImpl(session);
 				BillDBInvoice invoice = dao.getLatestUnPaidInvoiceIgnoreMonth(dbSubscription.getId());
 				BillUserBoImpl.prepareInvoiceForPayment(request, response, session, invoice, executor);
+				//Fetch business financials
+				if(request.getUser().getId() != null) {
+					BillDBUserFinancialDetails financials = new BillGenericDaoImpl(session).getEntityByKey(BillDBUserFinancialDetails.class, "user.id", request.getUser().getId(), true);
+					if(financials != null) {
+						BillFinancialDetails fin = new BillFinancialDetails();
+						fin.setVpa(financials.getVpa());
+						request.getUser().setFinancialDetails(fin);
+						response.setUser(request.getUser());
+					}
+				}
 			} else {
 				response.setResponse(ERROR_NOT_FOUND, ERROR_INVOICE_NOT_FOUND);
 				return response;

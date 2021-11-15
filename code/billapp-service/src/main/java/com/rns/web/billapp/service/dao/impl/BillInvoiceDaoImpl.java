@@ -385,7 +385,7 @@ public class BillInvoiceDaoImpl {
 	}*/
 	
 	public List<BillUser> getCustomerPendingInvoices(String phone) {
-		String queryString = "select count(*), invoice.subscription.business.name,invoice.subscription.business.id,invoice.subscription.business.vpa from BillDBInvoice invoice where invoice.status!=:paid AND invoice.status!=:deleted AND invoice.subscription.status!=:disabled AND invoice.subscription.phone=:phone group by invoice.subscription.business.id";
+		String queryString = "select count(*), invoice.subscription.business.name,invoice.subscription.business.id,invoice.subscription.business.user.id from BillDBInvoice invoice where invoice.status!=:paid AND invoice.status!=:deleted AND invoice.subscription.status!=:disabled AND invoice.subscription.phone=:phone group by invoice.subscription.business.id";
 		Query query = session.createQuery(queryString);
 		query.setString("paid", BillConstants.INVOICE_STATUS_PAID);
 		query.setString("deleted", BillConstants.INVOICE_STATUS_DELETED);
@@ -402,9 +402,7 @@ public class BillInvoiceDaoImpl {
 					BillUser user = new BillUser();
 					user.setCurrentBusiness(business);
 					if(objArr[3] != null) {
-						BillFinancialDetails financialDetails = new BillFinancialDetails();
-						financialDetails.setVpa(objArr[3].toString());	
-						user.setFinancialDetails(financialDetails);
+						user.setId(Integer.parseInt(objArr[3].toString()));
 					}
 					businesses.add(user);
 				}
