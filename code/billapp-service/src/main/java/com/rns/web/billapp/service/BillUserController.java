@@ -364,6 +364,14 @@ public class BillUserController {
 
 		return Response.temporaryRedirect(url).build();
 	}
+	
+	@POST
+	@Path("/completeUpiPayment")
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.APPLICATION_JSON)
+	public BillServiceResponse completeUpiPayment(BillServiceRequest request) {
+		return userBo.completePayment(request);
+	}
 
 	@POST
 	@Path("/getDeliveries")
